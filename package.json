@@ -1,0 +1,40 @@
+{
+  "name": "cuevue",
+  "version": "1.0.0",
+  "productName": "CueVue",
+  "description": "CueVue - Professional Demo Scene Controller",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac --dir"
+  },
+  "devDependencies": {
+    "electron": "^41.5.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.cuevue.app",
+    "productName": "CueVue",
+    "mac": {
+      "category": "public.app-category.business",
+      "target": "dir",
+      "identity": null,
+      "gatekeeperAssess": false,
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "NSScreenCaptureUsageDescription": "CueVue needs Screen Recording access to capture windows for the iPhone scene.",
+        "NSMicrophoneUsageDescription": "CueVue does not use the microphone.",
+        "NSCameraUsageDescription": "CueVue does not use the camera."
+      }
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "splash.html",
+      "package.json"
+    ]
+  }
+}

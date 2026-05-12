@@ -1,0 +1,1553 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: file: https:; script-src 'self' 'unsafe-inline'; img-src 'self' data: file:; media-src 'self' blob: data: file:;">
+  <title>CueVue</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; overflow: hidden; color: #fff; background: #111; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    button, input, select { font: inherit; }
+    button { min-height: 34px; padding: 0 12px; border: 1px solid #4a4a4a; border-radius: 8px; color: #fff; background: #282828; cursor: pointer; }
+    button:hover { background: #3a3a3a; }
+    button.primary { border-color: #3384ff; background: #1768d8; }
+    button.primary:hover { background: #2577ed; }
+    button.danger { border-color: #7a3030; background: #4a1f1f; color: #ffd9d9; }
+    button.danger:hover { background: #612828; }
+    input, select { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid #555; border-radius: 10px; color: #fff; background: #111; }
+    label { display: grid; gap: 6px; color: #ccc; font-size: 13px; }
+    .app { display: grid; grid-template-rows: 1fr 48px; height: 100%; min-width: 900px; }
+    .viewport { position: relative; min-height: 0; background: #181818; }
+    .scene { position: absolute; inset: 0; display: none; min-width: 0; min-height: 0; background-position: center; background-size: cover; }
+    .scene.active { display: block; }
+    .scene::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: rgba(5, 8, 12, 0.08); }
+    webview, .capture-video { position: relative; z-index: 1; width: 100%; height: 100%; border: 0; background: #070a0e; }
+    webview { background: #fff; }
+    .placeholder { position: relative; z-index: 1; display: grid; place-items: center; height: 100%; padding: 48px; text-align: center; background: rgba(24, 24, 24, 0.78); }
+    .placeholder-inner { width: min(780px, 90vw); }
+    .flow-scene { position: relative; z-index: 1; display: grid; grid-template-rows: auto 1fr; gap: 34px; height: 100%; padding: 56px 72px; background-color: #151719; background-position: center; background-size: cover; }
+    .flow-scene::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle at 18% 14%, rgba(83,104,122,.28), transparent 28%), rgba(10,12,14,.36); pointer-events: none; }
+    .flow-header { display: grid; grid-template-columns: 160px 1fr 160px; align-items: center; gap: 24px; }
+    .flow-logo { display: grid; place-items: center; min-height: 86px; padding: 16px; border: 1px dashed rgba(255,255,255,.22); border-radius: 8px; color: rgba(255,255,255,.68); background: rgba(0,0,0,.18); font-weight: 800; text-align: center; overflow-wrap: anywhere; }
+    .flow-logo img { max-width: 100%; max-height: 72px; object-fit: contain; }
+    .flow-title-block { text-align: center; }
+    .flow-title { font-size: clamp(34px, 5vw, 76px); line-height: 1; font-weight: 900; letter-spacing: 0; }
+    .flow-subtitle { margin-top: 12px; color: #aeb8c5; font-size: clamp(16px, 2vw, 26px); line-height: 1.35; }
+    .flow-topics { align-self: center; display: grid; gap: 12px; max-width: 1120px; width: 100%; margin: 0 auto; }
+    .flow-topic { min-height: 78px; display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px minmax(180px, .9fr); align-items: center; gap: 14px; padding: 14px 18px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: rgba(0,0,0,.28); box-shadow: 0 16px 40px rgba(0,0,0,.22); }
+    .flow-topic.clickable { cursor: pointer; }
+    .flow-topic.clickable:hover { border-color: rgba(145,209,139,.34); background: rgba(8,16,12,.34); }
+    .flow-topic-number { flex: 0 0 34px; height: 34px; display: grid; place-items: center; border-radius: 999px; color: #d9e7f5; background: #303f4c; font-weight: 900; }
+    .flow-topic-copy { display: grid; gap: 6px; min-width: 0; }
+    .flow-topic-heading { color: #eef3f8; font-size: clamp(16px, 2vw, 23px); font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
+    .flow-topic-subheading { color: #aeb8c5; font-size: clamp(13px, 1.45vw, 17px); line-height: 1.35; overflow-wrap: anywhere; }
+    .flow-topic-check { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 999px; color: #91d18b; font-size: 24px; font-weight: 900; opacity: 0; transform: scale(.72); transition: opacity .16s ease, transform .16s ease; }
+    .flow-topic.revealed .flow-topic-check { opacity: 1; transform: scale(1); }
+    .flow-topic-impact { display: grid; gap: 6px; min-width: 0; opacity: 0; transform: translateX(-8px); transition: opacity .16s ease, transform .16s ease; pointer-events: none; }
+    .flow-topic.revealed .flow-topic-impact { opacity: 1; transform: translateX(0); }
+    .flow-topic-impact-heading { color: #e8f4ea; font-size: clamp(15px, 1.7vw, 21px); font-weight: 850; line-height: 1.22; overflow-wrap: anywhere; }
+    .flow-topic-impact-subheading { color: #a7c9a7; font-size: clamp(12px, 1.3vw, 16px); line-height: 1.35; overflow-wrap: anywhere; }
+    .slides-stage { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; height: 100%; padding: 34px; background: #080a0d; }
+    .slide-image { max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid rgba(255,255,255,.08); background: #111; box-shadow: 0 20px 70px rgba(0,0,0,.42); }
+    .slide-empty { display: grid; place-items: center; width: min(760px, 82vw); min-height: 300px; border: 1px dashed rgba(255,255,255,.18); border-radius: 8px; color: #aeb8c5; text-align: center; background: rgba(255,255,255,.03); }
+    .slide-counter { position: absolute; right: 24px; bottom: 22px; z-index: 3; padding: 7px 10px; border: 1px solid rgba(255,255,255,.14); border-radius: 999px; color: #cfd7e2; background: rgba(8,12,17,.72); font-size: 13px; font-weight: 700; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 56px; line-height: 1; letter-spacing: 0; }
+    h2 { font-size: 34px; line-height: 1.1; letter-spacing: 0; }
+    h3 { font-size: 18px; line-height: 1.2; }
+    .muted { color: #aaa; line-height: 1.5; margin-top: 10px; }
+    .iphone-stage { position: relative; z-index: 1; display: grid; place-items: center; height: 100%; padding: 24px 34px; background-position: center; background-size: cover; }
+    .bezel { position: relative; width: min(405px, 43vh); min-width: 250px; aspect-ratio: 9 / 19.5; border: 9px solid #c8c3ba; border-radius: 42px; overflow: hidden; background: #050505; box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6); }
+    .bezel::before { content: ""; position: absolute; top: 10px; left: 50%; z-index: 4; width: 94px; height: 26px; border-radius: 999px; background: #000; transform: translateX(-50%); }
+    #iphone-video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+    .quiet-status { position: absolute; left: 24px; bottom: 24px; z-index: 4; max-width: 520px; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; background: rgba(8, 12, 17, 0.72); color: #c6d0dd; line-height: 1.4; }
+    .toolbar { height: 48px; display: flex; gap: 6px; align-items: stretch; padding: 6px 8px; border-top: 1px solid #333; background: #181818; }
+    .scene-slot { flex: 1; position: relative; min-width: 0; }
+    .scene-button { width: 100%; height: 100%; min-height: 0; border-radius: 6px; font-weight: 700; background: #242424; font-size: 13px; }
+    .scene-button.active { border-color: #53687a; background: #303f4c; }
+    .edit-scene-button { position: absolute; right: 5px; top: 4px; width: 22px; height: 20px; min-height: 0; border: 0; border-radius: 5px; padding: 0; background: rgba(255,255,255,0.13); color: #fff; font-size: 13px; line-height: 1; }
+    .scene-slot.permission-target .edit-scene-button { outline: 2px solid #d5a842; outline-offset: 1px; }
+    .scene-slot.permission-target::before { content: "Screen access needed →"; position: absolute; right: 30px; top: -30px; z-index: 4; padding: 5px 8px; border: 1px solid rgba(213,168,66,0.55); border-radius: 6px; color: #f0d88a; background: rgba(8, 12, 17, 0.9); font-size: 12px; font-weight: 700; white-space: nowrap; pointer-events: none; }
+    .toolbar-icon-button { flex: 0 0 44px; min-height: 0; padding: 0; border-radius: 6px; font-size: 18px; font-weight: 700; background: #242424; }
+    .toolbar-icon-button.active { border-color: #53687a; background: #303f4c; }
+    .fancy-cursor { position: fixed; left: 0; top: 0; z-index: 200; width: 34px; height: 34px; border: 2px solid rgba(125, 189, 255, .95); border-radius: 50%; pointer-events: none; translate: -50% -50%; box-shadow: 0 0 0 7px rgba(45, 125, 255, .16), 0 0 24px rgba(125, 189, 255, .62); opacity: 0; transition: opacity .12s ease; }
+    .fancy-cursor::after { content: ""; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; border-radius: 50%; background: #f6fbff; translate: -50% -50%; }
+    body.cursor-fancy, body.cursor-fancy * { cursor: none !important; }
+    body.cursor-fancy .fancy-cursor { opacity: 1; }
+    .overlay { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; padding: 28px; background: rgba(5, 8, 12, 0.72); }
+    .overlay.open { display: grid; }
+    .modal { width: min(980px, 94vw); max-height: 90vh; overflow: hidden; border: 1px solid #555; border-radius: 18px; background: #202020; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55); }
+    .settings-modal { width: min(680px, 92vw); }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px; border-bottom: 1px solid #444; }
+    .modal-body { display: grid; gap: 16px; max-height: calc(90vh - 84px); overflow: auto; padding: 18px; }
+    .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .settings-card { display: grid; gap: 12px; align-content: start; min-height: 220px; padding: 14px; border: 1px solid #3d3d3d; border-radius: 10px; background: #181818; }
+    .settings-card.source-card-wrap { min-height: 320px; }
+    .card-title { color: #f2f2f2; font-size: 15px; font-weight: 800; }
+    .card-subtitle { color: #9fa7b2; font-size: 13px; line-height: 1.45; margin: 0; }
+    .status-line { min-height: 40px; padding: 10px 12px; border: 1px solid #383838; border-radius: 8px; color: #cfd7e2; background: #101010; line-height: 1.4; overflow-wrap: anywhere; }
+    .settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .settings-actions.with-delete { grid-template-columns: 1fr 1fr 1fr; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stack { display: grid; gap: 10px; }
+    .type-panel { display: none; gap: 12px; }
+    .flow-fields { display: grid; gap: 10px; }
+    .flow-topic-fields { display: grid; gap: 10px; }
+    .flow-topic-edit-row { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+    .flow-topic-edit-number { height: 34px; display: grid; place-items: center; border-radius: 999px; color: #d9e7f5; background: #303f4c; font-weight: 900; }
+    .flow-topic-edit-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 10px; }
+    .flow-impact-toggle { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: #cfd7e2; font-size: 13px; }
+    .flow-impact-toggle input { width: auto; min-height: 0; }
+    .logo-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .logo-path { font-size: 12px; color: #9fa7b2; overflow-wrap: anywhere; }
+    .permission-box { display: grid; gap: 10px; padding: 12px; border: 1px solid #383838; border-radius: 8px; color: #cfd7e2; background: #101010; line-height: 1.45; }
+    .permission-box .permission-ok { color: #91d18b; }
+    .permission-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .device-guide { display: grid; gap: 10px; color: #c9d3df; line-height: 1.45; }
+    .quicktime-steps { margin: 0; padding-left: 20px; color: #aeb8c5; }
+    .device-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .device-checklist { display: grid; gap: 8px; padding: 12px; border: 1px solid #343a43; border-radius: 8px; background: #11151a; }
+    .device-check { color: #9aa6b5; }
+    .device-check.done { color: #91d18b; }
+    .device-check.active { color: #f0d17a; }
+    .device-check.fail { color: #ff8f8f; }
+    .device-fallback { display: none; gap: 10px; }
+    .device-fallback.open { display: grid; }
+    .type-panel.active { display: grid; }
+    .source-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; max-height: 360px; overflow: auto; }
+    .source-card { overflow: hidden; border: 1px solid #303b4d; border-radius: 8px; background: #0c1219; text-align: left; min-height: 150px; }
+    .source-card.selected { border-color: #63a1ff; background: #12243a; }
+    .source-card img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #06090d; border-bottom: 1px solid #26313f; }
+    .source-card > span { display: block; padding: 10px; color: #dce5ef; line-height: 1.3; overflow-wrap: anywhere; }
+    .source-kind { display: inline-block; margin: 0 6px 3px 0; padding: 2px 6px; border-radius: 999px; color: #d9e7f5; background: #303f4c; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+    .slide-thumb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(106px, 1fr)); gap: 10px; max-height: 350px; overflow: auto; padding: 2px; }
+    .slide-thumb { position: relative; display: grid; gap: 7px; min-height: 0; padding: 7px; border: 1px solid #303b4d; border-radius: 8px; background: #0c1219; color: #dce5ef; cursor: grab; }
+    .slide-thumb:active { cursor: grabbing; }
+    .slide-thumb.dragging { opacity: .45; }
+    .slide-thumb.active { border-color: #63a1ff; background: #12243a; }
+    .slide-thumb img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 5px; background: #06090d; }
+    .slide-thumb-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #cfd7e2; font-size: 12px; font-weight: 800; }
+    .slide-thumb-label span:last-child { color: #8793a2; font-weight: 700; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main class="viewport">
+      <section id="scene-flow" class="scene active">
+        <div class="flow-scene">
+          <div class="flow-header">
+            <div id="flow-logo-left" class="flow-logo">CueVue</div>
+            <div class="flow-title-block">
+              <div id="flow-title" class="flow-title">Demo Flow</div>
+              <div id="flow-subtitle" class="flow-subtitle">Today&apos;s walkthrough</div>
+            </div>
+            <div id="flow-logo-right" class="flow-logo">Client Logo</div>
+          </div>
+          <div id="flow-topics" class="flow-topics"></div>
+        </div>
+      </section>
+
+      <section id="scene-url" class="scene"></section>
+
+      <section id="scene-window" class="scene">
+        <video id="window-video" class="capture-video" autoplay muted playsinline></video>
+        <div id="window-status" class="quiet-status hidden"></div>
+      </section>
+
+      <section id="scene-device" class="scene">
+        <div id="iphone-stage" class="iphone-stage">
+          <div class="bezel">
+            <video id="iphone-video" autoplay muted playsinline></video>
+          </div>
+        </div>
+        <div id="device-status" class="quiet-status hidden"></div>
+      </section>
+
+      <section id="scene-slides" class="scene">
+        <div id="slides-stage" class="slides-stage">
+          <div id="slide-empty" class="slide-empty">Import slides in Scene Settings</div>
+          <img id="slide-image" class="slide-image hidden" alt="Slide">
+          <div id="slide-counter" class="slide-counter hidden">1 / 1</div>
+        </div>
+        <div id="slides-status" class="quiet-status hidden"></div>
+      </section>
+    </main>
+    <nav id="toolbar" class="toolbar" aria-label="Scenes">
+      <div class="scene-slot"><button class="scene-button active">Flow</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
+      <div class="scene-slot"><button class="scene-button">Jenn Demo</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
+      <div class="scene-slot"><button class="scene-button">Standard Demo</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
+      <div class="scene-slot"><button class="scene-button">iPhone</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
+      <div class="scene-slot"><button class="scene-button">Slides</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
+      <button class="toolbar-icon-button" aria-label="Refresh current scene">↻</button>
+      <button class="toolbar-icon-button" aria-label="Global settings">⚙</button>
+    </nav>
+  </div>
+
+  <div id="editor" class="overlay">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3>Scene Settings</h3>
+          <p class="muted">Configure this scene and its button order.</p>
+        </div>
+        <button id="close-editor-button">Close</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-grid">
+          <section class="settings-card">
+            <div>
+              <div class="card-title">Scene</div>
+              <p class="card-subtitle">Name, order, type, and background.</p>
+            </div>
+            <div class="grid-2">
+              <label>Scene order <input id="edit-order" type="number" min="1"></label>
+              <label>Scene name <input id="edit-name" spellcheck="false"></label>
+            </div>
+            <label>Scene type
+              <select id="edit-type">
+                <option value="flow">Flow</option>
+                <option value="url">URL</option>
+                <option value="window">Window</option>
+                <option value="device">Device</option>
+                <option value="slides">PPT Slides</option>
+              </select>
+            </label>
+            <div class="grid-2">
+              <button id="choose-bg-button" type="button">Choose Background</button>
+              <button id="choose-bg-all-button" type="button">Apply to All Scenes</button>
+            </div>
+            <div class="status-line" id="selected-bg-label">No background selected.</div>
+          </section>
+
+          <section class="settings-card source-card-wrap">
+            <div>
+              <div class="card-title">Source</div>
+              <p class="card-subtitle">Controls change based on the selected scene type.</p>
+            </div>
+
+            <div id="panel-url" class="type-panel">
+              <label>URL <input id="edit-url" type="url" spellcheck="false"></label>
+              <div class="grid-2">
+                <label>Saved username <input id="edit-username" spellcheck="false" autocomplete="username"></label>
+                <label>Saved password <input id="edit-password" type="password" autocomplete="current-password"></label>
+              </div>
+            </div>
+
+            <div id="panel-window" class="type-panel">
+              <button id="scan-window-button">Refresh Windows & Screens</button>
+              <div id="window-source-grid" class="source-grid"></div>
+            </div>
+
+            <div id="panel-device" class="type-panel">
+              <div class="device-actions">
+                <button id="open-quicktime-button">Set Up iPhone</button>
+                <button id="retry-device-button">Retry Detect iPhone</button>
+                <button id="manual-device-button">Choose Window Manually</button>
+              </div>
+              <button id="quicktime-help-button">QuickTime Help</button>
+              <div class="device-guide">
+                <p class="muted">If QuickTime is unavailable, open App Store or restore QuickTime Player from macOS.</p>
+                <div class="device-checklist">
+                  <div class="device-check" id="qt-check-opened">QuickTime opened</div>
+                  <div class="device-check" id="qt-check-recording">Movie Recording window detected</div>
+                  <div class="device-check" id="qt-check-selected">iPhone selected in QuickTime</div>
+                  <div class="device-check" id="qt-check-connected">CueVue connected</div>
+                </div>
+                <p class="muted">QuickTime must stay open while CueVue captures it. After CueVue connects, it will try to minimize QuickTime.</p>
+                <div id="device-fallback" class="device-fallback">
+                  <p class="muted">Manual fallback: choose the QuickTime Movie Recording window below.</p>
+                  <div id="device-source-grid" class="source-grid"></div>
+                </div>
+              </div>
+            </div>
+
+            <div id="panel-flow" class="type-panel">
+              <div class="flow-fields">
+                <label>Flow title <input id="flow-edit-title" spellcheck="false"></label>
+                <label>Flow subtitle <input id="flow-edit-subtitle" spellcheck="false"></label>
+                <div class="grid-2">
+                  <label>Your logo label <input id="flow-edit-logo-left" spellcheck="false"></label>
+                  <label>Company logo label <input id="flow-edit-logo-right" spellcheck="false"></label>
+                </div>
+                <div class="logo-actions">
+                  <button id="flow-logo-left-button" type="button">Upload Your Logo</button>
+                  <button id="flow-logo-right-button" type="button">Upload Company Logo</button>
+                </div>
+                <div class="grid-2">
+                  <div id="flow-logo-left-path" class="logo-path">No logo uploaded.</div>
+                  <div id="flow-logo-right-path" class="logo-path">No logo uploaded.</div>
+                </div>
+                <div>
+                  <div class="card-subtitle">Agenda topics</div>
+                  <div class="flow-topic-fields">
+                    <div class="flow-topic-edit-row">
+                      <div class="flow-topic-edit-number">1</div>
+                      <div class="flow-topic-edit-fields">
+                        <input class="flow-topic-heading-input" spellcheck="false" placeholder="Topic">
+                        <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
+                        <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
+                        <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
+                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                      </div>
+                    </div>
+                    <div class="flow-topic-edit-row">
+                      <div class="flow-topic-edit-number">2</div>
+                      <div class="flow-topic-edit-fields">
+                        <input class="flow-topic-heading-input" spellcheck="false" placeholder="Topic">
+                        <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
+                        <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
+                        <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
+                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                      </div>
+                    </div>
+                    <div class="flow-topic-edit-row">
+                      <div class="flow-topic-edit-number">3</div>
+                      <div class="flow-topic-edit-fields">
+                        <input class="flow-topic-heading-input" spellcheck="false" placeholder="Topic">
+                        <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
+                        <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
+                        <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
+                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                      </div>
+                    </div>
+                    <div class="flow-topic-edit-row">
+                      <div class="flow-topic-edit-number">4</div>
+                      <div class="flow-topic-edit-fields">
+                        <input class="flow-topic-heading-input" spellcheck="false" placeholder="Topic">
+                        <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
+                        <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
+                        <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
+                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                      </div>
+                    </div>
+                    <div class="flow-topic-edit-row">
+                      <div class="flow-topic-edit-number">5</div>
+                      <div class="flow-topic-edit-fields">
+                        <input class="flow-topic-heading-input" spellcheck="false" placeholder="Topic">
+                        <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
+                        <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
+                        <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
+                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                      </div>
+                    </div>
+                    <div class="flow-topic-edit-row">
+                      <div class="flow-topic-edit-number">6</div>
+                      <div class="flow-topic-edit-fields">
+                        <input class="flow-topic-heading-input" spellcheck="false" placeholder="Topic">
+                        <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
+                        <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
+                        <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
+                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="panel-slides" class="type-panel">
+              <p class="muted">Import .pptx/.ppt through PowerPoint export, or import .jpg/.png images directly. CueVue displays the resulting images internally.</p>
+              <div class="device-actions">
+                <button id="import-slides-button">Import Slides</button>
+              </div>
+              <div class="status-line" id="slides-import-status">No slides imported.</div>
+              <div id="slide-thumb-grid" class="slide-thumb-grid"></div>
+            </div>
+          </section>
+
+        </div>
+
+        <div class="settings-actions with-delete">
+          <button id="save-editor-button" class="primary">Save Scene</button>
+          <button id="delete-scene-button" class="danger">Delete Scene</button>
+          <button id="cancel-editor-button">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="global-settings" class="overlay">
+    <div class="modal settings-modal">
+      <div class="modal-head">
+        <div>
+          <h3>Global Settings</h3>
+          <p class="muted">Universal capture and macOS permission settings.</p>
+        </div>
+        <button id="close-global-settings-button">Close</button>
+      </div>
+      <div class="modal-body">
+        <section class="settings-card">
+          <div>
+            <div class="card-title">Cursor</div>
+            <p class="card-subtitle">Controls whether captured windows include the mouse cursor.</p>
+          </div>
+          <label>Cursor mode
+            <select id="cursor-mode">
+              <option value="auto">Auto</option>
+              <option value="show">Show cursor</option>
+              <option value="hide">Hide cursor</option>
+              <option value="fancy">Fancy demo cursor</option>
+            </select>
+          </label>
+        </section>
+        <section class="settings-card">
+          <div>
+            <div class="card-title">Status</div>
+            <p class="card-subtitle">Saved source and connection state for the current scene.</p>
+          </div>
+          <div class="status-line" id="selected-window-label">No capture window selected.</div>
+          <div class="status-line" id="selected-device-label">No iPhone source selected.</div>
+          <div class="status-line" id="selected-slides-label">No slides window selected.</div>
+          <div class="status-line" id="credential-status">URL credentials are saved when you save the scene.</div>
+        </section>
+        <section class="settings-card">
+          <div>
+            <div class="card-title">Apple Settings</div>
+            <p class="card-subtitle">Screen & System Audio Recording access.</p>
+          </div>
+          <div class="permission-box">
+            <span>CueVue needs macOS Screen & System Audio Recording permission before it can list or capture windows. If you turn CueVue on, quit and reopen CueVue.</span>
+            <button id="global-open-screen-settings-button" type="button">Apple Settings</button>
+            <span id="global-permission-detail" class="muted">Permission status not checked yet.</span>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <div id="fancy-cursor" class="fancy-cursor"></div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const { pathToFileURL } = require('url');
+
+    const STORAGE_KEY = 'cuevue_scenes_v2';
+    const SETTINGS_KEY = 'cuevue_global_settings_v1';
+    const defaultFlow = {
+      title: 'Demo Flow',
+      subtitle: "Today's walkthrough",
+      logoLeft: 'CueVue',
+      logoRight: 'Client Logo',
+      logoLeftPath: '',
+      logoRightPath: '',
+      topics: [
+        { heading: 'Introductions', subheading: 'Who is in the room and what we are covering', impact: '', subImpact: '', showImpact: false, revealed: false },
+        { heading: 'Current workflow', subheading: 'What happens today and where the friction is', impact: '', subImpact: '', showImpact: false, revealed: false },
+        { heading: 'Live demo', subheading: 'Walkthrough of the key scenes and outcomes', impact: '', subImpact: '', showImpact: false, revealed: false },
+        { heading: 'Questions', subheading: 'Open discussion and next steps', impact: '', subImpact: '', showImpact: false, revealed: false }
+      ]
+    };
+    const defaultScenes = [
+      { id: 'flow', name: 'Flow', type: 'flow', order: 1, url: '', bg: '', bgVersion: '', sourceId: '', sourceName: '', flow: defaultFlow },
+      { id: 'jenn', name: 'Jenn Demo', type: 'url', order: 2, url: 'https://jenn.macmms.com/', bg: '', bgVersion: '', sourceId: '', sourceName: '' },
+      { id: 'standard', name: 'Standard Demo', type: 'url', order: 3, url: 'https://standard.macmms.com/', bg: '', bgVersion: '', sourceId: '', sourceName: '' },
+      { id: 'iphone', name: 'iPhone', type: 'device', order: 4, url: '', bg: '', bgVersion: '', sourceId: '', sourceName: '' },
+      { id: 'slides', name: 'Slides', type: 'slides', order: 5, url: '', bg: '', bgVersion: '', sourceId: '', sourceName: '' }
+    ];
+
+    let scenes = loadScenes();
+    let activeId = scenes[0].id;
+    let editingId = activeId;
+    let currentStream = null;
+    let permissionPromptSceneId = '';
+    let quickTimeDetectTimer = null;
+    let globalSettings = loadGlobalSettings();
+    const urlWebviews = new Map();
+
+    const toolbar = document.getElementById('toolbar');
+    const urlScene = document.getElementById('scene-url');
+    const windowVideo = document.getElementById('window-video');
+    const iphoneVideo = document.getElementById('iphone-video');
+    const slideImage = document.getElementById('slide-image');
+    const slideEmpty = document.getElementById('slide-empty');
+    const slideCounter = document.getElementById('slide-counter');
+    const slideThumbGrid = document.getElementById('slide-thumb-grid');
+    const windowStatus = document.getElementById('window-status');
+    const deviceStatus = document.getElementById('device-status');
+    const slidesStatus = document.getElementById('slides-status');
+    const editor = document.getElementById('editor');
+    const globalSettingsOverlay = document.getElementById('global-settings');
+    const editType = document.getElementById('edit-type');
+
+    function loadGlobalSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+        if (saved && typeof saved === 'object') return { cursorMode: saved.cursorMode || 'auto' };
+      } catch (_) {}
+      return { cursorMode: 'auto' };
+    }
+
+    function saveGlobalSettings() {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(globalSettings));
+    }
+
+    function loadScenes() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (Array.isArray(saved)) return normalizeScenes(saved);
+      } catch (_) {}
+      return normalizeScenes(defaultScenes);
+    }
+
+    function normalizeScenes(input) {
+      const baseIds = new Set(defaultScenes.map((scene) => scene.id));
+      const merged = defaultScenes.map((base) => {
+        const saved = input.find((scene) => scene.id === base.id) || (base.id === 'flow' ? input.find((scene) => scene.id === 'toc') : null) || {};
+        const scene = { ...base, ...saved };
+        if (base.id === 'flow') {
+          scene.id = 'flow';
+          scene.type = 'flow';
+          if (!saved.name || saved.name === 'TOC') scene.name = 'Flow';
+          scene.flow = normalizeFlow(saved.flow);
+        }
+        return normalizeScene(scene);
+      });
+      const extras = input
+        .filter((scene) => scene && scene.id && !baseIds.has(scene.id) && scene.id !== 'toc')
+        .map(normalizeScene);
+      return merged.concat(extras).slice(0, 24).sort((a, b) => Number(a.order) - Number(b.order));
+    }
+
+    function normalizeScene(scene) {
+      const type = ['flow', 'url', 'window', 'device', 'slides'].includes(scene.type) ? scene.type : 'flow';
+      return {
+        id: scene.id || makeSceneId(),
+        name: scene.name || 'New Scene',
+        type,
+        order: Number(scene.order) || 999,
+        url: scene.url || '',
+        bg: scene.bg || '',
+        bgVersion: scene.bgVersion || '',
+        sourceId: scene.sourceId || '',
+        sourceName: scene.sourceName || '',
+        slidePaths: Array.isArray(scene.slidePaths) ? scene.slidePaths : [],
+        slideIndex: Number(scene.slideIndex) || 0,
+        slideSource: scene.slideSource || '',
+        flow: type === 'flow' ? normalizeFlow(scene.flow) : scene.flow
+      };
+    }
+
+    function makeSceneId() {
+      return `scene-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    }
+
+    function normalizeFlow(flow = {}) {
+      flow = flow || {};
+      const topics = Array.isArray(flow.topics)
+        ? flow.topics.map(normalizeFlowTopic).filter((item) => item.heading || item.subheading || item.impact || item.subImpact).slice(0, 6)
+        : defaultFlow.topics;
+      return {
+        title: flow.title || defaultFlow.title,
+        subtitle: flow.subtitle || defaultFlow.subtitle,
+        logoLeft: flow.logoLeft || defaultFlow.logoLeft,
+        logoRight: flow.logoRight || defaultFlow.logoRight,
+        logoLeftPath: flow.logoLeftPath || '',
+        logoRightPath: flow.logoRightPath || '',
+        topics: topics.length ? topics : defaultFlow.topics
+      };
+    }
+
+    function normalizeFlowTopic(item) {
+      if (typeof item === 'string') {
+        return { heading: item.trim(), subheading: '', impact: '', subImpact: '', showImpact: false, revealed: false };
+      }
+      return {
+        heading: item && item.heading ? String(item.heading).trim() : '',
+        subheading: item && item.subheading ? String(item.subheading).trim() : '',
+        impact: item && item.impact ? String(item.impact).trim() : '',
+        subImpact: item && item.subImpact ? String(item.subImpact).trim() : '',
+        showImpact: Boolean(item && (item.showImpact || item.impact || item.subImpact)),
+        revealed: Boolean(item && (item.revealed || (item.showImpact && !Object.prototype.hasOwnProperty.call(item, 'revealed'))))
+      };
+    }
+
+    function saveScenes() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(scenes));
+    }
+
+    function orderedScenes() {
+      return scenes.slice().sort((a, b) => Number(a.order) - Number(b.order));
+    }
+
+    function sceneById(id) {
+      return scenes.find((scene) => scene.id === id);
+    }
+
+    function renderFlow(scene) {
+      const flow = normalizeFlow(scene.flow);
+      document.getElementById('flow-title').textContent = flow.title;
+      document.getElementById('flow-subtitle').textContent = flow.subtitle;
+      renderLogo(document.getElementById('flow-logo-left'), flow.logoLeft, flow.logoLeftPath);
+      renderLogo(document.getElementById('flow-logo-right'), flow.logoRight, flow.logoRightPath);
+      const topics = flow.topics.slice(0, 6);
+      const list = document.getElementById('flow-topics');
+      list.innerHTML = '';
+      topics.forEach((topic, index) => {
+        const item = document.createElement('div');
+        const canReveal = Boolean(topic.impact || topic.subImpact);
+        item.className = 'flow-topic' + (canReveal ? ' clickable' : '') + (canReveal && topic.revealed ? ' revealed' : '');
+        item.innerHTML = `
+          <div class="flow-topic-number">${index + 1}</div>
+          <div class="flow-topic-copy">
+            <div class="flow-topic-heading">${escapeHtml(topic.heading)}</div>
+            ${topic.subheading ? `<div class="flow-topic-subheading">${escapeHtml(topic.subheading)}</div>` : ''}
+          </div>
+          <div class="flow-topic-check">✓</div>
+          <div class="flow-topic-impact">
+            ${topic.impact ? `<div class="flow-topic-impact-heading">${escapeHtml(topic.impact)}</div>` : ''}
+            ${topic.subImpact ? `<div class="flow-topic-impact-subheading">${escapeHtml(topic.subImpact)}</div>` : ''}
+          </div>
+        `;
+        if (canReveal) {
+          item.addEventListener('click', () => toggleFlowImpact(scene, index));
+        }
+        list.appendChild(item);
+      });
+    }
+
+    function toggleFlowImpact(scene, index) {
+      scene.flow = normalizeFlow(scene.flow);
+      const topic = scene.flow.topics[index];
+      if (!topic || (!topic.impact && !topic.subImpact)) return;
+      topic.revealed = !topic.revealed;
+      saveScenes();
+      renderFlow(scene);
+    }
+
+    function renderLogo(element, label, filePath) {
+      element.innerHTML = '';
+      if (filePath) {
+        const img = document.createElement('img');
+        img.src = pathToFileURL(filePath).href;
+        img.alt = label || 'Logo';
+        element.appendChild(img);
+        return;
+      }
+      element.textContent = label;
+    }
+
+    function renderSlides(scene) {
+      const slides = Array.isArray(scene.slidePaths) ? scene.slidePaths : [];
+      const index = Math.max(0, Math.min(Number(scene.slideIndex) || 0, slides.length - 1));
+      if (!slides.length) {
+        slideImage.classList.add('hidden');
+        slideCounter.classList.add('hidden');
+        slideEmpty.classList.remove('hidden');
+        showStatus(slidesStatus, 'No slides imported. Open Scene Settings and import .pptx, .ppt, .jpg, or .png files.');
+        return;
+      }
+      scene.slideIndex = index;
+      slideImage.src = pathToFileURL(slides[index]).href;
+      slideImage.classList.remove('hidden');
+      slideCounter.textContent = `${index + 1} / ${slides.length}`;
+      slideCounter.classList.remove('hidden');
+      slideEmpty.classList.add('hidden');
+      hideStatus(slidesStatus);
+    }
+
+    function renderSlideThumbnails(scene) {
+      if (!slideThumbGrid) return;
+      const slides = Array.isArray(scene.slidePaths) ? scene.slidePaths : [];
+      slideThumbGrid.innerHTML = '';
+      if (!slides.length) {
+        const empty = document.createElement('div');
+        empty.className = 'status-line';
+        empty.textContent = 'No slide images imported yet.';
+        slideThumbGrid.appendChild(empty);
+        return;
+      }
+
+      slides.forEach((slidePath, index) => {
+        const thumb = document.createElement('button');
+        thumb.type = 'button';
+        thumb.className = 'slide-thumb' + (index === (Number(scene.slideIndex) || 0) ? ' active' : '');
+        thumb.draggable = true;
+        thumb.dataset.index = String(index);
+        thumb.innerHTML = `
+          <img src="${pathToFileURL(slidePath).href}" alt="">
+          <div class="slide-thumb-label"><strong>Slide ${index + 1}</strong><span>Drag</span></div>
+        `;
+        thumb.addEventListener('click', () => {
+          scene.slideIndex = index;
+          saveScenes();
+          if (scene.id === activeId) renderSlides(scene);
+          renderSlideThumbnails(scene);
+        });
+        thumb.addEventListener('dragstart', (event) => {
+          thumb.classList.add('dragging');
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', String(index));
+        });
+        thumb.addEventListener('dragend', () => {
+          thumb.classList.remove('dragging');
+        });
+        thumb.addEventListener('dragover', (event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+        });
+        thumb.addEventListener('drop', (event) => {
+          event.preventDefault();
+          const fromIndex = Number(event.dataTransfer.getData('text/plain'));
+          reorderSlides(scene, fromIndex, index);
+        });
+        slideThumbGrid.appendChild(thumb);
+      });
+    }
+
+    function reorderSlides(scene, fromIndex, toIndex) {
+      const slides = Array.isArray(scene.slidePaths) ? scene.slidePaths : [];
+      if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex)) return;
+      if (fromIndex < 0 || toIndex < 0 || fromIndex >= slides.length || toIndex >= slides.length || fromIndex === toIndex) return;
+      const [moved] = slides.splice(fromIndex, 1);
+      slides.splice(toIndex, 0, moved);
+      scene.slidePaths = slides;
+      scene.slideIndex = toIndex;
+      saveScenes();
+      if (scene.id === activeId) renderSlides(scene);
+      renderSlideThumbnails(scene);
+    }
+
+    function changeSlide(direction) {
+      const scene = sceneById(activeId);
+      if (!scene || scene.type !== 'slides') return false;
+      const slides = Array.isArray(scene.slidePaths) ? scene.slidePaths : [];
+      if (!slides.length) return false;
+      const nextIndex = Math.max(0, Math.min((Number(scene.slideIndex) || 0) + direction, slides.length - 1));
+      if (nextIndex === scene.slideIndex) return true;
+      scene.slideIndex = nextIndex;
+      saveScenes();
+      renderSlides(scene);
+      return true;
+    }
+
+    function sceneBackgroundUrl(scene) {
+      if (!scene.bg) return '';
+      const url = pathToFileURL(scene.bg);
+      url.searchParams.set('v', scene.bgVersion || scene.bg);
+      return `url("${url.href}")`;
+    }
+
+    function applySceneBackground(scene) {
+      document.querySelectorAll('.scene').forEach((element) => {
+        element.style.backgroundImage = '';
+      });
+      document.getElementById('iphone-stage').style.backgroundImage = '';
+      document.querySelector('.flow-scene').style.backgroundImage = '';
+
+      const background = sceneBackgroundUrl(scene);
+      if (!background) return;
+
+      const target = document.getElementById(`scene-${scene.type}`);
+      if (target) target.style.backgroundImage = background;
+      if (scene.type === 'flow') {
+        document.querySelector('.flow-scene').style.backgroundImage = background;
+      }
+      if (scene.type === 'device') {
+        document.getElementById('iphone-stage').style.backgroundImage = background;
+      }
+    }
+
+    function renderToolbar() {
+      const ordered = orderedScenes();
+      toolbar.innerHTML = '';
+      ordered.forEach((scene) => {
+        const slot = document.createElement('div');
+        slot.className = 'scene-slot';
+        if (scene.id === permissionPromptSceneId) slot.classList.add('permission-target');
+
+        const button = document.createElement('button');
+        button.className = 'scene-button' + (scene.id === activeId ? ' active' : '');
+        button.textContent = scene.name;
+        button.addEventListener('click', () => showScene(scene.id));
+
+        const edit = document.createElement('button');
+        edit.className = 'edit-scene-button';
+        edit.textContent = '✎';
+        edit.addEventListener('click', (event) => {
+          event.stopPropagation();
+          showScene(scene.id);
+          setTimeout(openEditor, 0);
+        });
+        slot.appendChild(button);
+        slot.appendChild(edit);
+        toolbar.appendChild(slot);
+      });
+
+      const add = document.createElement('button');
+      add.className = 'toolbar-icon-button';
+      add.textContent = '+';
+      add.title = 'Add scene';
+      add.setAttribute('aria-label', 'Add scene');
+      add.addEventListener('click', addScene);
+      toolbar.appendChild(add);
+
+      const refresh = document.createElement('button');
+      refresh.className = 'toolbar-icon-button';
+      refresh.textContent = '↻';
+      refresh.title = 'Refresh current scene';
+      refresh.setAttribute('aria-label', 'Refresh current scene');
+      refresh.addEventListener('click', refreshActive);
+      toolbar.appendChild(refresh);
+
+      const notes = document.createElement('button');
+      notes.className = 'toolbar-icon-button';
+      notes.textContent = 'N';
+      notes.title = 'Presenter notebook';
+      notes.setAttribute('aria-label', 'Presenter notebook');
+      notes.addEventListener('click', () => {
+        ipcRenderer.send('toggle-notes');
+        sendNotesContext(sceneById(activeId));
+      });
+      toolbar.appendChild(notes);
+
+      const settings = document.createElement('button');
+      settings.className = 'toolbar-icon-button';
+      settings.textContent = '⚙';
+      settings.title = 'Global settings';
+      settings.setAttribute('aria-label', 'Global settings');
+      settings.addEventListener('click', openGlobalSettings);
+      toolbar.appendChild(settings);
+    }
+
+    function addScene() {
+      if (scenes.length >= 24) {
+        window.alert('CueVue supports up to 24 scenes.');
+        return;
+      }
+      const nextNumber = scenes.length + 1;
+      const scene = normalizeScene({
+        id: makeSceneId(),
+        name: `Scene ${nextNumber}`,
+        type: 'flow',
+        order: nextNumber,
+        flow: {
+          ...defaultFlow,
+          title: `Scene ${nextNumber}`,
+          subtitle: '',
+          topics: [{ heading: 'New topic', subheading: '' }]
+        }
+      });
+      scenes.push(scene);
+      scenes = orderedScenes().map((item, index) => ({ ...item, order: index + 1 }));
+      saveScenes();
+      showScene(scene.id);
+      setTimeout(openEditor, 0);
+    }
+
+    function showOnly(type) {
+      document.querySelectorAll('.scene').forEach((scene) => scene.classList.remove('active'));
+      const target = document.getElementById(`scene-${type}`) || document.getElementById('scene-flow');
+      target.classList.add('active');
+    }
+
+    async function showScene(id) {
+      activeId = id;
+      const scene = sceneById(id) || sceneById('flow') || defaultScenes[0];
+      renderToolbar();
+      stopStream();
+      hideStatus(windowStatus);
+      hideStatus(deviceStatus);
+      hideStatus(slidesStatus);
+
+      if (scene.type === 'url') {
+        showOnly('url');
+        applySceneBackground(scene);
+        const webview = getUrlWebview(scene);
+        showUrlWebview(webview);
+        if (webview.getAttribute('src') !== scene.url) webview.setAttribute('src', scene.url);
+        attachCredentialFill(scene, webview);
+        return;
+      }
+
+      if (scene.type === 'window') {
+        showOnly('window');
+        applySceneBackground(scene);
+        await restoreCapture(scene, windowVideo, windowStatus);
+        return;
+      }
+
+      if (scene.type === 'device') {
+        showOnly('device');
+        applySceneBackground(scene);
+        await restoreCapture(scene, iphoneVideo, deviceStatus);
+        return;
+      }
+
+      if (scene.type === 'slides') {
+        showOnly('slides');
+        applySceneBackground(scene);
+        renderSlides(scene);
+        return;
+      }
+
+      showOnly('flow');
+      renderFlow(scene);
+      applySceneBackground(scene);
+    }
+
+    function refreshActive() {
+      const scene = sceneById(activeId);
+      if (scene.type === 'url') {
+        const webview = getUrlWebview(scene);
+        if (webview.reload) webview.reload();
+      }
+      if (scene.type === 'window' || scene.type === 'device') showScene(activeId);
+    }
+
+    function getUrlWebview(scene) {
+      if (urlWebviews.has(scene.id)) return urlWebviews.get(scene.id);
+
+      const webview = document.createElement('webview');
+      webview.setAttribute('partition', `persist:cuevue-${scene.id}`);
+      webview.setAttribute('allowpopups', '');
+      webview.className = 'url-webview';
+      urlScene.appendChild(webview);
+      urlWebviews.set(scene.id, webview);
+      return webview;
+    }
+
+    function showUrlWebview(activeWebview) {
+      urlWebviews.forEach((webview) => {
+        webview.classList.toggle('hidden', webview !== activeWebview);
+      });
+    }
+
+    function openEditor() {
+      editingId = activeId;
+      const scene = sceneById(editingId);
+      document.getElementById('edit-name').value = scene.name;
+      document.getElementById('edit-order').value = scene.order;
+      document.getElementById('edit-url').value = scene.url || '';
+      editType.value = scene.type;
+      document.getElementById('selected-window-label').textContent = scene.type === 'window' && scene.sourceName ? `Selected: ${scene.sourceName}` : 'No capture window selected.';
+      document.getElementById('selected-device-label').textContent = scene.type === 'device' && scene.sourceName ? `Connected: ${scene.sourceName}` : 'No iPhone source selected.';
+      document.getElementById('selected-slides-label').textContent = scene.type === 'slides' && scene.slidePaths && scene.slidePaths.length ? `${scene.slidePaths.length} slides imported.` : 'No slides imported.';
+      document.getElementById('selected-bg-label').textContent = scene.bg ? scene.bg : 'No background selected.';
+      const flow = normalizeFlow(scene.flow);
+      document.getElementById('flow-edit-title').value = flow.title;
+      document.getElementById('flow-edit-subtitle').value = flow.subtitle;
+      document.getElementById('flow-edit-logo-left').value = flow.logoLeft;
+      document.getElementById('flow-edit-logo-right').value = flow.logoRight;
+      document.getElementById('flow-logo-left-path').textContent = flow.logoLeftPath || 'No logo uploaded.';
+      document.getElementById('flow-logo-right-path').textContent = flow.logoRightPath || 'No logo uploaded.';
+      const headingInputs = document.querySelectorAll('.flow-topic-heading-input');
+      const subheadingInputs = document.querySelectorAll('.flow-topic-subheading-input');
+      const showImpactInputs = document.querySelectorAll('.flow-topic-show-impact-input');
+      const impactInputs = document.querySelectorAll('.flow-topic-impact-input');
+      const subImpactInputs = document.querySelectorAll('.flow-topic-subimpact-input');
+      headingInputs.forEach((input, index) => {
+        input.value = flow.topics[index] ? flow.topics[index].heading : '';
+      });
+      subheadingInputs.forEach((input, index) => {
+        input.value = flow.topics[index] ? flow.topics[index].subheading : '';
+      });
+      showImpactInputs.forEach((input, index) => {
+        input.checked = flow.topics[index] ? Boolean(flow.topics[index].revealed) : false;
+      });
+      impactInputs.forEach((input, index) => {
+        input.value = flow.topics[index] ? flow.topics[index].impact : '';
+      });
+      subImpactInputs.forEach((input, index) => {
+        input.value = flow.topics[index] ? flow.topics[index].subImpact : '';
+      });
+      loadCredentials(scene);
+      syncTypePanels();
+      editor.classList.add('open');
+      if (scene.type === 'window') setTimeout(() => scanSources('window'), 0);
+      if (scene.type === 'slides') {
+        document.getElementById('slides-import-status').textContent = scene.slidePaths && scene.slidePaths.length
+          ? `${scene.slidePaths.length} slides imported${scene.slideSource ? ` from ${scene.slideSource}` : ''}.`
+          : 'No slides imported.';
+        renderSlideThumbnails(scene);
+      }
+      if (scene.type === 'device') {
+        updatePermissionDetail();
+      }
+    }
+
+    function closeEditor() {
+      editor.classList.remove('open');
+      stopQuickTimeDetection();
+    }
+
+    function deleteScene() {
+      const scene = sceneById(editingId);
+      if (!scene) return;
+      if (scenes.length <= 1) {
+        window.alert('CueVue needs at least one scene.');
+        return;
+      }
+      const confirmed = window.confirm(`Are you sure you want to delete "${scene.name}"? This action is permanent and cannot be undone.`);
+      if (!confirmed) return;
+      scenes = scenes.filter((item) => item.id !== scene.id).map((item, index) => ({ ...item, order: index + 1 }));
+      saveScenes();
+      closeEditor();
+      showScene((orderedScenes()[0] && orderedScenes()[0].id) || 'flow');
+    }
+
+    function syncTypePanels() {
+      document.querySelectorAll('.type-panel').forEach((panel) => panel.classList.remove('active'));
+      const panel = document.getElementById(`panel-${editType.value}`);
+      if (panel) panel.classList.add('active');
+    }
+
+    async function saveEditor() {
+      const scene = sceneById(editingId);
+      scene.name = document.getElementById('edit-name').value.trim() || scene.name;
+      scene.order = Number(document.getElementById('edit-order').value) || scene.order;
+      scene.type = editType.value;
+      scene.url = document.getElementById('edit-url').value.trim();
+      if (scene.type === 'flow') {
+        const headingInputs = Array.from(document.querySelectorAll('.flow-topic-heading-input'));
+        const subheadingInputs = Array.from(document.querySelectorAll('.flow-topic-subheading-input'));
+        const showImpactInputs = Array.from(document.querySelectorAll('.flow-topic-show-impact-input'));
+        const impactInputs = Array.from(document.querySelectorAll('.flow-topic-impact-input'));
+        const subImpactInputs = Array.from(document.querySelectorAll('.flow-topic-subimpact-input'));
+        const previousTopics = normalizeFlow(scene.flow).topics;
+        const topics = headingInputs
+          .map((input, index) => ({
+            heading: input.value.trim(),
+            subheading: subheadingInputs[index] ? subheadingInputs[index].value.trim() : '',
+            impact: impactInputs[index] ? impactInputs[index].value.trim() : '',
+            subImpact: subImpactInputs[index] ? subImpactInputs[index].value.trim() : '',
+            showImpact: Boolean((impactInputs[index] && impactInputs[index].value.trim()) || (subImpactInputs[index] && subImpactInputs[index].value.trim())),
+            revealed: showImpactInputs[index] ? showImpactInputs[index].checked : Boolean(previousTopics[index] && previousTopics[index].revealed)
+          }))
+          .filter((topic) => topic.heading || topic.subheading || topic.impact || topic.subImpact)
+          .slice(0, 6);
+        scene.flow = normalizeFlow({
+          title: document.getElementById('flow-edit-title').value.trim(),
+          subtitle: document.getElementById('flow-edit-subtitle').value.trim(),
+          logoLeft: document.getElementById('flow-edit-logo-left').value.trim(),
+          logoRight: document.getElementById('flow-edit-logo-right').value.trim(),
+          logoLeftPath: scene.flow && scene.flow.logoLeftPath,
+          logoRightPath: scene.flow && scene.flow.logoRightPath,
+          topics
+        });
+      }
+
+      if (scene.type === 'url') {
+        await ipcRenderer.invoke('save-credentials', scene.id, {
+          username: document.getElementById('edit-username').value.trim(),
+          password: document.getElementById('edit-password').value
+        });
+      }
+
+      scenes = orderedScenes().map((item, index) => ({ ...item, order: index + 1 }));
+      saveScenes();
+      closeEditor();
+      showScene(scene.id);
+    }
+
+    async function chooseBackground() {
+      const scene = sceneById(editingId);
+      const savedBg = await ipcRenderer.invoke('choose-bg', scene.id);
+      if (savedBg) {
+        scene.bg = savedBg;
+        scene.bgVersion = String(Date.now());
+        document.getElementById('selected-bg-label').textContent = savedBg;
+        saveScenes();
+        if (scene.id === activeId) showScene(scene.id);
+      }
+    }
+
+    async function chooseBackgroundAll() {
+      const savedByScene = await ipcRenderer.invoke('choose-bg-all', scenes.map((scene) => scene.id));
+      if (savedByScene) {
+        const stamp = String(Date.now());
+        scenes.forEach((scene) => {
+          if (savedByScene[scene.id]) {
+            scene.bg = savedByScene[scene.id];
+            scene.bgVersion = stamp;
+          }
+        });
+        document.getElementById('selected-bg-label').textContent = 'Applied to all scenes.';
+        saveScenes();
+        showScene(activeId);
+      }
+    }
+
+    async function chooseFlowLogo(side) {
+      const scene = sceneById(editingId);
+      scene.flow = normalizeFlow(scene.flow);
+      const savedLogo = await ipcRenderer.invoke('choose-logo', side === 'left' ? 'flow-logo-left' : 'flow-logo-right');
+      if (!savedLogo) return;
+      if (side === 'left') {
+        scene.flow.logoLeftPath = savedLogo;
+        document.getElementById('flow-logo-left-path').textContent = savedLogo;
+      } else {
+        scene.flow.logoRightPath = savedLogo;
+        document.getElementById('flow-logo-right-path').textContent = savedLogo;
+      }
+      saveScenes();
+      if (scene.id === activeId) {
+        renderFlow(scene);
+      }
+    }
+
+    async function loadCredentials(scene) {
+      document.getElementById('edit-username').value = '';
+      document.getElementById('edit-password').value = '';
+      const status = document.getElementById('credential-status');
+      status.textContent = scene.type === 'url' ? 'Checking saved credentials...' : 'No URL credentials for this scene.';
+      const credentials = await ipcRenderer.invoke('get-credentials', scene.id);
+      if (!credentials) {
+        if (scene.type === 'url') status.textContent = 'No saved credentials yet.';
+        return;
+      }
+      document.getElementById('edit-username').value = credentials.username || '';
+      document.getElementById('edit-password').value = credentials.password || '';
+      if (scene.type === 'url') {
+        status.textContent = (credentials.username || credentials.password) ? 'Saved credentials ready.' : 'No saved credentials yet.';
+      }
+    }
+
+    async function attachCredentialFill(scene, webview) {
+      const credentials = await ipcRenderer.invoke('get-credentials', scene.id);
+      if (!credentials || (!credentials.username && !credentials.password)) return;
+      const fill = () => {
+        const script = `
+          (() => {
+            const username = ${JSON.stringify(credentials.username || '')};
+            const password = ${JSON.stringify(credentials.password || '')};
+            const setValue = (el, value) => {
+              if (!el || !value) return false;
+              const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+              const setter = Object.getOwnPropertyDescriptor(proto, 'value') && Object.getOwnPropertyDescriptor(proto, 'value').set;
+              if (setter) setter.call(el, value);
+              else el.value = value;
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+              return true;
+            };
+            const visible = (el) => el && el.offsetParent !== null && !el.disabled && !el.readOnly;
+            const userSelectors = [
+              'input[type="email"]',
+              'input[autocomplete="username"]',
+              'input[name*="email" i]',
+              'input[id*="email" i]',
+              'input[name*="user" i]',
+              'input[id*="user" i]',
+              'input[name*="login" i]',
+              'input[id*="login" i]',
+              'input[type="text"]'
+            ];
+            const email = userSelectors.flatMap((selector) => Array.from(document.querySelectorAll(selector))).find(visible);
+            const pass = Array.from(document.querySelectorAll('input[type="password"], input[autocomplete="current-password"]')).find(visible);
+            if (setValue(email, username)) {
+              email.focus();
+            }
+            if (setValue(pass, password)) {
+              pass.focus();
+            }
+          })();
+        `;
+        webview.executeJavaScript(script).catch(() => {});
+      };
+      webview.addEventListener('did-finish-load', () => {
+        for (let attempt = 1; attempt <= 12; attempt += 1) {
+          setTimeout(fill, attempt * 700);
+        }
+      }, { once: true });
+      for (let attempt = 1; attempt <= 8; attempt += 1) {
+        setTimeout(fill, attempt * 700);
+      }
+    }
+
+    function setQuickTimeStep(step, state) {
+      const items = {
+        opened: document.getElementById('qt-check-opened'),
+        recording: document.getElementById('qt-check-recording'),
+        selected: document.getElementById('qt-check-selected'),
+        connected: document.getElementById('qt-check-connected')
+      };
+      if (!step) {
+        Object.values(items).forEach((item) => {
+          if (item) item.className = 'device-check';
+        });
+        return;
+      }
+      if (items[step]) items[step].className = `device-check ${state || ''}`.trim();
+    }
+
+    function stopQuickTimeDetection() {
+      if (quickTimeDetectTimer) clearInterval(quickTimeDetectTimer);
+      quickTimeDetectTimer = null;
+    }
+
+    function showDeviceFallback() {
+      document.getElementById('device-fallback').classList.add('open');
+      scanSources('device', false, true);
+    }
+
+    async function detectQuickTimeSource(autoPick = true) {
+      const sources = await getOrderedSources('device');
+      const preferred = sources.find((source) => rankSource(source, 'device') <= 2);
+      if (!preferred) return false;
+      setQuickTimeStep('recording', 'done');
+      if (autoPick) await selectCaptureSource('device', preferred);
+      return true;
+    }
+
+    async function scanSources(kind, autoPick = false, showDeviceGrid = false) {
+      const grid = kind === 'device'
+        ? (showDeviceGrid ? document.getElementById('device-source-grid') : null)
+        : document.getElementById('window-source-grid');
+      if (grid) grid.innerHTML = `<p class="muted">Scanning ${kind === 'window' ? 'windows and screens' : 'windows'}...</p>`;
+      let sources = [];
+      try {
+        sources = await getOrderedSources(kind);
+      } catch (error) {
+        if (grid) grid.innerHTML = `<p class="muted">Could not gather sources: ${escapeHtml(error.message || 'Screen Recording permission may be blocked.')}</p>`;
+        if (kind === 'device') document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Screen Recording permission may be blocked.'}`;
+        return;
+      }
+      if (grid) grid.innerHTML = '';
+      if (!sources.length) {
+        if (grid) grid.innerHTML = `<p class="muted">No ${kind === 'window' ? 'windows or screens' : 'windows'} found. Open the source you want to capture, then refresh.</p>`;
+        if (kind === 'device') document.getElementById('selected-device-label').textContent = 'No QuickTime movie recording window found yet.';
+        return;
+      }
+      if (autoPick && kind === 'device') {
+        if (await detectQuickTimeSource(true)) {
+          stopQuickTimeDetection();
+        } else {
+          document.getElementById('selected-device-label').textContent = 'No QuickTime/iPhone window found yet. Start the recording window, then refresh.';
+        }
+        return;
+      }
+      if (!grid) return;
+      sources.forEach((source) => {
+        const card = document.createElement('button');
+        card.className = 'source-card';
+        const label = source.kind === 'screen' ? 'Screen' : 'Window';
+        card.innerHTML = `<img src="${source.thumbnail}" alt=""><span><span class="source-kind">${label}</span>${escapeHtml(source.name)}</span>`;
+        card.addEventListener('click', async () => {
+          await selectCaptureSource(kind, source);
+          scanSources(kind, false, showDeviceGrid);
+        });
+        if (sceneById(editingId).sourceId === source.id) card.classList.add('selected');
+        grid.appendChild(card);
+      });
+    }
+
+    async function selectCaptureSource(kind, source) {
+      const scene = sceneById(editingId);
+      scene.sourceId = source.id;
+      scene.sourceName = source.name;
+      saveScenes();
+      if (scene.id === permissionPromptSceneId) {
+        permissionPromptSceneId = '';
+        renderToolbar();
+      }
+      const label = kind === 'device' ? document.getElementById('selected-device-label') : document.getElementById('selected-window-label');
+      const statusLabel = kind === 'device'
+        ? document.getElementById('selected-device-label')
+        : kind === 'slides'
+          ? document.getElementById('selected-slides-label')
+          : document.getElementById('selected-window-label');
+      statusLabel.textContent = `Connected: ${source.name}`;
+      if (scene.id === activeId) {
+        const video = kind === 'device' ? iphoneVideo : windowVideo;
+        const status = kind === 'device' ? deviceStatus : windowStatus;
+        await startCapture(source, video, status);
+      }
+      refreshGlobalStatus();
+      if (kind === 'device') {
+        setQuickTimeStep('selected', 'done');
+        setQuickTimeStep('connected', 'done');
+        document.getElementById('selected-device-label').textContent = `Connected: ${source.name}. QuickTime must stay open; CueVue will try to minimize it.`;
+        ipcRenderer.send('minimize-quicktime');
+      }
+    }
+
+    async function openQuickTimeAndScan() {
+      stopQuickTimeDetection();
+      setQuickTimeStep(null);
+      document.getElementById('device-fallback').classList.remove('open');
+      document.getElementById('selected-device-label').textContent = 'Opening QuickTime and looking for the Movie Recording window...';
+      setQuickTimeStep('opened', 'active');
+      const result = await ipcRenderer.invoke('quicktime-new-movie-recording');
+      if (result && !result.ok) {
+        setQuickTimeStep('opened', 'fail');
+        document.getElementById('selected-device-label').textContent = result.message;
+        return;
+      }
+      setQuickTimeStep('opened', 'done');
+      setQuickTimeStep('recording', 'active');
+      let attempts = 0;
+      quickTimeDetectTimer = setInterval(async () => {
+        attempts += 1;
+        try {
+          if (await detectQuickTimeSource(true)) {
+            stopQuickTimeDetection();
+            return;
+          }
+        } catch (error) {
+          stopQuickTimeDetection();
+          setQuickTimeStep('recording', 'fail');
+          document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Screen Recording permission may be blocked.'}`;
+          return;
+        }
+        document.getElementById('selected-device-label').textContent = 'Looking for QuickTime Movie Recording. Choose the iPhone in QuickTime if it is not already showing.';
+        if (attempts >= 20) {
+          stopQuickTimeDetection();
+          setQuickTimeStep('recording', 'fail');
+          document.getElementById('selected-device-label').textContent = 'Could not auto-detect the iPhone. Click Retry Detect iPhone or Choose Window Manually.';
+        }
+      }, 1000);
+    }
+
+    async function updatePermissionDetail(message) {
+      const detail = document.getElementById('global-permission-detail');
+      if (!detail) return;
+      if (message) {
+        detail.textContent = message;
+        detail.className = message.toLowerCase().includes('permission is on') ? 'permission-ok' : 'muted';
+        return;
+      }
+      const permission = await ipcRenderer.invoke('check-screen-permission');
+      if (permission === 'granted') {
+        detail.textContent = 'Permission is on. CueVue can list and capture windows.';
+        detail.className = 'permission-ok';
+      } else if (permission === 'denied' || permission === 'restricted') {
+        detail.textContent = 'Permission is blocked. Open Apple Settings, turn CueVue on, then quit and reopen CueVue.';
+        detail.className = 'muted';
+      } else {
+        detail.textContent = 'Permission has not been granted yet. Open Apple Settings, turn CueVue on if it appears, then quit and reopen CueVue.';
+        detail.className = 'muted';
+      }
+    }
+
+    async function getOrderedSources(kind) {
+      const sources = await ipcRenderer.invoke('get-sources');
+      const filtered = kind === 'device'
+        ? sources.filter((source) => source.kind !== 'screen')
+        : sources;
+      return filtered.slice().sort((a, b) => rankSource(a, kind) - rankSource(b, kind) || a.name.localeCompare(b.name));
+    }
+
+    function rankSource(source, kind) {
+      const name = source.name.toLowerCase();
+      if (kind === 'window' && source.kind === 'screen') return 0;
+      if (kind === 'device') {
+        if (name.includes('movie recording')) return 0;
+        if (name.includes('quicktime') && name.includes('recording')) return 1;
+        if (name.includes('iphone') && name.includes('recording')) return 2;
+        if (name.includes('quicktime')) return 8;
+      }
+      if (kind === 'slides') {
+        if (name.includes('powerpoint') && name.includes('slide')) return 0;
+        if (name.includes('slide show')) return 1;
+        if (name.includes('powerpoint')) return 2;
+      }
+      return 3;
+    }
+
+    async function restoreCapture(scene, video, statusEl) {
+      const permission = await ipcRenderer.invoke('check-screen-permission');
+      if (permission === 'denied' || permission === 'restricted') {
+        if (!scene.sourceId && !scene.sourceName) {
+          showPermissionStatus(scene);
+        }
+        return;
+      }
+      if (scene.id === permissionPromptSceneId) {
+        permissionPromptSceneId = '';
+        renderToolbar();
+      }
+      if (!scene.sourceId && !scene.sourceName) {
+        hideStatus(statusEl);
+        return;
+      }
+      const sources = await getOrderedSources(scene.type);
+      const source = sources.find((item) => item.id === scene.sourceId) || sources.find((item) => item.name === scene.sourceName);
+      if (!source) {
+        hideStatus(statusEl);
+        return;
+      }
+      await startCapture(source, video, statusEl);
+    }
+
+    async function startCapture(source, video, statusEl) {
+      try {
+        stopStream();
+        const videoConstraints = {
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: source.id,
+            minWidth: 640,
+            maxWidth: 3840,
+            minHeight: 360,
+            maxHeight: 2160
+          }
+        };
+        if (globalSettings.cursorMode === 'hide' || globalSettings.cursorMode === 'fancy') videoConstraints.cursor = 'never';
+        if (globalSettings.cursorMode === 'show') videoConstraints.cursor = 'always';
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: videoConstraints
+        });
+        currentStream = stream;
+        video.srcObject = stream;
+        hideStatus(statusEl);
+      } catch (error) {
+        showStatus(statusEl, `Capture failed: ${error.message || 'Unable to start selected source.'}`);
+      }
+    }
+
+    function stopStream() {
+      if (currentStream) currentStream.getTracks().forEach((track) => track.stop());
+      currentStream = null;
+      windowVideo.srcObject = null;
+      iphoneVideo.srcObject = null;
+    }
+
+    function openGlobalSettings() {
+      document.getElementById('cursor-mode').value = globalSettings.cursorMode || 'auto';
+      refreshGlobalStatus();
+      globalSettingsOverlay.classList.add('open');
+      updatePermissionDetail();
+    }
+
+    function closeGlobalSettings() {
+      globalSettingsOverlay.classList.remove('open');
+    }
+
+    function applyCursorMode() {
+      document.body.classList.toggle('cursor-fancy', globalSettings.cursorMode === 'fancy');
+      const cursor = document.getElementById('fancy-cursor');
+      if (cursor && globalSettings.cursorMode !== 'fancy') cursor.style.opacity = '0';
+    }
+
+    async function importSlides() {
+      const scene = sceneById(editingId);
+      document.getElementById('slides-import-status').textContent = 'Importing slides...';
+      const result = await ipcRenderer.invoke('import-slides', scene.id);
+      if (!result) {
+        document.getElementById('slides-import-status').textContent = 'Import cancelled.';
+        return;
+      }
+      if (!result.ok) {
+        document.getElementById('slides-import-status').textContent = result.message || 'Slide import failed.';
+        return;
+      }
+      scene.slidePaths = result.slides || [];
+      scene.slideIndex = 0;
+      scene.slideSource = result.source || '';
+      document.getElementById('slides-import-status').textContent = `${scene.slidePaths.length} slides imported${scene.slideSource ? ` from ${scene.slideSource}` : ''}.`;
+      document.getElementById('selected-slides-label').textContent = `${scene.slidePaths.length} slides imported.`;
+      saveScenes();
+      if (scene.id === activeId) renderSlides(scene);
+      renderSlideThumbnails(scene);
+    }
+
+    function refreshGlobalStatus() {
+      const scene = sceneById(activeId);
+      if (!scene) return;
+      document.getElementById('selected-window-label').textContent = scene.type === 'window' && scene.sourceName ? `Selected: ${scene.sourceName}` : 'No capture window selected.';
+      document.getElementById('selected-device-label').textContent = scene.type === 'device' && scene.sourceName ? `Connected: ${scene.sourceName}` : 'No iPhone source selected.';
+      document.getElementById('selected-slides-label').textContent = scene.type === 'slides' && scene.slidePaths && scene.slidePaths.length ? `${scene.slidePaths.length} slides imported.` : 'No slides imported.';
+      const status = document.getElementById('credential-status');
+      status.textContent = scene.type === 'url' ? 'Credentials are saved when you save the scene.' : 'No URL credentials for this scene.';
+    }
+
+    function showStatus(el, message) {
+      el.classList.remove('permission');
+      el.textContent = message;
+      el.classList.remove('hidden');
+    }
+
+    function showPermissionStatus(scene) {
+      permissionPromptSceneId = scene.id;
+      renderToolbar();
+    }
+
+    function hideStatus(el) {
+      el.textContent = '';
+      el.classList.remove('permission');
+      el.classList.add('hidden');
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
+    }
+
+    document.getElementById('close-editor-button').addEventListener('click', closeEditor);
+    document.getElementById('cancel-editor-button').addEventListener('click', closeEditor);
+    document.getElementById('save-editor-button').addEventListener('click', saveEditor);
+    document.getElementById('delete-scene-button').addEventListener('click', deleteScene);
+    editType.addEventListener('change', syncTypePanels);
+    document.getElementById('choose-bg-button').addEventListener('click', chooseBackground);
+    document.getElementById('choose-bg-all-button').addEventListener('click', chooseBackgroundAll);
+    document.getElementById('flow-logo-left-button').addEventListener('click', () => chooseFlowLogo('left'));
+    document.getElementById('flow-logo-right-button').addEventListener('click', () => chooseFlowLogo('right'));
+    document.getElementById('scan-window-button').addEventListener('click', () => scanSources('window'));
+    document.getElementById('global-open-screen-settings-button').addEventListener('click', () => ipcRenderer.send('open-screen-settings'));
+    document.getElementById('close-global-settings-button').addEventListener('click', closeGlobalSettings);
+    document.getElementById('cursor-mode').addEventListener('change', (event) => {
+      globalSettings.cursorMode = event.target.value;
+      saveGlobalSettings();
+      applyCursorMode();
+      const scene = sceneById(activeId);
+      if (scene && (scene.type === 'window' || scene.type === 'device' || scene.type === 'slides')) showScene(activeId);
+    });
+    document.getElementById('open-quicktime-button').addEventListener('click', openQuickTimeAndScan);
+    document.getElementById('retry-device-button').addEventListener('click', async () => {
+      stopQuickTimeDetection();
+      setQuickTimeStep('recording', 'active');
+      document.getElementById('selected-device-label').textContent = 'Retrying QuickTime Movie Recording detection...';
+      try {
+        if (!(await detectQuickTimeSource(true))) {
+          setQuickTimeStep('recording', 'fail');
+          document.getElementById('selected-device-label').textContent = 'No QuickTime Movie Recording window found. Open QuickTime, choose the iPhone, then retry.';
+        }
+      } catch (error) {
+        setQuickTimeStep('recording', 'fail');
+        document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Screen Recording permission may be blocked.'}`;
+      }
+    });
+    document.getElementById('manual-device-button').addEventListener('click', showDeviceFallback);
+    document.getElementById('quicktime-help-button').addEventListener('click', () => ipcRenderer.send('open-url', 'https://support.apple.com/guide/quicktime-player/welcome/mac'));
+    document.getElementById('import-slides-button').addEventListener('click', importSlides);
+
+    document.addEventListener('mousemove', (event) => {
+      if (globalSettings.cursorMode !== 'fancy') return;
+      const cursor = document.getElementById('fancy-cursor');
+      cursor.style.left = `${event.clientX}px`;
+      cursor.style.top = `${event.clientY}px`;
+      cursor.style.opacity = '1';
+    });
+    document.addEventListener('mouseleave', () => {
+      const cursor = document.getElementById('fancy-cursor');
+      if (cursor) cursor.style.opacity = '0';
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || editor.classList.contains('open') || globalSettingsOverlay.classList.contains('open')) return;
+      if (event.key === 'ArrowRight' || event.key === '>' || event.key === '.') {
+        if (changeSlide(1)) {
+          event.preventDefault();
+          return;
+        }
+      }
+      if (event.key === 'ArrowLeft' || event.key === '<' || event.key === ',') {
+        if (changeSlide(-1)) {
+          event.preventDefault();
+          return;
+        }
+      }
+      const index = Number(event.key) - 1;
+      const ordered = orderedScenes();
+      if (index >= 0 && index < ordered.length) showScene(ordered[index].id);
+    });
+
+    window.addEventListener('beforeunload', stopStream);
+
+    applyCursorMode();
+    renderToolbar();
+    showScene(activeId);
+  </script>
+</body>
+</html>

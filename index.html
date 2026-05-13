@@ -89,6 +89,9 @@
     .status-line { min-height: 40px; padding: 10px 12px; border: 1px solid #383838; border-radius: 8px; color: #cfd7e2; background: #101010; line-height: 1.4; overflow-wrap: anywhere; }
     .settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .settings-actions.with-delete { grid-template-columns: 1fr 1fr 1fr; }
+    .workspace-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .workspace-actions button { min-width: 0; }
+    .workspace-recent { display: grid; gap: 6px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .stack { display: grid; gap: 10px; }
     .type-panel { display: none; gap: 12px; }
@@ -99,6 +102,9 @@
     .flow-topic-edit-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 10px; }
     .flow-impact-toggle { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: #cfd7e2; font-size: 13px; }
     .flow-impact-toggle input { width: auto; min-height: 0; }
+    .flow-visibility-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .flow-visibility-toggle { display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 7px 9px; border: 1px solid #333; border-radius: 8px; background: #161616; color: #c8d0da; font-size: 12px; font-weight: 800; white-space: nowrap; }
+    .flow-visibility-toggle input { width: auto; min-height: 0; }
     .logo-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .logo-path { font-size: 12px; color: #9fa7b2; overflow-wrap: anywhere; }
     .permission-box { display: grid; gap: 10px; padding: 12px; border: 1px solid #383838; border-radius: 8px; color: #cfd7e2; background: #101010; line-height: 1.45; }
@@ -289,7 +295,12 @@
                         <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
-                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                        <div class="flow-visibility-grid">
+                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                        </div>
                       </div>
                     </div>
                     <div class="flow-topic-edit-row">
@@ -299,7 +310,12 @@
                         <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
-                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                        <div class="flow-visibility-grid">
+                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                        </div>
                       </div>
                     </div>
                     <div class="flow-topic-edit-row">
@@ -309,7 +325,12 @@
                         <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
-                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                        <div class="flow-visibility-grid">
+                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                        </div>
                       </div>
                     </div>
                     <div class="flow-topic-edit-row">
@@ -319,7 +340,12 @@
                         <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
-                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                        <div class="flow-visibility-grid">
+                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                        </div>
                       </div>
                     </div>
                     <div class="flow-topic-edit-row">
@@ -329,7 +355,12 @@
                         <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
-                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                        <div class="flow-visibility-grid">
+                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                        </div>
                       </div>
                     </div>
                     <div class="flow-topic-edit-row">
@@ -339,7 +370,12 @@
                         <input class="flow-topic-impact-input" spellcheck="false" placeholder="Impact">
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
-                        <label class="flow-impact-toggle"><input class="flow-topic-show-impact-input" type="checkbox"> ✓ Visible</label>
+                        <div class="flow-visibility-grid">
+                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
+                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -404,6 +440,23 @@
         </section>
         <section class="settings-card">
           <div>
+            <div class="card-title">Workspace</div>
+            <p class="card-subtitle">Save or open complete demo workspaces.</p>
+          </div>
+          <div class="workspace-actions">
+            <button id="save-workspace-button" type="button">Save</button>
+            <button id="save-workspace-as-button" type="button">Save As</button>
+            <button id="open-workspace-button" type="button">Open</button>
+          </div>
+          <label class="workspace-recent">Recent
+            <select id="recent-workspaces-select">
+              <option value="">No recent workspaces</option>
+            </select>
+          </label>
+          <div class="status-line" id="workspace-status">No workspace loaded.</div>
+        </section>
+        <section class="settings-card">
+          <div>
             <div class="card-title">Apple Settings</div>
             <p class="card-subtitle">Screen & System Audio Recording access.</p>
           </div>
@@ -431,10 +484,10 @@
       logoLeftPath: '',
       logoRightPath: '',
       topics: [
-        { heading: 'Introductions', subheading: 'Who is in the room and what we are covering', impact: '', subImpact: '', showImpact: false, revealed: false },
-        { heading: 'Current workflow', subheading: 'What happens today and where the friction is', impact: '', subImpact: '', showImpact: false, revealed: false },
-        { heading: 'Live demo', subheading: 'Walkthrough of the key scenes and outcomes', impact: '', subImpact: '', showImpact: false, revealed: false },
-        { heading: 'Questions', subheading: 'Open discussion and next steps', impact: '', subImpact: '', showImpact: false, revealed: false }
+        { heading: 'Introductions', subheading: 'Who is in the room and what we are covering', impact: '', subImpact: '', showImpact: false, revealed: false, topicVisible: true, subTopicVisible: true, impactVisible: true, subImpactVisible: true },
+        { heading: 'Current workflow', subheading: 'What happens today and where the friction is', impact: '', subImpact: '', showImpact: false, revealed: false, topicVisible: true, subTopicVisible: true, impactVisible: true, subImpactVisible: true },
+        { heading: 'Live demo', subheading: 'Walkthrough of the key scenes and outcomes', impact: '', subImpact: '', showImpact: false, revealed: false, topicVisible: true, subTopicVisible: true, impactVisible: true, subImpactVisible: true },
+        { heading: 'Questions', subheading: 'Open discussion and next steps', impact: '', subImpact: '', showImpact: false, revealed: false, topicVisible: true, subTopicVisible: true, impactVisible: true, subImpactVisible: true }
       ]
     };
     const defaultScenes = [
@@ -452,8 +505,11 @@
     let permissionPromptSceneId = '';
     let quickTimeDetectTimer = null;
     let webviewRecoveryTimer = null;
+    let currentWorkspacePath = '';
     let globalSettings = loadGlobalSettings();
     const urlWebviews = new Map();
+    const webviewLoadTimers = new Map();
+    const webviewHealthTimers = new Map();
 
     const toolbar = document.getElementById('toolbar');
     const urlScene = document.getElementById('scene-url');
@@ -550,15 +606,20 @@
 
     function normalizeFlowTopic(item) {
       if (typeof item === 'string') {
-        return { heading: item.trim(), subheading: '', impact: '', subImpact: '', showImpact: false, revealed: false };
+        return { heading: item.trim(), subheading: '', impact: '', subImpact: '', showImpact: false, revealed: false, topicVisible: true, subTopicVisible: true, impactVisible: true, subImpactVisible: true };
       }
+      const hasOwn = (key) => item && Object.prototype.hasOwnProperty.call(item, key);
       return {
         heading: item && item.heading ? String(item.heading).trim() : '',
         subheading: item && item.subheading ? String(item.subheading).trim() : '',
         impact: item && item.impact ? String(item.impact).trim() : '',
         subImpact: item && item.subImpact ? String(item.subImpact).trim() : '',
         showImpact: Boolean(item && (item.showImpact || item.impact || item.subImpact)),
-        revealed: Boolean(item && (item.revealed || (item.showImpact && !Object.prototype.hasOwnProperty.call(item, 'revealed'))))
+        revealed: Boolean(item && (item.revealed || (item.showImpact && !hasOwn('revealed')))),
+        topicVisible: hasOwn('topicVisible') ? Boolean(item.topicVisible) : true,
+        subTopicVisible: hasOwn('subTopicVisible') ? Boolean(item.subTopicVisible) : true,
+        impactVisible: hasOwn('impactVisible') ? Boolean(item.impactVisible) : true,
+        subImpactVisible: hasOwn('subImpactVisible') ? Boolean(item.subImpactVisible) : true
       };
     }
 
@@ -585,23 +646,24 @@
       list.innerHTML = '';
       topics.forEach((topic, index) => {
         const item = document.createElement('div');
-        const canReveal = Boolean(topic.impact || topic.subImpact);
-        item.className = 'flow-topic' + (canReveal ? ' clickable' : '') + (canReveal && topic.revealed ? ' revealed' : '');
+        const topicHeading = topic.topicVisible ? topic.heading : '';
+        const topicSubheading = topic.subTopicVisible ? topic.subheading : '';
+        const topicImpact = topic.impactVisible ? topic.impact : '';
+        const topicSubImpact = topic.subImpactVisible ? topic.subImpact : '';
+        const hasVisibleImpact = Boolean(topicImpact || topicSubImpact);
+        item.className = 'flow-topic' + (hasVisibleImpact ? ' revealed' : '');
         item.innerHTML = `
           <div class="flow-topic-number">${index + 1}</div>
           <div class="flow-topic-copy">
-            <div class="flow-topic-heading">${escapeHtml(topic.heading)}</div>
-            ${topic.subheading ? `<div class="flow-topic-subheading">${escapeHtml(topic.subheading)}</div>` : ''}
+            ${topicHeading ? `<div class="flow-topic-heading">${escapeHtml(topicHeading)}</div>` : ''}
+            ${topicSubheading ? `<div class="flow-topic-subheading">${escapeHtml(topicSubheading)}</div>` : ''}
           </div>
           <div class="flow-topic-check">✓</div>
           <div class="flow-topic-impact">
-            ${topic.impact ? `<div class="flow-topic-impact-heading">${escapeHtml(topic.impact)}</div>` : ''}
-            ${topic.subImpact ? `<div class="flow-topic-impact-subheading">${escapeHtml(topic.subImpact)}</div>` : ''}
+            ${topicImpact ? `<div class="flow-topic-impact-heading">${escapeHtml(topicImpact)}</div>` : ''}
+            ${topicSubImpact ? `<div class="flow-topic-impact-subheading">${escapeHtml(topicSubImpact)}</div>` : ''}
           </div>
         `;
-        if (canReveal) {
-          item.addEventListener('click', () => toggleFlowImpact(scene, index));
-        }
         list.appendChild(item);
       });
     }
@@ -609,7 +671,7 @@
     function toggleFlowImpact(scene, index) {
       scene.flow = normalizeFlow(scene.flow);
       const topic = scene.flow.topics[index];
-      if (!topic || (!topic.impact && !topic.subImpact)) return;
+      if (!topic || (!(topic.impactVisible && topic.impact) && !(topic.subImpactVisible && topic.subImpact))) return;
       topic.revealed = !topic.revealed;
       saveScenes();
       renderFlow(scene);
@@ -646,6 +708,40 @@
       hideStatus(slidesStatus);
     }
 
+    function slideName(scene, index) {
+      const slides = Array.isArray(scene.slidePaths) ? scene.slidePaths : [];
+      const filePath = slides[index] || '';
+      if (!filePath) return `Slide ${index + 1}`;
+      const parts = String(filePath).split(/[\\/]/);
+      return parts[parts.length - 1] || `Slide ${index + 1}`;
+    }
+
+    function sendNotesContext(scene) {
+      if (!scene) return;
+      if (scene.type === 'slides') {
+        const slides = Array.isArray(scene.slidePaths) ? scene.slidePaths : [];
+        const index = Math.max(0, Math.min(Number(scene.slideIndex) || 0, Math.max(slides.length - 1, 0)));
+        ipcRenderer.send('notes-context', {
+          type: 'slides',
+          sceneId: scene.id,
+          title: scene.name || 'Slides',
+          subtitle: slides.length ? slideName(scene, index) : 'Slide Notes',
+          noteKey: `${scene.id}:slide:${index}`,
+          slidePaths: slides,
+          slideIndex: index
+        });
+        return;
+      }
+
+      ipcRenderer.send('notes-context', {
+        type: scene.type || 'scene',
+        sceneId: scene.id,
+        title: scene.name || 'Scene',
+        subtitle: '',
+        noteKey: `${scene.id}:scene`
+      });
+    }
+
     function renderSlideThumbnails(scene) {
       if (!slideThumbGrid) return;
       const slides = Array.isArray(scene.slidePaths) ? scene.slidePaths : [];
@@ -672,6 +768,7 @@
           scene.slideIndex = index;
           saveScenes();
           if (scene.id === activeId) renderSlides(scene);
+          if (scene.id === activeId) sendNotesContext(scene);
           renderSlideThumbnails(scene);
         });
         thumb.addEventListener('dragstart', (event) => {
@@ -705,6 +802,7 @@
       scene.slideIndex = toIndex;
       saveScenes();
       if (scene.id === activeId) renderSlides(scene);
+      if (scene.id === activeId) sendNotesContext(scene);
       renderSlideThumbnails(scene);
     }
 
@@ -718,6 +816,7 @@
       scene.slideIndex = nextIndex;
       saveScenes();
       renderSlides(scene);
+      sendNotesContext(scene);
       return true;
     }
 
@@ -853,6 +952,7 @@
       if (scene.type === 'url') {
         showOnly('url');
         applySceneBackground(scene);
+        sendNotesContext(scene);
         const webview = getUrlWebview(scene);
         showUrlWebview(webview);
         if (webview.getAttribute('src') !== scene.url) webview.setAttribute('src', scene.url);
@@ -863,6 +963,7 @@
       if (scene.type === 'window') {
         showOnly('window');
         applySceneBackground(scene);
+        sendNotesContext(scene);
         await restoreCapture(scene, windowVideo, windowStatus);
         return;
       }
@@ -870,6 +971,7 @@
       if (scene.type === 'device') {
         showOnly('device');
         applySceneBackground(scene);
+        sendNotesContext(scene);
         await restoreCapture(scene, iphoneVideo, deviceStatus);
         return;
       }
@@ -878,12 +980,14 @@
         showOnly('slides');
         applySceneBackground(scene);
         renderSlides(scene);
+        sendNotesContext(scene);
         return;
       }
 
       showOnly('flow');
       renderFlow(scene);
       applySceneBackground(scene);
+      sendNotesContext(scene);
     }
 
     function refreshActive() {
@@ -894,22 +998,43 @@
       if (scene.type === 'window' || scene.type === 'device') showScene(activeId);
     }
 
-    function clearWebviewRecoveryTimer() {
-      if (webviewRecoveryTimer) clearTimeout(webviewRecoveryTimer);
-      webviewRecoveryTimer = null;
+    function clearWebviewRecoveryTimer(sceneId) {
+      if (sceneId && webviewLoadTimers.has(sceneId)) {
+        clearTimeout(webviewLoadTimers.get(sceneId));
+        webviewLoadTimers.delete(sceneId);
+      }
+      if (!sceneId && webviewRecoveryTimer) {
+        clearTimeout(webviewRecoveryTimer);
+        webviewRecoveryTimer = null;
+      }
+    }
+
+    function clearWebviewHealthTimer(sceneId) {
+      if (!webviewHealthTimers.has(sceneId)) return;
+      clearInterval(webviewHealthTimers.get(sceneId));
+      webviewHealthTimers.delete(sceneId);
+    }
+
+    function clearUrlWebview(sceneId) {
+      clearWebviewRecoveryTimer(sceneId);
+      clearWebviewHealthTimer(sceneId);
+      const existing = urlWebviews.get(sceneId);
+      if (!existing) return;
+      try {
+        existing.stop();
+      } catch (_) {}
+      existing.remove();
+      urlWebviews.delete(sceneId);
+    }
+
+    function clearAllUrlWebviews() {
+      Array.from(urlWebviews.keys()).forEach(clearUrlWebview);
     }
 
     function getUrlWebview(scene, options = {}) {
       if (!options.rebuild && urlWebviews.has(scene.id)) return urlWebviews.get(scene.id);
 
-      const existing = urlWebviews.get(scene.id);
-      if (existing) {
-        try {
-          existing.stop();
-        } catch (_) {}
-        existing.remove();
-        urlWebviews.delete(scene.id);
-      }
+      clearUrlWebview(scene.id);
 
       const webview = document.createElement('webview');
       webview.setAttribute('partition', `persist:cuevue-${scene.id}`);
@@ -923,19 +1048,22 @@
 
     function attachWebviewRecovery(scene, webview) {
       const armTimeout = () => {
-        clearWebviewRecoveryTimer();
-        webviewRecoveryTimer = setTimeout(() => {
+        clearWebviewRecoveryTimer(scene.id);
+        const timer = setTimeout(() => {
           if (scene.id === activeId && urlWebviews.get(scene.id) === webview) {
             rebuildUrlWebview(scene, 'load-timeout');
           }
         }, 25000);
+        webviewLoadTimers.set(scene.id, timer);
       };
+      const clearSceneTimer = () => clearWebviewRecoveryTimer(scene.id);
 
       webview.addEventListener('did-start-loading', armTimeout);
-      webview.addEventListener('did-stop-loading', clearWebviewRecoveryTimer);
-      webview.addEventListener('did-finish-load', clearWebviewRecoveryTimer);
+      webview.addEventListener('did-stop-loading', clearSceneTimer);
+      webview.addEventListener('did-finish-load', clearSceneTimer);
+      webview.addEventListener('dom-ready', () => startWebviewHealthCheck(scene, webview));
       webview.addEventListener('did-fail-load', (event) => {
-        clearWebviewRecoveryTimer();
+        clearWebviewRecoveryTimer(scene.id);
         if (event && event.isMainFrame !== false && scene.id === activeId) {
           setTimeout(() => rebuildUrlWebview(scene, 'load-failed'), 700);
         }
@@ -948,8 +1076,24 @@
       });
     }
 
+    function startWebviewHealthCheck(scene, webview) {
+      clearWebviewHealthTimer(scene.id);
+      const timer = setInterval(() => {
+        if (scene.id !== activeId || urlWebviews.get(scene.id) !== webview) return;
+        const probe = webview.executeJavaScript('document.readyState', true);
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('probe-timeout')), 3500));
+        Promise.race([probe, timeout]).catch(() => {
+          if (scene.id === activeId && urlWebviews.get(scene.id) === webview) {
+            rebuildUrlWebview(scene, 'stale-auth-or-session');
+          }
+        });
+      }, 45000);
+      webviewHealthTimers.set(scene.id, timer);
+    }
+
     function rebuildUrlWebview(scene, reason) {
-      clearWebviewRecoveryTimer();
+      clearWebviewRecoveryTimer(scene.id);
+      clearWebviewHealthTimer(scene.id);
       const webview = getUrlWebview(scene, { rebuild: true });
       showUrlWebview(webview);
       if (scene.url) webview.setAttribute('src', scene.url);
@@ -984,23 +1128,35 @@
       document.getElementById('flow-logo-right-path').textContent = flow.logoRightPath || 'No logo uploaded.';
       const headingInputs = document.querySelectorAll('.flow-topic-heading-input');
       const subheadingInputs = document.querySelectorAll('.flow-topic-subheading-input');
-      const showImpactInputs = document.querySelectorAll('.flow-topic-show-impact-input');
       const impactInputs = document.querySelectorAll('.flow-topic-impact-input');
       const subImpactInputs = document.querySelectorAll('.flow-topic-subimpact-input');
+      const topicVisibleInputs = document.querySelectorAll('.flow-topic-visible-input');
+      const subTopicVisibleInputs = document.querySelectorAll('.flow-subtopic-visible-input');
+      const impactVisibleInputs = document.querySelectorAll('.flow-impact-visible-input');
+      const subImpactVisibleInputs = document.querySelectorAll('.flow-subimpact-visible-input');
       headingInputs.forEach((input, index) => {
         input.value = flow.topics[index] ? flow.topics[index].heading : '';
       });
       subheadingInputs.forEach((input, index) => {
         input.value = flow.topics[index] ? flow.topics[index].subheading : '';
       });
-      showImpactInputs.forEach((input, index) => {
-        input.checked = flow.topics[index] ? Boolean(flow.topics[index].revealed) : false;
-      });
       impactInputs.forEach((input, index) => {
         input.value = flow.topics[index] ? flow.topics[index].impact : '';
       });
       subImpactInputs.forEach((input, index) => {
         input.value = flow.topics[index] ? flow.topics[index].subImpact : '';
+      });
+      topicVisibleInputs.forEach((input, index) => {
+        input.checked = flow.topics[index] ? Boolean(flow.topics[index].topicVisible) : true;
+      });
+      subTopicVisibleInputs.forEach((input, index) => {
+        input.checked = flow.topics[index] ? Boolean(flow.topics[index].subTopicVisible) : true;
+      });
+      impactVisibleInputs.forEach((input, index) => {
+        input.checked = flow.topics[index] ? Boolean(flow.topics[index].impactVisible) : true;
+      });
+      subImpactVisibleInputs.forEach((input, index) => {
+        input.checked = flow.topics[index] ? Boolean(flow.topics[index].subImpactVisible) : true;
       });
       loadCredentials(scene);
       syncTypePanels();
@@ -1052,9 +1208,12 @@
       if (scene.type === 'flow') {
         const headingInputs = Array.from(document.querySelectorAll('.flow-topic-heading-input'));
         const subheadingInputs = Array.from(document.querySelectorAll('.flow-topic-subheading-input'));
-        const showImpactInputs = Array.from(document.querySelectorAll('.flow-topic-show-impact-input'));
         const impactInputs = Array.from(document.querySelectorAll('.flow-topic-impact-input'));
         const subImpactInputs = Array.from(document.querySelectorAll('.flow-topic-subimpact-input'));
+        const topicVisibleInputs = Array.from(document.querySelectorAll('.flow-topic-visible-input'));
+        const subTopicVisibleInputs = Array.from(document.querySelectorAll('.flow-subtopic-visible-input'));
+        const impactVisibleInputs = Array.from(document.querySelectorAll('.flow-impact-visible-input'));
+        const subImpactVisibleInputs = Array.from(document.querySelectorAll('.flow-subimpact-visible-input'));
         const previousTopics = normalizeFlow(scene.flow).topics;
         const topics = headingInputs
           .map((input, index) => ({
@@ -1063,7 +1222,11 @@
             impact: impactInputs[index] ? impactInputs[index].value.trim() : '',
             subImpact: subImpactInputs[index] ? subImpactInputs[index].value.trim() : '',
             showImpact: Boolean((impactInputs[index] && impactInputs[index].value.trim()) || (subImpactInputs[index] && subImpactInputs[index].value.trim())),
-            revealed: showImpactInputs[index] ? showImpactInputs[index].checked : Boolean(previousTopics[index] && previousTopics[index].revealed)
+            revealed: Boolean(previousTopics[index] && previousTopics[index].revealed),
+            topicVisible: topicVisibleInputs[index] ? topicVisibleInputs[index].checked : true,
+            subTopicVisible: subTopicVisibleInputs[index] ? subTopicVisibleInputs[index].checked : true,
+            impactVisible: impactVisibleInputs[index] ? impactVisibleInputs[index].checked : true,
+            subImpactVisible: subImpactVisibleInputs[index] ? subImpactVisibleInputs[index].checked : true
           }))
           .filter((topic) => topic.heading || topic.subheading || topic.impact || topic.subImpact)
           .slice(0, 6);
@@ -1458,12 +1621,103 @@
     function openGlobalSettings() {
       document.getElementById('cursor-mode').value = globalSettings.cursorMode || 'auto';
       refreshGlobalStatus();
+      refreshRecentWorkspaces();
       globalSettingsOverlay.classList.add('open');
       updatePermissionDetail();
     }
 
     function closeGlobalSettings() {
       globalSettingsOverlay.classList.remove('open');
+    }
+
+    function workspaceData() {
+      return {
+        scenes,
+        activeId,
+        settings: globalSettings
+      };
+    }
+
+    function setWorkspaceStatus(message) {
+      const status = document.getElementById('workspace-status');
+      if (status) status.textContent = message;
+    }
+
+    function workspaceName(filePath) {
+      if (!filePath) return '';
+      const parts = String(filePath).split(/[\\/]/);
+      return parts[parts.length - 1] || filePath;
+    }
+
+    async function refreshRecentWorkspaces() {
+      const select = document.getElementById('recent-workspaces-select');
+      if (!select) return;
+      const state = await ipcRenderer.invoke('workspace-recent');
+      currentWorkspacePath = state.currentWorkspace || currentWorkspacePath || '';
+      select.innerHTML = '';
+      const recent = Array.isArray(state.recentWorkspaces) ? state.recentWorkspaces : [];
+      if (!recent.length) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No recent workspaces';
+        select.appendChild(option);
+      } else {
+        const blank = document.createElement('option');
+        blank.value = '';
+        blank.textContent = 'Recent workspaces';
+        select.appendChild(blank);
+        recent.forEach((filePath) => {
+          const option = document.createElement('option');
+          option.value = filePath;
+          option.textContent = workspaceName(filePath);
+          select.appendChild(option);
+        });
+      }
+      setWorkspaceStatus(currentWorkspacePath ? `Loaded: ${currentWorkspacePath}` : 'No workspace loaded.');
+    }
+
+    async function saveWorkspace(saveAs = false) {
+      setWorkspaceStatus(saveAs ? 'Saving workspace as...' : 'Saving workspace...');
+      const result = await ipcRenderer.invoke(saveAs ? 'workspace-save-as' : 'workspace-save', workspaceData());
+      if (!result || result.canceled) {
+        setWorkspaceStatus(currentWorkspacePath ? `Loaded: ${currentWorkspacePath}` : 'Save cancelled.');
+        return;
+      }
+      if (!result.ok) {
+        setWorkspaceStatus(result.message || 'Workspace save failed.');
+        return;
+      }
+      currentWorkspacePath = result.path || currentWorkspacePath;
+      setWorkspaceStatus(`Saved: ${currentWorkspacePath}`);
+      await refreshRecentWorkspaces();
+    }
+
+    async function openWorkspace(filePath = '') {
+      setWorkspaceStatus('Opening workspace...');
+      const result = await ipcRenderer.invoke('workspace-open', filePath);
+      if (!result || result.canceled) {
+        setWorkspaceStatus(currentWorkspacePath ? `Loaded: ${currentWorkspacePath}` : 'Open cancelled.');
+        return;
+      }
+      if (!result.ok || !result.workspace) {
+        setWorkspaceStatus(result.message || 'Workspace open failed.');
+        return;
+      }
+      const workspace = result.workspace;
+      scenes = normalizeScenes(workspace.scenes || defaultScenes);
+      activeId = workspace.activeId && sceneById(workspace.activeId) ? workspace.activeId : (orderedScenes()[0] && orderedScenes()[0].id) || 'flow';
+      globalSettings = workspace.settings && typeof workspace.settings === 'object'
+        ? { cursorMode: workspace.settings.cursorMode || 'auto' }
+        : loadGlobalSettings();
+      currentWorkspacePath = result.path || '';
+      clearAllUrlWebviews();
+      saveScenes();
+      saveGlobalSettings();
+      applyCursorMode();
+      closeGlobalSettings();
+      showScene(activeId);
+      setWorkspaceStatus(`Loaded: ${currentWorkspacePath}`);
+      await refreshRecentWorkspaces();
     }
 
     function applyCursorMode() {
@@ -1491,6 +1745,7 @@
       document.getElementById('selected-slides-label').textContent = `${scene.slidePaths.length} slides imported.`;
       saveScenes();
       if (scene.id === activeId) renderSlides(scene);
+      if (scene.id === activeId) sendNotesContext(scene);
       renderSlideThumbnails(scene);
     }
 
@@ -1537,6 +1792,12 @@
     document.getElementById('scan-window-button').addEventListener('click', () => scanSources('window'));
     document.getElementById('global-open-screen-settings-button').addEventListener('click', () => ipcRenderer.send('open-screen-settings'));
     document.getElementById('close-global-settings-button').addEventListener('click', closeGlobalSettings);
+    document.getElementById('save-workspace-button').addEventListener('click', () => saveWorkspace(false));
+    document.getElementById('save-workspace-as-button').addEventListener('click', () => saveWorkspace(true));
+    document.getElementById('open-workspace-button').addEventListener('click', () => openWorkspace());
+    document.getElementById('recent-workspaces-select').addEventListener('change', (event) => {
+      if (event.target.value) openWorkspace(event.target.value);
+    });
     document.getElementById('cursor-mode').addEventListener('change', (event) => {
       globalSettings.cursorMode = event.target.value;
       saveGlobalSettings();
@@ -1594,10 +1855,14 @@
       if (index >= 0 && index < ordered.length) showScene(ordered[index].id);
     });
 
-    window.addEventListener('beforeunload', stopStream);
+    window.addEventListener('beforeunload', () => {
+      stopStream();
+      clearAllUrlWebviews();
+    });
 
     applyCursorMode();
     renderToolbar();
+    refreshRecentWorkspaces();
     showScene(activeId);
   </script>
 </body>

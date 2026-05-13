@@ -52,6 +52,29 @@ npm run build:dmg
 
 The build output is written to `dist/` and should not be committed.
 
+## Installing the Unsigned macOS Beta
+
+CueVue beta builds are unsigned until Developer ID signing and notarization are enabled. macOS may block the first launch on a work MacBook.
+
+1. Download the latest `.dmg` from GitHub Releases.
+2. Open the `.dmg` and drag `CueVue.app` into `Applications`.
+3. If macOS says the app cannot be opened, open `System Settings` > `Privacy & Security`.
+4. In the security warning for CueVue, choose `Open Anyway`.
+5. Launch CueVue again from `Applications`.
+
+This is expected for unsigned beta testing. Do not bypass company security policy on managed devices without approval.
+
+## GitHub Release Builds
+
+Tagged releases build an unsigned Apple Silicon DMG automatically:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The release workflow uploads the generated DMG to the GitHub Releases page.
+
 ## Release Prep
 
 - macOS build resources live in `buildResources/`.

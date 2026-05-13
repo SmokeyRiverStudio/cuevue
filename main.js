@@ -10,6 +10,7 @@ let splashWindow = null;
 let mainWindow = null;
 let notesWindow = null;
 let lastNotesContext = null;
+let notesWindowStateSaveTimer = null;
 
 const bgExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
 const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'];
@@ -114,6 +115,117 @@ function writeNotes(notes) {
   fs.writeFileSync(notesFile(), JSON.stringify(notes || {}, null, 2));
 }
 
+function notesWindowStateFile() {
+  return path.join(app.getPath('userData'), 'notebook-window.json');
+}
+
+function readNotesWindowState() {
+  try {
+    const filePath = notesWindowStateFile();
+    if (!fs.existsSync(filePath)) return {};
+    const state = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return state && typeof state === 'object' ? state : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function writeNotesWindowState(state) {
+  try {
+    fs.writeFileSync(notesWindowStateFile(), JSON.stringify(state || {}, null, 2));
+  } catch (_) {}
+}
+
+function captureNotesWindowState() {
+  if (!notesWindow || notesWindow.isDestroyed()) return null;
+  const bounds = notesWindow.getBounds();
+  return {
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height
+  };
+}
+
+function scheduleNotesWindowStateSave() {
+  if (notesWindowStateSaveTimer) clearTimeout(notesWindowStateSaveTimer);
+  notesWindowStateSaveTimer = setTimeout(() => {
+    const state = captureNotesWindowState();
+    if (state) writeNotesWindowState(state);
+  }, 250);
+}
+
+function workspaceStateFile() {
+  return path.join(app.getPath('userData'), 'workspace-state.json');
+}
+
+function readWorkspaceState() {
+  try {
+    const filePath = workspaceStateFile();
+    if (!fs.existsSync(filePath)) return { currentWorkspace: '', recentWorkspaces: [] };
+    const state = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return {
+      currentWorkspace: state.currentWorkspace || '',
+      recentWorkspaces: Array.isArray(state.recentWorkspaces) ? state.recentWorkspaces.filter(Boolean).slice(0, 10) : []
+    };
+  } catch (_) {
+    return { currentWorkspace: '', recentWorkspaces: [] };
+  }
+}
+
+function writeWorkspaceState(state) {
+  fs.writeFileSync(workspaceStateFile(), JSON.stringify({
+    currentWorkspace: state.currentWorkspace || '',
+    recentWorkspaces: Array.isArray(state.recentWorkspaces) ? state.recentWorkspaces.filter(Boolean).slice(0, 10) : []
+  }, null, 2));
+}
+
+function rememberWorkspace(filePath) {
+  if (!filePath) return readWorkspaceState();
+  const state = readWorkspaceState();
+  const recentWorkspaces = [filePath]
+    .concat(state.recentWorkspaces.filter((item) => item !== filePath))
+    .slice(0, 10);
+  const nextState = { currentWorkspace: filePath, recentWorkspaces };
+  writeWorkspaceState(nextState);
+  return nextState;
+}
+
+function normalizeWorkspacePath(filePath) {
+  if (!filePath) return '';
+  return path.extname(filePath).toLowerCase() === '.cuevue' ? filePath : `${filePath}.cuevue`;
+}
+
+async function chooseWorkspaceSavePath() {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Save CueVue Workspace',
+    defaultPath: 'CueVue Workspace.cuevue',
+    filters: [{ name: 'CueVue Workspace', extensions: ['cuevue'] }]
+  });
+  if (result.canceled || !result.filePath) return '';
+  return normalizeWorkspacePath(result.filePath);
+}
+
+function workspacePayload(rendererPayload = {}) {
+  return {
+    app: 'CueVue',
+    version: 1,
+    savedAt: new Date().toISOString(),
+    scenes: Array.isArray(rendererPayload.scenes) ? rendererPayload.scenes : [],
+    activeId: rendererPayload.activeId || '',
+    settings: rendererPayload.settings && typeof rendererPayload.settings === 'object' ? rendererPayload.settings : {},
+    notes: readNotes(),
+    notebookState: captureNotesWindowState() || readNotesWindowState()
+  };
+}
+
+function writeWorkspaceFile(filePath, rendererPayload) {
+  const targetPath = normalizeWorkspacePath(filePath);
+  fs.writeFileSync(targetPath, JSON.stringify(workspacePayload(rendererPayload), null, 2));
+  const state = rememberWorkspace(targetPath);
+  return { ok: true, path: targetPath, recentWorkspaces: state.recentWorkspaces };
+}
+
 function notesWindowHtml() {
   return `<!doctype html>
 <html>
@@ -129,7 +241,7 @@ function notesWindowHtml() {
     .notebook::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, transparent 0 29px, rgba(66, 95, 150, .28) 29px 30px); }
     .head { position: relative; z-index: 1; display: grid; gap: 4px; padding-bottom: 10px; border-bottom: 2px solid rgba(190, 73, 68, .38); }
     .title { color: #2d2922; font-size: 18px; font-weight: 900; line-height: 1.15; overflow-wrap: anywhere; }
-    .subtitle { color: #765f4f; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .subtitle { display: none; }
     .slides { position: relative; z-index: 1; display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 0 8px; }
     .slides.open { display: grid; }
     .slide-card { display: grid; gap: 4px; min-width: 0; color: #655447; font-size: 11px; font-weight: 800; text-align: center; }
@@ -146,7 +258,7 @@ function notesWindowHtml() {
       <div id="subtitle" class="subtitle">No scene selected</div>
     </div>
     <div id="slides" class="slides"></div>
-    <textarea id="notes" spellcheck="true" placeholder="Presenter notes..."></textarea>
+    <textarea id="notes" spellcheck="true" placeholder=""></textarea>
   </div>
   <script>
     const { ipcRenderer, fileUrl: cuevueFileUrl } = window.cuevue;
@@ -214,9 +326,12 @@ function createNotesWindow() {
     return;
   }
 
+  const savedState = readNotesWindowState();
   notesWindow = new BrowserWindow({
-    width: 360,
-    height: 540,
+    x: Number.isFinite(savedState.x) ? savedState.x : undefined,
+    y: Number.isFinite(savedState.y) ? savedState.y : undefined,
+    width: Number(savedState.width) || 360,
+    height: Number(savedState.height) || 540,
     minWidth: 300,
     minHeight: 420,
     title: 'CueVue Notes',
@@ -236,6 +351,12 @@ function createNotesWindow() {
     if (!notesWindow || notesWindow.isDestroyed()) return;
     notesWindow.show();
     if (lastNotesContext) notesWindow.webContents.send('notes-context', lastNotesContext);
+  });
+  notesWindow.on('move', scheduleNotesWindowStateSave);
+  notesWindow.on('resize', scheduleNotesWindowStateSave);
+  notesWindow.on('close', () => {
+    const state = captureNotesWindowState();
+    if (state) writeNotesWindowState(state);
   });
   notesWindow.on('closed', () => {
     notesWindow = null;
@@ -512,6 +633,60 @@ ipcMain.on('notes-save', (_, key, text) => {
   const notes = readNotes();
   notes[key] = String(text || '');
   writeNotes(notes);
+});
+
+ipcMain.handle('workspace-recent', async () => readWorkspaceState());
+
+ipcMain.handle('workspace-save', async (_, rendererPayload) => {
+  try {
+    const state = readWorkspaceState();
+    const targetPath = state.currentWorkspace || await chooseWorkspaceSavePath();
+    if (!targetPath) return { ok: false, canceled: true };
+    return writeWorkspaceFile(targetPath, rendererPayload);
+  } catch (error) {
+    return { ok: false, message: error.message || 'Workspace save failed.' };
+  }
+});
+
+ipcMain.handle('workspace-save-as', async (_, rendererPayload) => {
+  try {
+    const targetPath = await chooseWorkspaceSavePath();
+    if (!targetPath) return { ok: false, canceled: true };
+    return writeWorkspaceFile(targetPath, rendererPayload);
+  } catch (error) {
+    return { ok: false, message: error.message || 'Workspace save failed.' };
+  }
+});
+
+ipcMain.handle('workspace-open', async (_, requestedPath) => {
+  try {
+    let targetPath = requestedPath;
+    if (!targetPath) {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        title: 'Open CueVue Workspace',
+        properties: ['openFile'],
+        filters: [{ name: 'CueVue Workspace', extensions: ['cuevue'] }]
+      });
+      if (result.canceled || !result.filePaths.length) return { ok: false, canceled: true };
+      targetPath = result.filePaths[0];
+    }
+    if (!fs.existsSync(targetPath)) return { ok: false, message: 'Workspace file was not found.' };
+    const workspace = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
+    if (!workspace || !Array.isArray(workspace.scenes)) {
+      return { ok: false, message: 'This is not a valid CueVue workspace.' };
+    }
+    if (workspace.notes && typeof workspace.notes === 'object') writeNotes(workspace.notes);
+    if (workspace.notebookState && typeof workspace.notebookState === 'object') writeNotesWindowState(workspace.notebookState);
+    const state = rememberWorkspace(targetPath);
+    return {
+      ok: true,
+      path: targetPath,
+      workspace,
+      recentWorkspaces: state.recentWorkspaces
+    };
+  } catch (error) {
+    return { ok: false, message: error.message || 'Workspace open failed.' };
+  }
 });
 
 ipcMain.on('launch-quicktime', () => {

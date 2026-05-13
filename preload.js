@@ -26,7 +26,11 @@ const invokeChannels = new Set([
   'import-slides',
   'get-bg',
   'save-credentials',
-  'get-credentials'
+  'get-credentials',
+  'workspace-save',
+  'workspace-save-as',
+  'workspace-open',
+  'workspace-recent'
 ]);
 
 const receiveChannels = new Set([

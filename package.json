@@ -9,9 +9,11 @@
     "start": "electron .",
     "build": "electron-builder --mac",
     "build:mac-dir": "electron-builder --mac dir",
-    "build:dmg": "electron-builder --mac dmg"
+    "build:dmg": "electron-builder --mac dmg",
+    "build:unsigned": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac -c.mac.identity=null"
   },
   "devDependencies": {
+    "@electron/notarize": "^3.1.1",
     "electron": "^41.5.0",
     "electron-builder": "^26.8.1"
   },
@@ -26,17 +28,17 @@
         "dmg"
       ],
       "icon": "buildResources/icon.icns",
-      "identity": null,
       "gatekeeperAssess": false,
       "hardenedRuntime": true,
       "entitlements": "buildResources/entitlements.mac.plist",
-      "entitlementsInherit": "buildResources/entitlements.mac.plist",
+      "entitlementsInherit": "buildResources/entitlements.mac.inherit.plist",
       "extendInfo": {
         "NSScreenCaptureUsageDescription": "CueVue needs Screen Recording access to capture windows for the iPhone scene.",
         "NSMicrophoneUsageDescription": "CueVue does not use the microphone.",
         "NSCameraUsageDescription": "CueVue does not use the camera."
       }
     },
+    "afterSign": "scripts/notarize.js",
     "dmg": {
       "title": "CueVue ${version}",
       "format": "UDZO",

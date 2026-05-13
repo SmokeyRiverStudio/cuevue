@@ -30,13 +30,16 @@ jobs:
       - name: Build unsigned Apple Silicon DMG
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: npm run build
+        run: npm run build:dmg
+
+      - name: Verify DMG output
+        run: ls -lh dist/CueVue-*.dmg
 
       - name: Upload DMG workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: CueVue-macOS-DMG
-          path: dist/*.dmg
+          path: dist/CueVue-*.dmg
           if-no-files-found: error
 
       - name: Publish GitHub Release
@@ -46,4 +49,4 @@ jobs:
           name: CueVue Beta ${{ github.ref_name }}
           draft: false
           prerelease: true
-          files: dist/*.dmg
+          files: dist/CueVue-*.dmg

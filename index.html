@@ -419,8 +419,7 @@
   <div id="fancy-cursor" class="fancy-cursor"></div>
 
   <script>
-    const { ipcRenderer } = require('electron');
-    const { pathToFileURL } = require('url');
+    const { ipcRenderer, fileUrl: cuevueFileUrl } = window.cuevue;
 
     const STORAGE_KEY = 'cuevue_scenes_v2';
     const SETTINGS_KEY = 'cuevue_global_settings_v1';
@@ -452,6 +451,7 @@
     let currentStream = null;
     let permissionPromptSceneId = '';
     let quickTimeDetectTimer = null;
+    let webviewRecoveryTimer = null;
     let globalSettings = loadGlobalSettings();
     const urlWebviews = new Map();
 
@@ -619,7 +619,7 @@
       element.innerHTML = '';
       if (filePath) {
         const img = document.createElement('img');
-        img.src = pathToFileURL(filePath).href;
+        img.src = cuevueFileUrl(filePath);
         img.alt = label || 'Logo';
         element.appendChild(img);
         return;
@@ -638,7 +638,7 @@
         return;
       }
       scene.slideIndex = index;
-      slideImage.src = pathToFileURL(slides[index]).href;
+      slideImage.src = cuevueFileUrl(slides[index]);
       slideImage.classList.remove('hidden');
       slideCounter.textContent = `${index + 1} / ${slides.length}`;
       slideCounter.classList.remove('hidden');
@@ -665,7 +665,7 @@
         thumb.draggable = true;
         thumb.dataset.index = String(index);
         thumb.innerHTML = `
-          <img src="${pathToFileURL(slidePath).href}" alt="">
+          <img src="${cuevueFileUrl(slidePath)}" alt="">
           <div class="slide-thumb-label"><strong>Slide ${index + 1}</strong><span>Drag</span></div>
         `;
         thumb.addEventListener('click', () => {
@@ -723,7 +723,7 @@
 
     function sceneBackgroundUrl(scene) {
       if (!scene.bg) return '';
-      const url = pathToFileURL(scene.bg);
+      const url = new URL(cuevueFileUrl(scene.bg));
       url.searchParams.set('v', scene.bgVersion || scene.bg);
       return `url("${url.href}")`;
     }
@@ -889,14 +889,27 @@
     function refreshActive() {
       const scene = sceneById(activeId);
       if (scene.type === 'url') {
-        const webview = getUrlWebview(scene);
-        if (webview.reload) webview.reload();
+        rebuildUrlWebview(scene, 'manual-refresh');
       }
       if (scene.type === 'window' || scene.type === 'device') showScene(activeId);
     }
 
-    function getUrlWebview(scene) {
-      if (urlWebviews.has(scene.id)) return urlWebviews.get(scene.id);
+    function clearWebviewRecoveryTimer() {
+      if (webviewRecoveryTimer) clearTimeout(webviewRecoveryTimer);
+      webviewRecoveryTimer = null;
+    }
+
+    function getUrlWebview(scene, options = {}) {
+      if (!options.rebuild && urlWebviews.has(scene.id)) return urlWebviews.get(scene.id);
+
+      const existing = urlWebviews.get(scene.id);
+      if (existing) {
+        try {
+          existing.stop();
+        } catch (_) {}
+        existing.remove();
+        urlWebviews.delete(scene.id);
+      }
 
       const webview = document.createElement('webview');
       webview.setAttribute('partition', `persist:cuevue-${scene.id}`);
@@ -904,6 +917,44 @@
       webview.className = 'url-webview';
       urlScene.appendChild(webview);
       urlWebviews.set(scene.id, webview);
+      attachWebviewRecovery(scene, webview);
+      return webview;
+    }
+
+    function attachWebviewRecovery(scene, webview) {
+      const armTimeout = () => {
+        clearWebviewRecoveryTimer();
+        webviewRecoveryTimer = setTimeout(() => {
+          if (scene.id === activeId && urlWebviews.get(scene.id) === webview) {
+            rebuildUrlWebview(scene, 'load-timeout');
+          }
+        }, 25000);
+      };
+
+      webview.addEventListener('did-start-loading', armTimeout);
+      webview.addEventListener('did-stop-loading', clearWebviewRecoveryTimer);
+      webview.addEventListener('did-finish-load', clearWebviewRecoveryTimer);
+      webview.addEventListener('did-fail-load', (event) => {
+        clearWebviewRecoveryTimer();
+        if (event && event.isMainFrame !== false && scene.id === activeId) {
+          setTimeout(() => rebuildUrlWebview(scene, 'load-failed'), 700);
+        }
+      });
+      webview.addEventListener('render-process-gone', () => {
+        if (scene.id === activeId) setTimeout(() => rebuildUrlWebview(scene, 'renderer-gone'), 300);
+      });
+      webview.addEventListener('unresponsive', () => {
+        if (scene.id === activeId) setTimeout(() => rebuildUrlWebview(scene, 'unresponsive'), 300);
+      });
+    }
+
+    function rebuildUrlWebview(scene, reason) {
+      clearWebviewRecoveryTimer();
+      const webview = getUrlWebview(scene, { rebuild: true });
+      showUrlWebview(webview);
+      if (scene.url) webview.setAttribute('src', scene.url);
+      attachCredentialFill(scene, webview);
+      console.info(`CueVue rebuilt webview for ${scene.name || scene.id}: ${reason}`);
       return webview;
     }
 

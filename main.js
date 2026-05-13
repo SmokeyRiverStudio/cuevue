@@ -4,6 +4,7 @@ const path = require('path');
 const { execFile } = require('child_process');
 
 app.setName('CueVue');
+app.enableSandbox();
 
 let splashWindow = null;
 let mainWindow = null;
@@ -31,7 +32,8 @@ function createSplashWindow() {
     backgroundColor: '#101317',
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      sandbox: true
     }
   });
 
@@ -51,13 +53,23 @@ function createMainWindow() {
     title: 'CueVue',
     backgroundColor: '#0d1117',
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: appFile('preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
       webviewTag: true
     }
   });
 
   mainWindow.loadFile(appFile('index.html')).catch(() => {});
+
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.key !== 'Escape' || input.type !== 'keyDown') return;
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFullScreen()) {
+      event.preventDefault();
+      mainWindow.setFullScreen(false);
+    }
+  });
 
   mainWindow.once('ready-to-show', async () => {
     try {
@@ -137,8 +149,7 @@ function notesWindowHtml() {
     <textarea id="notes" spellcheck="true" placeholder="Presenter notes..."></textarea>
   </div>
   <script>
-    const { ipcRenderer } = require('electron');
-    const { pathToFileURL } = require('url');
+    const { ipcRenderer, fileUrl: cuevueFileUrl } = window.cuevue;
     let currentKey = '';
     let saveTimer = null;
     const title = document.getElementById('title');
@@ -147,7 +158,7 @@ function notesWindowHtml() {
     const slides = document.getElementById('slides');
 
     function fileUrl(filePath) {
-      return filePath ? pathToFileURL(filePath).href : '';
+      return cuevueFileUrl(filePath);
     }
 
     function renderSlides(context) {
@@ -213,8 +224,10 @@ function createNotesWindow() {
     alwaysOnTop: true,
     backgroundColor: '#fbf2cf',
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+      preload: appFile('preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true
     }
   });
 

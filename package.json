@@ -2,11 +2,14 @@
   "name": "cuevue",
   "version": "1.0.0",
   "productName": "CueVue",
+  "author": "Smokey River Studio",
   "description": "CueVue - Professional Demo Scene Controller",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --mac --dir"
+    "build": "electron-builder --mac",
+    "build:mac-dir": "electron-builder --mac dir",
+    "build:dmg": "electron-builder --mac dmg"
   },
   "devDependencies": {
     "electron": "^41.5.0",
@@ -15,23 +18,47 @@
   "build": {
     "appId": "com.cuevue.app",
     "productName": "CueVue",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
     "mac": {
       "category": "public.app-category.business",
-      "target": "dir",
+      "target": [
+        "dir",
+        "dmg"
+      ],
+      "icon": "buildResources/icon.icns",
       "identity": null,
       "gatekeeperAssess": false,
-      "hardenedRuntime": false,
+      "hardenedRuntime": true,
+      "entitlements": "buildResources/entitlements.mac.plist",
+      "entitlementsInherit": "buildResources/entitlements.mac.plist",
       "extendInfo": {
         "NSScreenCaptureUsageDescription": "CueVue needs Screen Recording access to capture windows for the iPhone scene.",
         "NSMicrophoneUsageDescription": "CueVue does not use the microphone.",
         "NSCameraUsageDescription": "CueVue does not use the camera."
       }
     },
+    "dmg": {
+      "title": "CueVue ${version}",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "buildResources"
     },
     "files": [
       "main.js",
+      "preload.js",
       "index.html",
       "splash.html",
       "package.json"

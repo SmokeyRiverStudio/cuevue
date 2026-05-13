@@ -18,6 +18,7 @@ CueVue is a pure Electron live production and demo scene controller. It provides
 - Electron 41
 - Plain HTML, CSS, and JavaScript
 - `main.js` Electron main process
+- `preload.js` context-isolated bridge for renderer IPC
 - `index.html` application UI
 - `splash.html` startup splash screen
 - No React, Next.js, Vite, or Tailwind runtime
@@ -40,7 +41,23 @@ npm start
 npm run build
 ```
 
+The default build creates unsigned macOS `.app` and `.dmg` artifacts in `dist/`.
+
+Additional build commands:
+
+```bash
+npm run build:mac-dir
+npm run build:dmg
+```
+
 The build output is written to `dist/` and should not be committed.
+
+## Release Prep
+
+- macOS build resources live in `buildResources/`.
+- `buildResources/icon-source.svg` and `buildResources/icon-source.png` are the editable/source icon assets.
+- `buildResources/icon.icns` is referenced by electron-builder.
+- Signing and notarization guidance lives in `NOTARIZATION.md`.
 
 ## Source Control Notes
 

@@ -35,6 +35,23 @@ npm install
 npm start
 ```
 
+## Demo Today
+
+Known-good local demo workspace:
+
+```text
+/Users/jennburk/Downloads/CueVue15/demo-workspaces/cuevue-demo-today.cuevue
+```
+
+Launch from the app source folder:
+
+```bash
+cd /Users/jennburk/Downloads/CueVue15
+npm start
+```
+
+In CueVue, use `Open` in the Workspace panel and select the workspace above.
+
 ## Build
 
 ```bash

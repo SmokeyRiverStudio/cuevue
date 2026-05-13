@@ -1,0 +1,151 @@
+{
+  "app": "CueVue",
+  "version": 1,
+  "savedAt": "2026-05-13T00:00:00.000Z",
+  "scenes": [
+    {
+      "id": "flow",
+      "name": "Flow",
+      "type": "flow",
+      "order": 1,
+      "url": "",
+      "bg": "",
+      "bgVersion": "",
+      "sourceId": "",
+      "sourceName": "",
+      "flow": {
+        "title": "Demo Flow",
+        "subtitle": "CueVue live walkthrough",
+        "logoLeft": "CueVue",
+        "logoRight": "Client Demo",
+        "logoLeftPath": "",
+        "logoRightPath": "",
+        "topics": [
+          {
+            "heading": "Demo setup",
+            "subheading": "Confirm the control room, scenes, and output are ready",
+            "impact": "Room aligned",
+            "subImpact": "Everyone can see the workflow before switching scenes",
+            "showImpact": true,
+            "revealed": true,
+            "topicVisible": true,
+            "subTopicVisible": true,
+            "impactVisible": true,
+            "subImpactVisible": true
+          },
+          {
+            "heading": "Fiix Demo",
+            "subheading": "Open the live Fiix demo environment",
+            "impact": "Live system context",
+            "subImpact": "Switch without leaving the presentation workspace",
+            "showImpact": true,
+            "revealed": true,
+            "topicVisible": true,
+            "subTopicVisible": true,
+            "impactVisible": true,
+            "subImpactVisible": true
+          },
+          {
+            "heading": "Work Request Portal",
+            "subheading": "Review the request intake workflow",
+            "impact": "Operational handoff",
+            "subImpact": "Show how a request moves into action",
+            "showImpact": true,
+            "revealed": true,
+            "topicVisible": true,
+            "subTopicVisible": true,
+            "impactVisible": true,
+            "subImpactVisible": true
+          },
+          {
+            "heading": "Mobile/iPhone",
+            "subheading": "Placeholder for mobile workflow or iPhone mirroring",
+            "impact": "Field-ready view",
+            "subImpact": "Use if QuickTime/iPhone mirroring is available",
+            "showImpact": true,
+            "revealed": true,
+            "topicVisible": true,
+            "subTopicVisible": true,
+            "impactVisible": true,
+            "subImpactVisible": true
+          },
+          {
+            "heading": "Slides",
+            "subheading": "Placeholder for supporting slide visuals",
+            "impact": "Close cleanly",
+            "subImpact": "Use for wrap-up or fallback talking points",
+            "showImpact": true,
+            "revealed": true,
+            "topicVisible": true,
+            "subTopicVisible": true,
+            "impactVisible": true,
+            "subImpactVisible": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "fiix-demo",
+      "name": "Fiix Demo",
+      "type": "url",
+      "order": 2,
+      "url": "https://jenn.macmms.com/",
+      "bg": "",
+      "bgVersion": "",
+      "sourceId": "",
+      "sourceName": ""
+    },
+    {
+      "id": "work-request-portal",
+      "name": "Work Request Portal",
+      "type": "url",
+      "order": 3,
+      "url": "https://standard.macmms.com/",
+      "bg": "",
+      "bgVersion": "",
+      "sourceId": "",
+      "sourceName": ""
+    },
+    {
+      "id": "mobile-iphone",
+      "name": "Mobile/iPhone Placeholder",
+      "type": "device",
+      "order": 4,
+      "url": "",
+      "bg": "",
+      "bgVersion": "",
+      "sourceId": "",
+      "sourceName": ""
+    },
+    {
+      "id": "slides-placeholder",
+      "name": "Slides Placeholder",
+      "type": "slides",
+      "order": 5,
+      "url": "",
+      "bg": "",
+      "bgVersion": "",
+      "sourceId": "",
+      "sourceName": "",
+      "slidePaths": [],
+      "slideIndex": 0,
+      "slideSource": ""
+    }
+  ],
+  "activeId": "flow",
+  "settings": {
+    "cursorMode": "auto"
+  },
+  "notes": {
+    "flow:scene": "Start here. Confirm CueVue is running, then step through the demo scenes in order.",
+    "fiix-demo:scene": "Use this scene for the Fiix demo environment. If corporate auth prompts, authenticate inside the webview.",
+    "work-request-portal:scene": "Use this scene for the work request portal workflow.",
+    "mobile-iphone:scene": "Optional. Use only if the iPhone/QuickTime mirror is ready on the work Mac.",
+    "slides-placeholder:slide:0": "Optional slide placeholder for wrap-up or fallback talking points."
+  },
+  "notebookState": {
+    "width": 360,
+    "height": 520,
+    "alwaysOnTop": true
+  }
+}

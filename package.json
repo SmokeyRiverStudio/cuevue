@@ -39,6 +39,8 @@
     },
     "dmg": {
       "title": "CueVue ${version}",
+      "format": "UDZO",
+      "size": "1200m",
       "contents": [
         {
           "x": 130,

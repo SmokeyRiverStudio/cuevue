@@ -45,6 +45,8 @@ jobs:
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           name: CueVue Beta ${{ github.ref_name }}
           draft: false

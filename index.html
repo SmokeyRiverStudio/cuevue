@@ -476,6 +476,7 @@
 
     const STORAGE_KEY = 'cuevue_scenes_v2';
     const SETTINGS_KEY = 'cuevue_global_settings_v1';
+    const QUICK_FLOW_KEY = 'cuevue.flow.quickedit.v1';
     const defaultFlow = {
       title: 'Demo Flow',
       subtitle: "Today's walkthrough",
@@ -539,11 +540,62 @@
     }
 
     function loadScenes() {
+      let loaded = null;
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (Array.isArray(saved)) return normalizeScenes(saved);
+        if (Array.isArray(saved)) loaded = normalizeScenes(saved);
       } catch (_) {}
-      return normalizeScenes(defaultScenes);
+      const normalized = loaded || normalizeScenes(defaultScenes);
+      const migrated = migrateQuickEditFlow(normalized);
+      if (migrated) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      }
+      return normalized;
+    }
+
+    function migrateQuickEditFlow(targetScenes) {
+      let rows = null;
+      try {
+        rows = JSON.parse(localStorage.getItem(QUICK_FLOW_KEY));
+      } catch (_) {}
+      if (!Array.isArray(rows)) return false;
+
+      const topics = rows
+        .map((row) => Array.isArray(row) ? row : [])
+        .map((row) => ({
+          heading: String(row[0] || '').trim(),
+          subheading: String(row[1] || '').trim(),
+          impact: String(row[2] || '').trim(),
+          subImpact: String(row[3] || '').trim(),
+          showImpact: Boolean(String(row[2] || '').trim() || String(row[3] || '').trim()),
+          revealed: Boolean(String(row[2] || '').trim() || String(row[3] || '').trim()),
+          topicVisible: true,
+          subTopicVisible: true,
+          impactVisible: true,
+          subImpactVisible: true
+        }))
+        .filter((topic) => topic.heading || topic.subheading || topic.impact || topic.subImpact)
+        .slice(0, 6);
+      if (!topics.length) return false;
+
+      const flowScene = targetScenes.find((scene) => scene.id === 'flow');
+      if (!flowScene) return false;
+      const currentFlow = normalizeFlow(flowScene.flow);
+      const hasExistingImpact = currentFlow.topics.some((topic) => topic.impact || topic.subImpact);
+      const isDefaultTopicSet = currentFlow.topics.length === defaultFlow.topics.length
+        && currentFlow.topics.every((topic, index) => (
+          topic.heading === defaultFlow.topics[index].heading
+          && topic.subheading === defaultFlow.topics[index].subheading
+          && !topic.impact
+          && !topic.subImpact
+        ));
+      if (hasExistingImpact || !isDefaultTopicSet) return false;
+
+      flowScene.flow = normalizeFlow({
+        ...currentFlow,
+        topics
+      });
+      return true;
     }
 
     function normalizeScenes(input) {
@@ -822,9 +874,17 @@
 
     function sceneBackgroundUrl(scene) {
       if (!scene.bg) return '';
-      const url = new URL(cuevueFileUrl(scene.bg));
-      url.searchParams.set('v', scene.bgVersion || scene.bg);
-      return `url("${url.href}")`;
+      try {
+        const raw = String(scene.bg);
+        const href = /^(file|https?|data|blob):/i.test(raw) ? raw : cuevueFileUrl(raw);
+        const url = new URL(href);
+        if (url.protocol !== 'data:' && url.protocol !== 'blob:') {
+          url.searchParams.set('v', scene.bgVersion || scene.bg);
+        }
+        return `url("${url.href}")`;
+      } catch (_) {
+        return '';
+      }
     }
 
     function applySceneBackground(scene) {

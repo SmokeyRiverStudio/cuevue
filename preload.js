@@ -1,5 +1,13 @@
 const { contextBridge, ipcRenderer } = require('electron');
-const { pathToFileURL } = require('url');
+
+function toFileUrl(filePath) {
+  if (!filePath) return '';
+  const value = String(filePath);
+  if (/^(file|https?|data|blob):/i.test(value)) return value;
+  const normalized = value.replace(/\\/g, '/');
+  const prefix = normalized.startsWith('/') ? 'file://' : 'file:///';
+  return prefix + normalized.split('/').map(encodeURIComponent).join('/');
+}
 
 const sendChannels = new Set([
   'open-app',
@@ -57,6 +65,6 @@ contextBridge.exposeInMainWorld('cuevue', {
     }
   },
   fileUrl(filePath) {
-    return filePath ? pathToFileURL(filePath).href : '';
+    return toFileUrl(filePath);
   }
 });

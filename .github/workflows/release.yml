@@ -33,13 +33,15 @@ jobs:
         run: npm run build:dmg
 
       - name: Verify DMG output
-        run: ls -lh dist/CueVue-*.dmg
+        run: |
+          ls -lah dist/
+          ls -lh dist/*.dmg
 
       - name: Upload DMG workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: CueVue-macOS-DMG
-          path: dist/CueVue-*.dmg
+          path: dist/*.dmg
           if-no-files-found: error
 
       - name: Publish GitHub Release
@@ -51,4 +53,4 @@ jobs:
           name: CueVue Beta ${{ github.ref_name }}
           draft: false
           prerelease: true
-          files: dist/CueVue-*.dmg
+          files: dist/*.dmg

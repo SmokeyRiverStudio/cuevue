@@ -651,7 +651,11 @@
         const topicImpact = topic.impactVisible ? topic.impact : '';
         const topicSubImpact = topic.subImpactVisible ? topic.subImpact : '';
         const hasVisibleImpact = Boolean(topicImpact || topicSubImpact);
-        item.className = 'flow-topic' + (hasVisibleImpact ? ' revealed' : '');
+        item.className = [
+          'flow-topic',
+          hasVisibleImpact ? 'clickable' : '',
+          hasVisibleImpact && topic.revealed ? 'revealed' : ''
+        ].filter(Boolean).join(' ');
         item.innerHTML = `
           <div class="flow-topic-number">${index + 1}</div>
           <div class="flow-topic-copy">
@@ -664,6 +668,7 @@
             ${topicSubImpact ? `<div class="flow-topic-impact-subheading">${escapeHtml(topicSubImpact)}</div>` : ''}
           </div>
         `;
+        if (hasVisibleImpact) item.addEventListener('click', () => toggleFlowImpact(scene, index));
         list.appendChild(item);
       });
     }

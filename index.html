@@ -448,6 +448,12 @@
             <button id="save-workspace-as-button" type="button">Save As</button>
             <button id="open-workspace-button" type="button">Open</button>
           </div>
+          <label>Save mode
+            <select id="workspace-save-mode">
+              <option value="embedded">Embedded</option>
+              <option value="linked">Linked</option>
+            </select>
+          </label>
           <label class="workspace-recent">Recent
             <select id="recent-workspaces-select">
               <option value="">No recent workspaces</option>
@@ -1639,7 +1645,8 @@
       return {
         scenes,
         activeId,
-        settings: globalSettings
+        settings: globalSettings,
+        workspaceMode: document.getElementById('workspace-save-mode').value
       };
     }
 
@@ -1693,8 +1700,11 @@
         return;
       }
       currentWorkspacePath = result.path || currentWorkspacePath;
-      setWorkspaceStatus(`Saved: ${currentWorkspacePath}`);
       await refreshRecentWorkspaces();
+      const missing = Array.isArray(result.missingAssets) && result.missingAssets.length
+        ? ` Missing assets: ${result.missingAssets.length}.`
+        : '';
+      setWorkspaceStatus(`Saved ${result.mode || 'linked'}: ${currentWorkspacePath}.${missing}`);
     }
 
     async function openWorkspace(filePath = '') {
@@ -1709,6 +1719,9 @@
         return;
       }
       const workspace = result.workspace;
+      if (result.mode && document.getElementById('workspace-save-mode')) {
+        document.getElementById('workspace-save-mode').value = result.mode;
+      }
       scenes = normalizeScenes(workspace.scenes || defaultScenes);
       activeId = workspace.activeId && sceneById(workspace.activeId) ? workspace.activeId : (orderedScenes()[0] && orderedScenes()[0].id) || 'flow';
       globalSettings = workspace.settings && typeof workspace.settings === 'object'
@@ -1721,8 +1734,11 @@
       applyCursorMode();
       closeGlobalSettings();
       showScene(activeId);
-      setWorkspaceStatus(`Loaded: ${currentWorkspacePath}`);
       await refreshRecentWorkspaces();
+      const missing = Array.isArray(result.missingAssets) && result.missingAssets.length
+        ? ` Missing linked assets: ${result.missingAssets.length}.`
+        : '';
+      setWorkspaceStatus(`Loaded ${result.mode || workspace.mode || 'linked'}: ${currentWorkspacePath}.${missing}`);
     }
 
     function applyCursorMode() {

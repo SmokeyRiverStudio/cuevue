@@ -876,6 +876,47 @@ ipcMain.handle('quicktime-new-movie-recording', async () => {
   };
 });
 
+ipcMain.handle('quicktime-status', async () => {
+  if (process.platform !== 'darwin') {
+    return { ok: true, running: false, windows: [], movieRecording: false };
+  }
+  try {
+    const script = [
+      'tell application "System Events"',
+      'if not (exists process "QuickTime Player") then return "NOT_RUNNING"',
+      'set windowNames to {}',
+      'tell process "QuickTime Player"',
+      'repeat with appWindow in windows',
+      'set end of windowNames to name of appWindow',
+      'end repeat',
+      'end tell',
+      'set AppleScript\'s text item delimiters to linefeed',
+      'set joinedNames to windowNames as text',
+      'set AppleScript\'s text item delimiters to ""',
+      'return joinedNames',
+      'end tell'
+    ].join('\n');
+    const output = await runAppleScriptAsync(script);
+    const raw = String(output || '').trim();
+    if (raw === 'NOT_RUNNING') return { ok: true, running: false, windows: [], movieRecording: false };
+    const windows = raw ? raw.split(/\r?\n/).map((name) => name.trim()).filter(Boolean) : [];
+    return {
+      ok: true,
+      running: true,
+      windows,
+      movieRecording: windows.some((name) => /movie recording|quicktime|iphone|ipad/i.test(name))
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      running: false,
+      windows: [],
+      movieRecording: false,
+      message: error.message || 'Unable to inspect QuickTime windows.'
+    };
+  }
+});
+
 ipcMain.on('minimize-quicktime', () => {
   runAppleScript('tell application "System Events" to tell process "QuickTime Player" to set miniaturized of windows to true');
 });

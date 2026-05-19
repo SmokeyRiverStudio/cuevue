@@ -120,6 +120,13 @@
     .device-check.fail { color: #ff8f8f; }
     .device-fallback { display: none; gap: 10px; }
     .device-fallback.open { display: grid; }
+    .device-diagnostics { position: absolute; right: 18px; bottom: 18px; z-index: 8; width: min(520px, calc(100% - 36px)); max-height: 42vh; overflow: auto; padding: 12px; border: 1px solid rgba(99, 161, 255, .45); border-radius: 8px; background: rgba(8, 12, 17, .86); color: #dce5ef; font-size: 12px; line-height: 1.35; }
+    .device-diagnostics h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; color: #8fc1ff; }
+    .device-diagnostics dl { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(0, 1fr); gap: 5px 10px; margin: 0; }
+    .device-diagnostics dt { color: #93a0af; }
+    .device-diagnostics dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .device-diagnostics .diag-fail { color: #ffadad; }
+    .device-diagnostics .diag-ok { color: #9de59b; }
     .type-panel.active { display: grid; }
     .source-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; max-height: 360px; overflow: auto; }
     .source-card { overflow: hidden; border: 1px solid #303b4d; border-radius: 8px; background: #0c1219; text-align: left; min-height: 150px; }
@@ -168,6 +175,7 @@
             <video id="iphone-video" autoplay muted playsinline></video>
           </div>
         </div>
+        <aside id="device-diagnostics" class="device-diagnostics" aria-live="polite"></aside>
         <div id="device-status" class="quiet-status hidden"></div>
       </section>
 
@@ -513,6 +521,22 @@
     let webviewRecoveryTimer = null;
     let currentWorkspacePath = '';
     let globalSettings = loadGlobalSettings();
+    let deviceDiagnostics = {
+      permission: 'unknown',
+      sources: [],
+      quickTimeLaunched: false,
+      quickTimeRunning: false,
+      quickTimeWindows: [],
+      movieRecordingWindow: false,
+      selectedSource: '',
+      staleSource: false,
+      getUserMedia: 'not started',
+      videoSrcObject: false,
+      videoTrack: false,
+      videoDimensions: '0 x 0',
+      playback: 'not started',
+      failure: ''
+    };
     const urlWebviews = new Map();
     const webviewLoadTimers = new Map();
     const webviewHealthTimers = new Map();
@@ -527,6 +551,7 @@
     const slideThumbGrid = document.getElementById('slide-thumb-grid');
     const windowStatus = document.getElementById('window-status');
     const deviceStatus = document.getElementById('device-status');
+    const deviceDiagnosticsEl = document.getElementById('device-diagnostics');
     const slidesStatus = document.getElementById('slides-status');
     const editor = document.getElementById('editor');
     const globalSettingsOverlay = document.getElementById('global-settings');
@@ -1401,15 +1426,71 @@
       quickTimeDetectTimer = null;
     }
 
+    function updateDeviceDiagnostics(patch = {}) {
+      deviceDiagnostics = { ...deviceDiagnostics, ...patch };
+      if (!deviceDiagnosticsEl) return;
+      const statusClass = (value) => {
+        const text = String(value || '').toLowerCase();
+        if (text.includes('failed') || text.includes('blocked') || text.includes('missing') || text.includes('stale')) return 'diag-fail';
+        if (text.includes('succeeded') || text === 'granted' || text === 'true' || text.includes('playing')) return 'diag-ok';
+        return '';
+      };
+      const sources = deviceDiagnostics.sources.length
+        ? deviceDiagnostics.sources.map((source) => `${source.kind}: ${source.name} [${source.id}]`).join('\n')
+        : 'none';
+      const rows = [
+        ['Screen Recording', deviceDiagnostics.permission],
+        ['Detected Sources', sources],
+        ['QuickTime Launched', deviceDiagnostics.quickTimeLaunched],
+        ['QuickTime Running', deviceDiagnostics.quickTimeRunning],
+        ['QuickTime Windows', deviceDiagnostics.quickTimeWindows.length ? deviceDiagnostics.quickTimeWindows.join('\n') : 'none'],
+        ['Movie Window', deviceDiagnostics.movieRecordingWindow],
+        ['Selected Source', deviceDiagnostics.selectedSource || 'none'],
+        ['Stale Source', deviceDiagnostics.staleSource],
+        ['getUserMedia', deviceDiagnostics.getUserMedia],
+        ['video.srcObject', deviceDiagnostics.videoSrcObject],
+        ['Video Track', deviceDiagnostics.videoTrack],
+        ['Video Dimensions', deviceDiagnostics.videoDimensions],
+        ['Playback', deviceDiagnostics.playback],
+        ['Failure', deviceDiagnostics.failure || 'none']
+      ];
+      deviceDiagnosticsEl.innerHTML = `<h3>iPhone Capture Diagnostics</h3><dl>${rows.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd class="${statusClass(value)}">${escapeHtml(value)}</dd>`).join('')}</dl>`;
+    }
+
+    async function refreshDeviceDiagnostics(patch = {}) {
+      const next = { ...patch };
+      try {
+        next.permission = await ipcRenderer.invoke('check-screen-permission');
+      } catch (error) {
+        next.permission = error.message || 'unknown';
+      }
+      try {
+        const quickTime = await ipcRenderer.invoke('quicktime-status');
+        next.quickTimeRunning = Boolean(quickTime && quickTime.running);
+        next.quickTimeWindows = quickTime && Array.isArray(quickTime.windows) ? quickTime.windows : [];
+        next.movieRecordingWindow = Boolean(quickTime && quickTime.movieRecording);
+        if (quickTime && !quickTime.ok && quickTime.message) next.failure = quickTime.message;
+      } catch (error) {
+        next.failure = error.message || 'Unable to inspect QuickTime.';
+      }
+      updateDeviceDiagnostics(next);
+    }
+
     function showDeviceFallback() {
       document.getElementById('device-fallback').classList.add('open');
+      updateDeviceDiagnostics({ failure: 'Manual Source Picker opened.' });
       scanSources('device', false, true);
     }
 
     async function detectQuickTimeSource(autoPick = true) {
+      await refreshDeviceDiagnostics({ failure: '' });
       const sources = await getOrderedSources('device');
-      const preferred = sources.find((source) => rankSource(source, 'device') <= 2);
-      if (!preferred) return false;
+      updateDeviceDiagnostics({ sources });
+      const preferred = sources.find((source) => rankSource(source, 'device') <= 5);
+      if (!preferred) {
+        updateDeviceDiagnostics({ failure: 'No QuickTime, Movie Recording, iPhone, or iPad source detected.' });
+        return false;
+      }
       setQuickTimeStep('recording', 'done');
       if (autoPick) await selectCaptureSource('device', preferred);
       return true;
@@ -1423,15 +1504,18 @@
       let sources = [];
       try {
         sources = await getOrderedSources(kind);
+        if (kind === 'device') await refreshDeviceDiagnostics({ sources, failure: '' });
       } catch (error) {
         if (grid) grid.innerHTML = `<p class="muted">Could not gather sources: ${escapeHtml(error.message || 'Screen Recording permission may be blocked.')}</p>`;
         if (kind === 'device') document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Screen Recording permission may be blocked.'}`;
+        if (kind === 'device') await refreshDeviceDiagnostics({ failure: error.message || 'Screen Recording permission may be blocked.' });
         return;
       }
       if (grid) grid.innerHTML = '';
       if (!sources.length) {
         if (grid) grid.innerHTML = `<p class="muted">No ${kind === 'window' ? 'windows or screens' : 'windows'} found. Open the source you want to capture, then refresh.</p>`;
         if (kind === 'device') document.getElementById('selected-device-label').textContent = 'No QuickTime movie recording window found yet.';
+        if (kind === 'device') await refreshDeviceDiagnostics({ sources: [], failure: 'No desktopCapturer window sources detected.' });
         return;
       }
       if (autoPick && kind === 'device') {
@@ -1447,7 +1531,7 @@
         const card = document.createElement('button');
         card.className = 'source-card';
         const label = source.kind === 'screen' ? 'Screen' : 'Window';
-        card.innerHTML = `<img src="${source.thumbnail}" alt=""><span><span class="source-kind">${label}</span>${escapeHtml(source.name)}</span>`;
+        card.innerHTML = `<img src="${source.thumbnail}" alt=""><span><span class="source-kind">${label}</span>${escapeHtml(source.name)}<br><small>${escapeHtml(source.id)}</small></span>`;
         card.addEventListener('click', async () => {
           await selectCaptureSource(kind, source);
           scanSources(kind, false, showDeviceGrid);
@@ -1462,6 +1546,11 @@
       scene.sourceId = source.id;
       scene.sourceName = source.name;
       saveScenes();
+      updateDeviceDiagnostics({
+        selectedSource: `${source.name} [${source.id}]`,
+        staleSource: false,
+        failure: ''
+      });
       if (scene.id === permissionPromptSceneId) {
         permissionPromptSceneId = '';
         renderToolbar();
@@ -1476,14 +1565,14 @@
       if (scene.id === activeId) {
         const video = kind === 'device' ? iphoneVideo : windowVideo;
         const status = kind === 'device' ? deviceStatus : windowStatus;
-        await startCapture(source, video, status);
+        const connected = await startCapture(source, video, status);
+        if (kind === 'device' && !connected) return;
       }
       refreshGlobalStatus();
       if (kind === 'device') {
         setQuickTimeStep('selected', 'done');
         setQuickTimeStep('connected', 'done');
-        document.getElementById('selected-device-label').textContent = `Connected: ${source.name}. QuickTime must stay open; CueVue will try to minimize it.`;
-        ipcRenderer.send('minimize-quicktime');
+        document.getElementById('selected-device-label').textContent = `Connected: ${source.name}. QuickTime must stay open.`;
       }
     }
 
@@ -1494,6 +1583,7 @@
       document.getElementById('selected-device-label').textContent = 'Opening QuickTime and looking for the Movie Recording window...';
       setQuickTimeStep('opened', 'active');
       const result = await ipcRenderer.invoke('quicktime-new-movie-recording');
+      await refreshDeviceDiagnostics({ quickTimeLaunched: Boolean(result && result.ok), failure: result && !result.ok ? result.message : '' });
       if (result && !result.ok) {
         setQuickTimeStep('opened', 'fail');
         document.getElementById('selected-device-label').textContent = result.message;
@@ -1519,7 +1609,9 @@
         if (attempts >= 20) {
           stopQuickTimeDetection();
           setQuickTimeStep('recording', 'fail');
-          document.getElementById('selected-device-label').textContent = 'Could not auto-detect the iPhone. Click Retry Detect iPhone or Choose Window Manually.';
+          document.getElementById('selected-device-label').textContent = 'In QuickTime Player choose File > New Movie Recording and select iPhone from camera dropdown.';
+          updateDeviceDiagnostics({ failure: 'QuickTime recording window missing or iPhone source not visible after detection timeout.' });
+          showDeviceFallback();
         }
       }, 1000);
     }
@@ -1558,9 +1650,14 @@
       if (kind === 'window' && source.kind === 'screen') return 0;
       if (kind === 'device') {
         if (name.includes('movie recording')) return 0;
-        if (name.includes('quicktime') && name.includes('recording')) return 1;
-        if (name.includes('iphone') && name.includes('recording')) return 2;
-        if (name.includes('quicktime')) return 8;
+        if (name.includes('iphone') && name.includes('quicktime')) return 1;
+        if (name.includes('ipad') && name.includes('quicktime')) return 1;
+        if (name.includes('quicktime') && name.includes('recording')) return 2;
+        if (name.includes('iphone') && name.includes('recording')) return 3;
+        if (name.includes('ipad') && name.includes('recording')) return 3;
+        if (name.includes('iphone')) return 4;
+        if (name.includes('ipad')) return 4;
+        if (name.includes('quicktime')) return 5;
       }
       if (kind === 'slides') {
         if (name.includes('powerpoint') && name.includes('slide')) return 0;
@@ -1571,8 +1668,10 @@
     }
 
     async function restoreCapture(scene, video, statusEl) {
+      if (scene.type === 'device') await refreshDeviceDiagnostics({ failure: '' });
       const permission = await ipcRenderer.invoke('check-screen-permission');
       if (permission === 'denied' || permission === 'restricted') {
+        if (scene.type === 'device') updateDeviceDiagnostics({ permission, failure: 'Screen Recording permission is blocked.' });
         if (!scene.sourceId && !scene.sourceName) {
           showPermissionStatus(scene);
         }
@@ -1587,10 +1686,27 @@
         return;
       }
       const sources = await getOrderedSources(scene.type);
-      const source = sources.find((item) => item.id === scene.sourceId) || sources.find((item) => item.name === scene.sourceName);
+      if (scene.type === 'device') updateDeviceDiagnostics({ sources });
+      const source = sources.find((item) => item.id === scene.sourceId)
+        || sources.find((item) => item.name === scene.sourceName)
+        || sources.find((item) => scene.sourceName && item.name.toLowerCase() === scene.sourceName.toLowerCase());
       if (!source) {
+        if (scene.type === 'device') {
+          updateDeviceDiagnostics({
+            staleSource: Boolean(scene.sourceId || scene.sourceName),
+            selectedSource: scene.sourceName || scene.sourceId || '',
+            failure: 'Saved source is stale or no longer visible. Use Manual Source Picker or Set Up iPhone.'
+          });
+          showStatus(statusEl, 'Saved iPhone source is not available. Use Set Up iPhone or Choose Window Manually.');
+          return;
+        }
         hideStatus(statusEl);
         return;
+      }
+      if (scene.type === 'device' && source.id !== scene.sourceId) {
+        scene.sourceId = source.id;
+        saveScenes();
+        updateDeviceDiagnostics({ staleSource: true, selectedSource: `${source.name} [${source.id}]` });
       }
       await startCapture(source, video, statusEl);
     }
@@ -1598,6 +1714,17 @@
     async function startCapture(source, video, statusEl) {
       try {
         stopStream();
+        const isDeviceVideo = video === iphoneVideo;
+        if (isDeviceVideo) updateDeviceDiagnostics({
+          selectedSource: `${source.name} [${source.id}]`,
+          staleSource: false,
+          getUserMedia: 'starting',
+          videoSrcObject: false,
+          videoTrack: false,
+          videoDimensions: '0 x 0',
+          playback: 'not started',
+          failure: ''
+        });
         const videoConstraints = {
           mandatory: {
             chromeMediaSource: 'desktop',
@@ -1616,9 +1743,55 @@
         });
         currentStream = stream;
         video.srcObject = stream;
+        const track = stream.getVideoTracks()[0];
+        if (isDeviceVideo) updateDeviceDiagnostics({
+          getUserMedia: 'succeeded',
+          videoSrcObject: Boolean(video.srcObject),
+          videoTrack: Boolean(track),
+          failure: track ? '' : 'getUserMedia returned no video track.'
+        });
+        if (!track) throw new Error('Selected source returned no video track.');
+        try {
+          await video.play();
+        } catch (error) {
+          if (isDeviceVideo) updateDeviceDiagnostics({ playback: `failed: ${error.message || 'video.play failed'}` });
+          throw error;
+        }
+        await new Promise((resolve, reject) => {
+          let checks = 0;
+          const timer = setInterval(() => {
+            checks += 1;
+            if (isDeviceVideo) updateDeviceDiagnostics({
+              videoDimensions: `${video.videoWidth || 0} x ${video.videoHeight || 0}`,
+              playback: video.paused ? 'waiting' : 'playing'
+            });
+            if (video.videoWidth > 0 && video.videoHeight > 0 && !video.paused) {
+              clearInterval(timer);
+              resolve();
+            } else if (checks >= 40) {
+              clearInterval(timer);
+              reject(new Error('Capture stream started, but live video dimensions stayed at 0 x 0.'));
+            }
+          }, 250);
+        });
         hideStatus(statusEl);
+        if (isDeviceVideo) updateDeviceDiagnostics({
+          videoDimensions: `${video.videoWidth} x ${video.videoHeight}`,
+          playback: 'playing',
+          failure: ''
+        });
+        return true;
       } catch (error) {
         showStatus(statusEl, `Capture failed: ${error.message || 'Unable to start selected source.'}`);
+        if (video === iphoneVideo) updateDeviceDiagnostics({
+          getUserMedia: 'failed',
+          videoSrcObject: Boolean(video.srcObject),
+          videoTrack: Boolean(video.srcObject && video.srcObject.getVideoTracks && video.srcObject.getVideoTracks()[0]),
+          videoDimensions: `${video.videoWidth || 0} x ${video.videoHeight || 0}`,
+          playback: video.paused ? 'failed' : 'unknown',
+          failure: error.message || 'Unable to start selected source.'
+        });
+        return false;
       }
     }
 

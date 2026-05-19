@@ -21,6 +21,7 @@ const sendChannels = new Set([
 const invokeChannels = new Set([
   'notes-get',
   'quicktime-new-movie-recording',
+  'quicktime-status',
   'get-sources',
   'check-screen-permission',
   'save-bg',

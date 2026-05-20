@@ -687,6 +687,7 @@
           hasVisibleImpact ? 'clickable' : '',
           hasVisibleImpact && topic.revealed ? 'revealed' : ''
         ].filter(Boolean).join(' ');
+        item.dataset.flowTopicIndex = String(index);
         item.innerHTML = `
           <div class="flow-topic-number">${index + 1}</div>
           <div class="flow-topic-copy">
@@ -699,12 +700,13 @@
             ${topicSubImpact ? `<div class="flow-topic-impact-subheading">${escapeHtml(topicSubImpact)}</div>` : ''}
           </div>
         `;
-        if (hasVisibleImpact) item.addEventListener('click', () => toggleFlowImpact(scene, index));
         list.appendChild(item);
       });
     }
 
-    function toggleFlowImpact(scene, index) {
+    function toggleFlowImpact(index) {
+      const scene = sceneById(activeId);
+      if (!scene || scene.type !== 'flow') return;
       scene.flow = normalizeFlow(scene.flow);
       const topic = scene.flow.topics[index];
       if (!topic || (!(topic.impactVisible && topic.impact) && !(topic.subImpactVisible && topic.subImpact))) return;
@@ -1978,6 +1980,11 @@
     document.getElementById('cancel-editor-button').addEventListener('click', closeEditor);
     document.getElementById('save-editor-button').addEventListener('click', saveEditor);
     document.getElementById('delete-scene-button').addEventListener('click', deleteScene);
+    document.getElementById('flow-topics').addEventListener('click', (event) => {
+      const row = event.target.closest('.flow-topic.clickable');
+      if (!row || !event.currentTarget.contains(row)) return;
+      toggleFlowImpact(Number(row.dataset.flowTopicIndex));
+    });
     editType.addEventListener('change', syncTypePanels);
     document.getElementById('choose-bg-button').addEventListener('click', chooseBackground);
     document.getElementById('choose-bg-all-button').addEventListener('click', chooseBackgroundAll);

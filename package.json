@@ -1,6 +1,6 @@
 {
   "name": "cuevue",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "productName": "CueVue",
   "author": "Smokey River Studio",
   "description": "CueVue - Professional Demo Scene Controller",
@@ -9,7 +9,7 @@
     "start": "electron .",
     "build": "electron-builder --mac",
     "build:mac-dir": "electron-builder --mac dir",
-    "build:dmg": "electron-builder --mac dmg",
+    "build:dmg": "electron-builder --mac dmg --publish never",
     "build:unsigned": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac -c.mac.identity=null"
   },
   "devDependencies": {
@@ -39,6 +39,7 @@
       }
     },
     "afterSign": "scripts/notarize.js",
+    "publish": null,
     "dmg": {
       "title": "CueVue ${version}",
       "format": "UDZO",

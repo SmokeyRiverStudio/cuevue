@@ -38,8 +38,8 @@ jobs:
       - name: Verify DMG output
         run: |
           ls -lah dist/
-          test -f dist/CueVue-0.2.4-arm64.dmg
-          ls -lh dist/CueVue-0.2.4-arm64.dmg
+          test -f dist/CueVue-0.2.5-arm64.dmg
+          ls -lh dist/CueVue-0.2.5-arm64.dmg
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')

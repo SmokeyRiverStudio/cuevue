@@ -9,6 +9,8 @@ function filePathToUrl(filePath) {
 const sendChannels = new Set([
   'open-app',
   'open-url',
+  'toggle-fullscreen',
+  'exit-fullscreen',
   'toggle-notes',
   'notes-context',
   'notes-ready',

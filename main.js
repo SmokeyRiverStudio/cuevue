@@ -66,8 +66,17 @@ function createMainWindow() {
   mainWindow.loadFile(appFile('index.html')).catch(() => {});
 
   mainWindow.webContents.on('before-input-event', (event, input) => {
-    if (input.key !== 'Escape' || input.type !== 'keyDown') return;
-    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFullScreen()) {
+    if (input.type !== 'keyDown' || !mainWindow || mainWindow.isDestroyed()) return;
+
+    const key = String(input.key || '').toLowerCase();
+    const isFullscreenShortcut = (key === 'f' && input.meta && input.control) || input.key === 'F11';
+    if (isFullscreenShortcut) {
+      event.preventDefault();
+      mainWindow.setFullScreen(!mainWindow.isFullScreen());
+      return;
+    }
+
+    if (input.key === 'Escape' && mainWindow.isFullScreen()) {
       event.preventDefault();
       mainWindow.setFullScreen(false);
     }
@@ -764,6 +773,18 @@ ipcMain.on('open-app', (_, appName) => {
 
 ipcMain.on('open-url', (_, url) => {
   if (url) shell.openExternal(url);
+});
+
+ipcMain.on('toggle-fullscreen', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setFullScreen(!mainWindow.isFullScreen());
+  }
+});
+
+ipcMain.on('exit-fullscreen', () => {
+  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFullScreen()) {
+    mainWindow.setFullScreen(false);
+  }
 });
 
 ipcMain.on('toggle-notes', () => {

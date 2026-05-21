@@ -36,10 +36,14 @@ jobs:
         run: npm run build:dmg
 
       - name: Verify DMG output
+        shell: bash
         run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          dmg="dist/CueVue-${version}-arm64.dmg"
           ls -lah dist/
-          test -f dist/CueVue-0.2.6-arm64.dmg
-          ls -lh dist/CueVue-0.2.6-arm64.dmg
+          test -f "$dmg"
+          ls -lh "$dmg"
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')

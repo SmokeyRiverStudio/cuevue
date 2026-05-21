@@ -1660,6 +1660,7 @@
         if (name.includes('iphone')) return 4;
         if (name.includes('ipad')) return 4;
         if (name.includes('quicktime')) return 5;
+        return 100;
       }
       if (kind === 'slides') {
         if (name.includes('powerpoint') && name.includes('slide')) return 0;
@@ -2038,6 +2039,20 @@
     });
 
     document.addEventListener('keydown', (event) => {
+      const key = String(event.key || '').toLowerCase();
+      if (event.metaKey && event.ctrlKey && !event.altKey && key === 'f') {
+        event.preventDefault();
+        ipcRenderer.send('toggle-fullscreen');
+        return;
+      }
+      if (!event.metaKey && !event.ctrlKey && !event.altKey && event.key === 'F11') {
+        event.preventDefault();
+        ipcRenderer.send('toggle-fullscreen');
+        return;
+      }
+      if (!event.metaKey && !event.ctrlKey && !event.altKey && event.key === 'Escape') {
+        ipcRenderer.send('exit-fullscreen');
+      }
       if (event.metaKey || event.ctrlKey || event.altKey || editor.classList.contains('open') || globalSettingsOverlay.classList.contains('open')) return;
       if (event.key === 'ArrowRight' || event.key === '>' || event.key === '.') {
         if (changeSlide(1)) {

@@ -501,7 +501,7 @@
             <p class="card-subtitle">Screen & System Audio Recording access.</p>
           </div>
           <div class="permission-box">
-            <span>CueVue needs macOS Screen & System Audio Recording permission before it can list or capture windows. If you turn CueVue on, quit and reopen CueVue.</span>
+            <span>CueVue verifies capture access by asking Electron for fresh window and screen sources. macOS permission status is shown as a hint only.</span>
             <button id="global-open-screen-settings-button" type="button">Apple Settings</button>
             <span id="global-permission-detail" class="muted">Permission status not checked yet.</span>
           </div>
@@ -552,6 +552,10 @@
     let deviceDiagnostics = {
       permission: 'unknown',
       sources: [],
+      allSources: [],
+      sourceScan: 'not started',
+      sourceScanError: '',
+      sourceFilter: '',
       quickTimeLaunched: false,
       quickTimeRunning: false,
       quickTimeWindows: [],
@@ -969,7 +973,8 @@
       const sourceScenes = scenes.filter((scene) => (scene.type === 'window' || scene.type === 'device') && (scene.sourceId || scene.sourceName));
       if (sourceScenes.length) {
         try {
-          const sources = await ipcRenderer.invoke('get-sources');
+          const scan = await queryCaptureSources('preview');
+          const sources = scan.allSources;
           sourceScenes.forEach((scene) => {
             const source = sources.find((item) => item.id === scene.sourceId)
               || sources.find((item) => item.name === scene.sourceName)
@@ -1582,25 +1587,20 @@
       if (!scene || (scene.type !== 'device' && scene.type !== 'window')) return;
       permissionPromptSceneId = scene.id;
       renderToolbar();
-      if (options.clearSource) clearCaptureSource(scene);
       if (scene.type === 'device') {
         setQuickTimeStep('recording', 'fail');
         updateDeviceDiagnostics({
           permission: options.permission || deviceDiagnostics.permission,
           selectedSource: scene.sourceName || scene.sourceId || 'none',
-          staleSource: Boolean(options.clearSource),
-          failure: options.message || 'Screen Recording permission is blocked.'
+          staleSource: false,
+          failure: options.message || 'Electron could not enumerate capture sources.'
         });
       }
-      showStatus(scene.type === 'device' ? deviceStatus : windowStatus, options.message || 'Screen Recording is blocked. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.');
+      showStatus(scene.type === 'device' ? deviceStatus : windowStatus, options.message || 'CueVue cannot enumerate capture sources yet. Retry Detect iPhone will force a fresh scan.');
       permissionRecoveryTimer = setInterval(async () => {
-        let permission = 'unknown';
-        try {
-          permission = await ipcRenderer.invoke('check-screen-permission');
-        } catch (_) {}
-        if (scene.type === 'device') await refreshDeviceDiagnostics({ permission, failure: isScreenPermissionBlocked(permission) ? 'Waiting for Screen Recording permission.' : '' });
-        updatePermissionDetail();
-        if (permission !== 'granted') return;
+        const scan = await queryCaptureSources(scene.type);
+        if (scene.type === 'device') await refreshDeviceDiagnostics({ ...scan.diagnostics, failure: scan.sources.length ? '' : scan.diagnostics.failure });
+        if (!scan.sources.length) return;
         stopPermissionRecovery();
         permissionPromptSceneId = '';
         renderToolbar();
@@ -1612,6 +1612,37 @@
           await showScene(scene.id);
         }
       }, 1500);
+    }
+
+    async function queryCaptureSources(kind) {
+      let result = null;
+      try {
+        result = await ipcRenderer.invoke('get-capture-sources', { reason: kind || 'manual' });
+      } catch (error) {
+        result = {
+          ok: false,
+          permission: 'unknown',
+          error: error.message || 'Unable to list capture sources.',
+          sources: []
+        };
+      }
+      const allSources = Array.isArray(result.sources) ? result.sources : [];
+      const sources = allSources.slice().sort((a, b) => rankSource(a, kind) - rankSource(b, kind) || a.name.localeCompare(b.name));
+      const rejected = kind === 'device'
+        ? []
+        : allSources.filter((source) => !sources.some((item) => item.id === source.id));
+      const diagnostics = {
+        permission: `${result.permission || 'unknown'} (macOS API hint; ${result.ok ? 'desktopCapturer succeeded' : 'desktopCapturer failed'})`,
+        allSources,
+        sources,
+        sourceScan: result.ok ? `ok (${allSources.length})` : 'failed',
+        sourceScanError: result.error || '',
+        sourceFilter: rejected.length ? rejected.map((source) => `${source.kind}: ${source.name} [${source.id}]`).join('\n') : 'none',
+        failure: result.ok
+          ? (allSources.length ? '' : 'desktopCapturer returned no sources.')
+          : `desktopCapturer failed: ${result.error || 'unknown error'}`
+      };
+      return { ok: Boolean(result.ok), permission: result.permission || 'unknown', allSources, sources, diagnostics };
     }
 
     function updateDeviceDiagnostics(patch = {}) {
@@ -1626,9 +1657,16 @@
       const sources = deviceDiagnostics.sources.length
         ? deviceDiagnostics.sources.map((source) => `${source.kind}: ${source.name} [${source.id}]`).join('\n')
         : 'none';
+      const allSources = deviceDiagnostics.allSources.length
+        ? deviceDiagnostics.allSources.map((source) => `${source.kind}: ${source.name} [${source.id}]`).join('\n')
+        : 'none';
       const rows = [
         ['Screen Recording', deviceDiagnostics.permission],
+        ['Source Scan', deviceDiagnostics.sourceScan],
+        ['Source Scan Error', deviceDiagnostics.sourceScanError || 'none'],
+        ['All Sources', allSources],
         ['Detected Sources', sources],
+        ['Filtered Out', deviceDiagnostics.sourceFilter || 'none'],
         ['QuickTime Launched', deviceDiagnostics.quickTimeLaunched],
         ['QuickTime Running', deviceDiagnostics.quickTimeRunning],
         ['QuickTime Windows', deviceDiagnostics.quickTimeWindows.length ? deviceDiagnostics.quickTimeWindows.join('\n') : 'none'],
@@ -1647,10 +1685,12 @@
 
     async function refreshDeviceDiagnostics(patch = {}) {
       const next = { ...patch };
-      try {
-        next.permission = await ipcRenderer.invoke('check-screen-permission');
-      } catch (error) {
-        next.permission = error.message || 'unknown';
+      if (!next.permission) {
+        try {
+          next.permission = `${await ipcRenderer.invoke('check-screen-permission')} (macOS API hint)`;
+        } catch (error) {
+          next.permission = error.message || 'unknown';
+        }
       }
       try {
         const quickTime = await ipcRenderer.invoke('quicktime-status');
@@ -1672,23 +1712,21 @@
 
     async function detectQuickTimeSource(autoPick = true) {
       await refreshDeviceDiagnostics({ failure: '' });
-      const permission = await ipcRenderer.invoke('check-screen-permission');
-      if (isScreenPermissionBlocked(permission) || isScreenPermissionPending(permission)) {
-        const scene = sceneById(editingId) || sceneById(activeId);
-        startPermissionRecovery(scene, {
-          permission,
-          clearSource: isScreenPermissionBlocked(permission),
-          message: isScreenPermissionBlocked(permission)
-            ? 'Screen Recording permission is blocked. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.'
-            : 'Screen Recording permission is not granted yet. Open Apple Settings if CueVue appears, then return here; CueVue will retry automatically.'
-        });
+      const scan = await queryCaptureSources('device');
+      updateDeviceDiagnostics(scan.diagnostics);
+      if (!scan.ok) {
+        document.getElementById('selected-device-label').textContent = `Could not gather capture sources: ${scan.diagnostics.sourceScanError || 'unknown Electron error'}`;
         return false;
       }
-      const sources = await getOrderedSources('device');
-      updateDeviceDiagnostics({ sources });
-      const preferred = sources.find((source) => rankSource(source, 'device') <= 5);
+      const preferred = scan.sources.find((source) => rankSource(source, 'device') <= 20)
+        || scan.sources.find((source) => source.kind === 'window')
+        || scan.sources[0];
       if (!preferred) {
-        updateDeviceDiagnostics({ failure: 'No QuickTime, Movie Recording, iPhone, or iPad source detected.' });
+        updateDeviceDiagnostics({
+          failure: scan.allSources.length
+            ? 'Sources were returned, but none could be selected.'
+            : 'No capturable windows or screens returned by Electron.'
+        });
         return false;
       }
       setQuickTimeStep('recording', 'done');
@@ -1749,34 +1787,25 @@
       if (grid) grid.innerHTML = `<p class="muted">Scanning ${kind === 'window' ? 'windows and screens' : 'windows'}...</p>`;
       let sources = [];
       try {
-        if (kind === 'device') {
-          const permission = await ipcRenderer.invoke('check-screen-permission');
-          if (isScreenPermissionBlocked(permission) || isScreenPermissionPending(permission)) {
-            const scene = sceneById(editingId) || sceneById(activeId);
-            startPermissionRecovery(scene, {
-              permission,
-              clearSource: isScreenPermissionBlocked(permission),
-              message: isScreenPermissionBlocked(permission)
-                ? 'Screen Recording permission is blocked. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.'
-                : 'Screen Recording permission is not granted yet. Open Apple Settings if CueVue appears, then return here; CueVue will retry automatically.'
-            });
-            if (grid) grid.innerHTML = '<p class="muted">Waiting for Screen Recording permission. CueVue will rescan automatically.</p>';
-            return;
-          }
+        const scan = await queryCaptureSources(kind);
+        sources = scan.sources;
+        if (kind === 'device') await refreshDeviceDiagnostics(scan.diagnostics);
+        if (!scan.ok) {
+          if (grid) grid.innerHTML = `<p class="muted">Could not gather sources: ${escapeHtml(scan.diagnostics.sourceScanError || 'Electron capture enumeration failed.')}</p>`;
+          if (kind === 'device') document.getElementById('selected-device-label').textContent = `Could not gather capture sources: ${scan.diagnostics.sourceScanError || 'Electron capture enumeration failed.'}`;
+          return;
         }
-        sources = await getOrderedSources(kind);
-        if (kind === 'device') await refreshDeviceDiagnostics({ sources, failure: '' });
       } catch (error) {
-        if (grid) grid.innerHTML = `<p class="muted">Could not gather sources: ${escapeHtml(error.message || 'Screen Recording permission may be blocked.')}</p>`;
-        if (kind === 'device') document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Screen Recording permission may be blocked.'}`;
-        if (kind === 'device') await refreshDeviceDiagnostics({ failure: error.message || 'Screen Recording permission may be blocked.' });
+        if (grid) grid.innerHTML = `<p class="muted">Could not gather sources: ${escapeHtml(error.message || 'Electron capture enumeration failed.')}</p>`;
+        if (kind === 'device') document.getElementById('selected-device-label').textContent = `Could not gather capture sources: ${error.message || 'Electron capture enumeration failed.'}`;
+        if (kind === 'device') await refreshDeviceDiagnostics({ failure: error.message || 'Electron capture enumeration failed.' });
         return;
       }
       if (grid) grid.innerHTML = '';
       if (!sources.length) {
         if (grid) grid.innerHTML = `<p class="muted">No ${kind === 'window' ? 'windows or screens' : 'windows'} found. Open the source you want to capture, then refresh.</p>`;
-        if (kind === 'device') document.getElementById('selected-device-label').textContent = 'No QuickTime movie recording window found yet.';
-        if (kind === 'device') await refreshDeviceDiagnostics({ sources: [], failure: 'No desktopCapturer window sources detected.' });
+        if (kind === 'device') document.getElementById('selected-device-label').textContent = 'Electron returned no capturable windows or screens. QuickTime may be visible but not capturable to CueVue yet.';
+        if (kind === 'device') await refreshDeviceDiagnostics({ sources: [], failure: 'desktopCapturer returned no sources.' });
         return;
       }
       if (autoPick && kind === 'device') {
@@ -1842,19 +1871,6 @@
       setQuickTimeStep(null);
       document.getElementById('device-fallback').classList.remove('open');
       document.getElementById('selected-device-label').textContent = 'Opening QuickTime and looking for the Movie Recording window...';
-      const permission = await ipcRenderer.invoke('check-screen-permission');
-      if (isScreenPermissionBlocked(permission) || isScreenPermissionPending(permission)) {
-        const scene = sceneById(editingId) || sceneById(activeId);
-        startPermissionRecovery(scene, {
-          permission,
-          clearSource: isScreenPermissionBlocked(permission),
-          message: isScreenPermissionBlocked(permission)
-            ? 'Screen Recording permission is blocked. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.'
-            : 'Screen Recording permission is not granted yet. Open Apple Settings if CueVue appears, then return here; CueVue will retry automatically.'
-        });
-        ipcRenderer.send('open-screen-settings');
-        return;
-      }
       setQuickTimeStep('opened', 'active');
       const result = await ipcRenderer.invoke('quicktime-new-movie-recording');
       await refreshDeviceDiagnostics({ quickTimeLaunched: Boolean(result && result.ok), failure: result && !result.ok ? result.message : '' });
@@ -1903,20 +1919,19 @@
         detail.textContent = 'Permission is on. CueVue can list and capture windows.';
         detail.className = 'permission-ok';
       } else if (permission === 'denied' || permission === 'restricted') {
-        detail.textContent = 'Permission is blocked. Open Apple Settings, turn CueVue on, then return here; CueVue will retry automatically.';
+        detail.textContent = 'macOS API reports denied, but CueVue will still try desktopCapturer because System Settings may already be enabled.';
         detail.className = 'muted';
       } else {
-        detail.textContent = 'Permission is not granted yet. Open Apple Settings, turn CueVue on if it appears, then return here; CueVue will retry automatically.';
+        detail.textContent = 'macOS API has no settled permission value yet. CueVue will verify by enumerating capture sources.';
         detail.className = 'muted';
       }
     }
 
     async function getOrderedSources(kind) {
-      const sources = await ipcRenderer.invoke('get-sources');
-      const filtered = kind === 'device'
-        ? sources.filter((source) => source.kind !== 'screen')
-        : sources;
-      return filtered.slice().sort((a, b) => rankSource(a, kind) - rankSource(b, kind) || a.name.localeCompare(b.name));
+      const scan = await queryCaptureSources(kind);
+      if (kind === 'device') updateDeviceDiagnostics(scan.diagnostics);
+      if (!scan.ok) throw new Error(scan.diagnostics.sourceScanError || 'Electron failed to enumerate capture sources.');
+      return scan.sources;
     }
 
     function rankSource(source, kind) {
@@ -1944,25 +1959,26 @@
 
     async function restoreCapture(scene, video, statusEl) {
       if (scene.type === 'device') await refreshDeviceDiagnostics({ failure: '' });
-      const permission = await ipcRenderer.invoke('check-screen-permission');
-      if (isScreenPermissionBlocked(permission) || isScreenPermissionPending(permission)) {
-        const message = isScreenPermissionBlocked(permission)
-          ? 'Screen Recording permission is blocked. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.'
-          : 'Screen Recording permission is not granted yet. Open Apple Settings if CueVue appears, then return here; CueVue will retry automatically.';
-        if (scene.type === 'device') updateDeviceDiagnostics({ permission, failure: message });
-        startPermissionRecovery(scene, { permission, message, clearSource: isScreenPermissionBlocked(permission) });
-        return;
-      }
       if (scene.id === permissionPromptSceneId) {
         permissionPromptSceneId = '';
         renderToolbar();
       }
       if (!scene.sourceId && !scene.sourceName) {
         hideStatus(statusEl);
+        if (scene.type === 'device') await detectQuickTimeSource(true);
         return;
       }
-      const sources = await getOrderedSources(scene.type);
-      if (scene.type === 'device') updateDeviceDiagnostics({ sources });
+      let sources = [];
+      try {
+        sources = await getOrderedSources(scene.type);
+      } catch (error) {
+        if (scene.type === 'device') {
+          updateDeviceDiagnostics({ failure: error.message || 'Electron failed to enumerate capture sources.' });
+          showStatus(statusEl, `Capture source scan failed: ${error.message || 'Electron failed to enumerate capture sources.'}`);
+          showDeviceFallback();
+        }
+        return;
+      }
       const source = sources.find((item) => item.id === scene.sourceId)
         || sources.find((item) => item.name === scene.sourceName)
         || sources.find((item) => scene.sourceName && item.name.toLowerCase() === scene.sourceName.toLowerCase());
@@ -2079,12 +2095,12 @@
             playback: video.paused ? 'failed' : 'unknown',
             failure: error.message || 'Unable to start selected source.'
           });
-          if (isScreenPermissionBlocked(permission) || /permission|denied|notallowed|not allowed/i.test(error.message || '')) {
+          if (/permission|denied|notallowed|not allowed/i.test(error.message || '')) {
             const scene = sceneById(activeId);
             startPermissionRecovery(scene, {
               permission,
-              clearSource: true,
-              message: 'Screen Recording permission blocked capture. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.'
+              clearSource: false,
+              message: `getUserMedia failed after source selection: ${error.message || 'permission-related capture error'}`
             });
           }
         }

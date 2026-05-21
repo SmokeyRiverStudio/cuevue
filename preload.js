@@ -24,6 +24,7 @@ const invokeChannels = new Set([
   'notes-get',
   'quicktime-new-movie-recording',
   'quicktime-status',
+  'get-capture-sources',
   'get-sources',
   'check-screen-permission',
   'save-bg',

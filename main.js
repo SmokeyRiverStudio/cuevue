@@ -942,38 +942,53 @@ ipcMain.on('minimize-quicktime', () => {
   runAppleScript('tell application "System Events" to tell process "QuickTime Player" to set miniaturized of windows to true');
 });
 
-ipcMain.handle('get-sources', async () => {
-  let sources = [];
-  try {
-    sources = await desktopCapturer.getSources({
-      types: ['window', 'screen'],
-      thumbnailSize: { width: 320, height: 180 }
-    });
-  } catch (error) {
-    const permission = process.platform === 'darwin'
-      ? systemPreferences.getMediaAccessStatus('screen')
-      : 'granted';
-    const message = permission === 'denied' || permission === 'restricted' || permission === 'not-determined'
-      ? `Screen Recording permission is ${permission}.`
-      : (error.message || 'Unable to list capture sources.');
-    throw new Error(message);
-  }
-
-  return sources.map((source) => ({
-    id: source.id,
-    name: source.name,
-    kind: source.id.startsWith('screen:') ? 'screen' : 'window',
-    thumbnail: source.thumbnail.toDataURL()
-  }));
-});
-
-ipcMain.handle('check-screen-permission', () => {
+function screenPermissionStatus() {
   if (process.platform !== 'darwin') return 'granted';
   try {
     return systemPreferences.getMediaAccessStatus('screen');
   } catch (_) {
     return 'unknown';
   }
+}
+
+async function enumerateCaptureSources() {
+  const permission = screenPermissionStatus();
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['window', 'screen'],
+      thumbnailSize: { width: 320, height: 180 }
+    });
+    return {
+      ok: true,
+      permission,
+      error: '',
+      sources: sources.map((source) => ({
+        id: source.id,
+        name: source.name,
+        kind: source.id.startsWith('screen:') ? 'screen' : 'window',
+        thumbnail: source.thumbnail.toDataURL()
+      }))
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      permission,
+      error: error && error.message ? error.message : 'Unable to list capture sources.',
+      sources: []
+    };
+  }
+}
+
+ipcMain.handle('get-capture-sources', async () => enumerateCaptureSources());
+
+ipcMain.handle('get-sources', async () => {
+  const result = await enumerateCaptureSources();
+  if (!result.ok) throw new Error(result.error || 'Unable to list capture sources.');
+  return result.sources;
+});
+
+ipcMain.handle('check-screen-permission', () => {
+  return screenPermissionStatus();
 });
 
 ipcMain.on('open-screen-settings', () => {

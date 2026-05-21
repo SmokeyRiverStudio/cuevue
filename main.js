@@ -943,10 +943,21 @@ ipcMain.on('minimize-quicktime', () => {
 });
 
 ipcMain.handle('get-sources', async () => {
-  const sources = await desktopCapturer.getSources({
-    types: ['window', 'screen'],
-    thumbnailSize: { width: 320, height: 180 }
-  });
+  let sources = [];
+  try {
+    sources = await desktopCapturer.getSources({
+      types: ['window', 'screen'],
+      thumbnailSize: { width: 320, height: 180 }
+    });
+  } catch (error) {
+    const permission = process.platform === 'darwin'
+      ? systemPreferences.getMediaAccessStatus('screen')
+      : 'granted';
+    const message = permission === 'denied' || permission === 'restricted' || permission === 'not-determined'
+      ? `Screen Recording permission is ${permission}.`
+      : (error.message || 'Unable to list capture sources.');
+    throw new Error(message);
+  }
 
   return sources.map((source) => ({
     id: source.id,

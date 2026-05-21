@@ -17,7 +17,7 @@
     button.danger:hover { background: #612828; }
     input, select { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid #555; border-radius: 10px; color: #fff; background: #111; }
     label { display: grid; gap: 6px; color: #ccc; font-size: 13px; }
-    .app { display: grid; grid-template-rows: 1fr 48px; height: 100%; min-width: 900px; }
+    .app { display: grid; grid-template-rows: 1fr 82px; height: 100%; min-width: 900px; }
     .viewport { position: relative; min-height: 0; background: #181818; }
     .scene { position: absolute; inset: 0; display: none; min-width: 0; min-height: 0; background-position: center; background-size: cover; }
     .scene.active { display: block; }
@@ -26,28 +26,29 @@
     webview { background: #fff; }
     .placeholder { position: relative; z-index: 1; display: grid; place-items: center; height: 100%; padding: 48px; text-align: center; background: rgba(24, 24, 24, 0.78); }
     .placeholder-inner { width: min(780px, 90vw); }
-    .flow-scene { position: relative; z-index: 1; display: grid; grid-template-rows: auto 1fr; gap: 34px; height: 100%; padding: 56px 72px; background-color: #151719; background-position: center; background-size: cover; }
+    .flow-scene { --flow-scale: 1; --flow-gap: 14px; position: relative; z-index: 1; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: clamp(18px, calc(30px * var(--flow-scale)), 34px); height: 100%; padding: clamp(24px, calc(54px * var(--flow-scale)), 58px) clamp(28px, calc(70px * var(--flow-scale)), 76px); overflow: hidden; background-color: #151719; background-position: center; background-size: cover; }
     .flow-scene::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle at 18% 14%, rgba(83,104,122,.28), transparent 28%), rgba(10,12,14,.36); pointer-events: none; }
-    .flow-header { display: grid; grid-template-columns: 160px 1fr 160px; align-items: center; gap: 24px; }
-    .flow-logo { display: grid; place-items: center; min-height: 86px; padding: 16px; border: 1px dashed rgba(255,255,255,.22); border-radius: 8px; color: rgba(255,255,255,.68); background: rgba(0,0,0,.18); font-weight: 800; text-align: center; overflow-wrap: anywhere; }
-    .flow-logo img { max-width: 100%; max-height: 72px; object-fit: contain; }
+    .flow-header { min-height: 0; display: grid; grid-template-columns: minmax(112px, 160px) minmax(0, 1fr) minmax(112px, 160px); align-items: center; gap: clamp(14px, calc(22px * var(--flow-scale)), 26px); }
+    .flow-logo { display: grid; place-items: center; min-height: clamp(58px, calc(82px * var(--flow-scale)), 86px); padding: clamp(9px, calc(15px * var(--flow-scale)), 16px); border: 1px dashed rgba(255,255,255,.22); border-radius: 8px; color: rgba(255,255,255,.72); background: rgba(0,0,0,.18); font-size: clamp(12px, calc(15px * var(--flow-scale)), 17px); font-weight: 800; text-align: center; overflow-wrap: anywhere; }
+    .flow-logo img { max-width: 100%; max-height: clamp(44px, calc(68px * var(--flow-scale)), 72px); object-fit: contain; }
     .flow-title-block { text-align: center; }
-    .flow-title { font-size: clamp(34px, 5vw, 76px); line-height: 1; font-weight: 900; letter-spacing: 0; }
-    .flow-subtitle { margin-top: 12px; color: #aeb8c5; font-size: clamp(16px, 2vw, 26px); line-height: 1.35; }
-    .flow-topics { align-self: center; display: grid; gap: 12px; max-width: 1120px; width: 100%; margin: 0 auto; }
-    .flow-topic { min-height: 78px; display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px minmax(180px, .9fr); align-items: center; gap: 14px; padding: 14px 18px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: rgba(0,0,0,.28); box-shadow: 0 16px 40px rgba(0,0,0,.22); }
+    .flow-title { font-size: clamp(28px, calc(68px * var(--flow-scale)), 76px); line-height: .98; font-weight: 900; letter-spacing: 0; overflow-wrap: anywhere; }
+    .flow-subtitle { margin-top: clamp(7px, calc(11px * var(--flow-scale)), 12px); color: #aeb8c5; font-size: clamp(14px, calc(24px * var(--flow-scale)), 26px); line-height: 1.32; overflow-wrap: anywhere; }
+    .flow-topics { align-self: center; display: grid; gap: var(--flow-gap); max-width: min(1180px, 100%); width: 100%; margin: 0 auto; overflow: hidden; }
+    .flow-topic { min-height: var(--flow-topic-height, 74px); display: grid; grid-template-columns: clamp(26px, calc(32px * var(--flow-scale)), 34px) minmax(0, 1fr) clamp(24px, calc(30px * var(--flow-scale)), 34px) minmax(160px, .88fr); align-items: center; gap: clamp(8px, calc(13px * var(--flow-scale)), 14px); padding: clamp(9px, calc(13px * var(--flow-scale)), 14px) clamp(12px, calc(17px * var(--flow-scale)), 18px); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: rgba(0,0,0,.28); box-shadow: 0 16px 40px rgba(0,0,0,.22); overflow: hidden; transition: border-color .16s ease, background .16s ease, transform .16s ease; }
     .flow-topic.clickable { cursor: pointer; }
-    .flow-topic.clickable:hover { border-color: rgba(145,209,139,.34); background: rgba(8,16,12,.34); }
-    .flow-topic-number { flex: 0 0 34px; height: 34px; display: grid; place-items: center; border-radius: 999px; color: #d9e7f5; background: #303f4c; font-weight: 900; }
+    .flow-topic.clickable:hover { border-color: rgba(145,209,139,.34); background: rgba(8,16,12,.34); transform: translateY(-1px); }
+    .flow-topic-number { height: clamp(26px, calc(32px * var(--flow-scale)), 34px); display: grid; place-items: center; border-radius: 999px; color: #d9e7f5; background: #303f4c; font-size: clamp(12px, calc(15px * var(--flow-scale)), 16px); font-weight: 900; }
     .flow-topic-copy { display: grid; gap: 6px; min-width: 0; }
-    .flow-topic-heading { color: #eef3f8; font-size: clamp(16px, 2vw, 23px); font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
-    .flow-topic-subheading { color: #aeb8c5; font-size: clamp(13px, 1.45vw, 17px); line-height: 1.35; overflow-wrap: anywhere; }
-    .flow-topic-check { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 999px; color: #91d18b; font-size: 24px; font-weight: 900; opacity: 0; transform: scale(.72); transition: opacity .16s ease, transform .16s ease; }
+    .flow-topic-heading { color: #eef3f8; font-size: clamp(14px, calc(21px * var(--flow-scale)), 23px); font-weight: 800; line-height: 1.16; overflow-wrap: anywhere; }
+    .flow-topic-subheading { color: #aeb8c5; font-size: clamp(12px, calc(16px * var(--flow-scale)), 17px); line-height: 1.28; overflow-wrap: anywhere; }
+    .flow-topic-check { display: grid; place-items: center; width: clamp(24px, calc(29px * var(--flow-scale)), 30px); height: clamp(24px, calc(29px * var(--flow-scale)), 30px); border-radius: 999px; color: #91d18b; font-size: clamp(18px, calc(23px * var(--flow-scale)), 24px); font-weight: 900; opacity: .32; transform: scale(.72); transition: opacity .16s ease, transform .16s ease; }
     .flow-topic.revealed .flow-topic-check { opacity: 1; transform: scale(1); }
-    .flow-topic-impact { display: grid; gap: 6px; min-width: 0; opacity: 0; transform: translateX(-8px); transition: opacity .16s ease, transform .16s ease; pointer-events: none; }
+    .flow-topic-impact { display: grid; gap: 5px; min-width: 0; max-height: 0; opacity: 0; transform: translateX(-8px); transition: opacity .18s ease, transform .18s ease, max-height .18s ease; pointer-events: none; }
     .flow-topic.revealed .flow-topic-impact { opacity: 1; transform: translateX(0); }
-    .flow-topic-impact-heading { color: #e8f4ea; font-size: clamp(15px, 1.7vw, 21px); font-weight: 850; line-height: 1.22; overflow-wrap: anywhere; }
-    .flow-topic-impact-subheading { color: #a7c9a7; font-size: clamp(12px, 1.3vw, 16px); line-height: 1.35; overflow-wrap: anywhere; }
+    .flow-topic.revealed .flow-topic-impact { max-height: 120px; }
+    .flow-topic-impact-heading { color: #e8f4ea; font-size: clamp(13px, calc(19px * var(--flow-scale)), 21px); font-weight: 850; line-height: 1.18; overflow-wrap: anywhere; }
+    .flow-topic-impact-subheading { color: #a7c9a7; font-size: clamp(11px, calc(15px * var(--flow-scale)), 16px); line-height: 1.26; overflow-wrap: anywhere; }
     .slides-stage { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; height: 100%; padding: 34px; background: #080a0d; }
     .slide-image { max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid rgba(255,255,255,.08); background: #111; box-shadow: 0 20px 70px rgba(0,0,0,.42); }
     .slide-empty { display: grid; place-items: center; width: min(760px, 82vw); min-height: 300px; border: 1px dashed rgba(255,255,255,.18); border-radius: 8px; color: #aeb8c5; text-align: center; background: rgba(255,255,255,.03); }
@@ -62,10 +63,26 @@
     .bezel::before { content: ""; position: absolute; top: 10px; left: 50%; z-index: 4; width: 94px; height: 26px; border-radius: 999px; background: #000; transform: translateX(-50%); }
     #iphone-video { width: 100%; height: 100%; object-fit: cover; background: #000; }
     .quiet-status { position: absolute; left: 24px; bottom: 24px; z-index: 4; max-width: 520px; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; background: rgba(8, 12, 17, 0.72); color: #c6d0dd; line-height: 1.4; }
-    .toolbar { height: 48px; display: flex; gap: 6px; align-items: stretch; padding: 6px 8px; border-top: 1px solid #333; background: #181818; }
+    .toolbar { height: 82px; display: flex; gap: 6px; align-items: stretch; padding: 7px 8px; border-top: 1px solid #333; background: #181818; }
     .scene-slot { flex: 1; position: relative; min-width: 0; }
-    .scene-button { width: 100%; height: 100%; min-height: 0; border-radius: 6px; font-weight: 700; background: #242424; font-size: 13px; }
+    .scene-button { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; border-radius: 6px; padding: 0; font-weight: 700; background: #242424; font-size: 12px; text-align: left; }
     .scene-button.active { border-color: #53687a; background: #303f4c; }
+    .scene-preview { position: absolute; inset: 0; background: linear-gradient(135deg, #1f252c, #101317); background-position: center; background-size: cover; opacity: .9; }
+    .scene-preview.flow-preview { display: grid; grid-template-rows: auto 1fr; gap: 4px; padding: 6px; background: #151719; }
+    .scene-preview.flow-preview::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 18% 10%, rgba(83,104,122,.36), transparent 45%); }
+    .flow-preview-title { position: relative; width: 70%; height: 7px; border-radius: 999px; background: #eef3f8; }
+    .flow-preview-lines { position: relative; display: grid; gap: 3px; align-content: center; }
+    .flow-preview-lines span { height: 5px; border-radius: 999px; background: rgba(174,184,197,.7); }
+    .flow-preview-lines span:nth-child(2n) { width: 82%; background: rgba(145,209,139,.6); }
+    .scene-preview.url-preview { display: grid; grid-template-rows: 10px 1fr; background: #f5f7fb; }
+    .scene-preview.url-preview::before { content: ""; background: linear-gradient(90deg, #ff766e 0 10px, #ffd166 10px 20px, #7bd88f 20px 30px, #d9e2ef 30px); }
+    .scene-preview.url-preview::after { content: ""; margin: 8px; border-radius: 4px; background: linear-gradient(#31465c 0 8px, transparent 8px 14px, #b5c1ce 14px 19px, transparent 19px 25px, #dfe6ee 25px 100%); }
+    .scene-preview.device-preview { display: grid; place-items: center; background: #070a0e; }
+    .scene-preview.device-preview::after { content: ""; width: 28%; aspect-ratio: 9 / 19.5; border: 3px solid #c8c3ba; border-radius: 10px; background: #050505; box-shadow: 0 6px 20px rgba(0,0,0,.45); }
+    .scene-preview.slides-preview { display: grid; place-items: center; background: #080a0d; }
+    .scene-preview.slides-preview::after { content: ""; width: 70%; aspect-ratio: 16 / 9; border: 1px solid rgba(255,255,255,.18); background: #151d27; box-shadow: 0 5px 18px rgba(0,0,0,.45); }
+    .scene-preview.has-image::after, .scene-preview.has-image::before { display: none; }
+    .scene-button-label { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 16px 7px 5px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.76)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
     .edit-scene-button { position: absolute; right: 5px; top: 4px; width: 22px; height: 20px; min-height: 0; border: 0; border-radius: 5px; padding: 0; background: rgba(255,255,255,0.13); color: #fff; font-size: 13px; line-height: 1; }
     .scene-slot.permission-target .edit-scene-button { outline: 2px solid #d5a842; outline-offset: 1px; }
     .scene-slot.permission-target::before { content: "Screen access needed →"; position: absolute; right: 30px; top: -30px; z-index: 4; padding: 5px 8px; border: 1px solid rgba(213,168,66,0.55); border-radius: 6px; color: #f0d88a; background: rgba(8, 12, 17, 0.9); font-size: 12px; font-weight: 700; white-space: nowrap; pointer-events: none; }
@@ -142,6 +159,15 @@
     .slide-thumb img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 5px; background: #06090d; }
     .slide-thumb-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #cfd7e2; font-size: 12px; font-weight: 800; }
     .slide-thumb-label span:last-child { color: #8793a2; font-weight: 700; }
+    @media (max-width: 1040px), (max-height: 700px) {
+      .app { grid-template-rows: 1fr 72px; min-width: 760px; }
+      .toolbar { height: 72px; }
+      .toolbar-icon-button { flex-basis: 38px; font-size: 16px; }
+      .flow-header { grid-template-columns: minmax(86px, 120px) minmax(0, 1fr) minmax(86px, 120px); }
+      .flow-topic { grid-template-columns: clamp(24px, calc(30px * var(--flow-scale)), 32px) minmax(0, 1fr); align-items: start; }
+      .flow-topic-check { grid-column: 1; grid-row: 2; }
+      .flow-topic-impact { grid-column: 2; grid-row: 2; }
+    }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -518,6 +544,8 @@
     let currentStream = null;
     let permissionPromptSceneId = '';
     let quickTimeDetectTimer = null;
+    let permissionRecoveryTimer = null;
+    let thumbnailRefreshTimer = null;
     let webviewRecoveryTimer = null;
     let currentWorkspacePath = '';
     let globalSettings = loadGlobalSettings();
@@ -540,6 +568,7 @@
     const urlWebviews = new Map();
     const webviewLoadTimers = new Map();
     const webviewHealthTimers = new Map();
+    const scenePreviewCache = new Map();
 
     const toolbar = document.getElementById('toolbar');
     const urlScene = document.getElementById('scene-url');
@@ -668,11 +697,20 @@
 
     function renderFlow(scene) {
       const flow = normalizeFlow(scene.flow);
+      const flowShell = document.querySelector('.flow-scene');
       document.getElementById('flow-title').textContent = flow.title;
       document.getElementById('flow-subtitle').textContent = flow.subtitle;
       renderLogo(document.getElementById('flow-logo-left'), flow.logoLeft, flow.logoLeftPath);
       renderLogo(document.getElementById('flow-logo-right'), flow.logoRight, flow.logoRightPath);
       const topics = flow.topics.slice(0, 6);
+      const longest = topics.reduce((max, topic) => Math.max(max, [topic.heading, topic.subheading, topic.impact, topic.subImpact].join(' ').length), 0);
+      const visibleImpactCount = topics.filter((topic) => topic.revealed && ((topic.impactVisible && topic.impact) || (topic.subImpactVisible && topic.subImpact))).length;
+      const scale = Math.max(.68, Math.min(1, 1 - Math.max(0, topics.length - 4) * .055 - Math.max(0, longest - 90) * .0022 - visibleImpactCount * .025));
+      if (flowShell) {
+        flowShell.style.setProperty('--flow-scale', scale.toFixed(3));
+        flowShell.style.setProperty('--flow-gap', `${Math.max(7, Math.round(14 * scale))}px`);
+        flowShell.style.setProperty('--flow-topic-height', `${Math.max(56, Math.round(78 * scale))}px`);
+      }
       const list = document.getElementById('flow-topics');
       list.innerHTML = '';
       topics.forEach((topic, index) => {
@@ -702,6 +740,7 @@
         `;
         list.appendChild(item);
       });
+      updateScenePreview(scene);
     }
 
     function toggleFlowImpact(index) {
@@ -735,6 +774,7 @@
         slideCounter.classList.add('hidden');
         slideEmpty.classList.remove('hidden');
         showStatus(slidesStatus, 'No slides imported. Open Scene Settings and import .pptx, .ppt, .jpg, or .png files.');
+        updateScenePreview(scene);
         return;
       }
       scene.slideIndex = index;
@@ -744,6 +784,7 @@
       slideCounter.classList.remove('hidden');
       slideEmpty.classList.add('hidden');
       hideStatus(slidesStatus);
+      updateScenePreview(scene);
     }
 
     function slideName(scene, index) {
@@ -885,6 +926,78 @@
       }
     }
 
+    function scenePreviewImage(scene) {
+      if (!scene) return '';
+      if (scenePreviewCache.has(scene.id)) return scenePreviewCache.get(scene.id);
+      if (scene.type === 'slides' && Array.isArray(scene.slidePaths) && scene.slidePaths.length) {
+        const index = Math.max(0, Math.min(Number(scene.slideIndex) || 0, scene.slidePaths.length - 1));
+        return cuevueFileUrl(scene.slidePaths[index]);
+      }
+      if (scene.bg) return cuevueFileUrl(scene.bg);
+      return '';
+    }
+
+    function previewClass(scene) {
+      if (!scene) return '';
+      if (scene.type === 'flow') return 'flow-preview';
+      if (scene.type === 'url') return 'url-preview';
+      if (scene.type === 'device') return 'device-preview';
+      if (scene.type === 'slides') return 'slides-preview';
+      return 'window-preview';
+    }
+
+    function flowPreviewMarkup(scene) {
+      if (!scene || scene.type !== 'flow') return '';
+      const flow = normalizeFlow(scene.flow);
+      const lines = flow.topics.slice(0, 4).map(() => '<span></span>').join('');
+      return `<span class="flow-preview-title"></span><span class="flow-preview-lines">${lines}</span>`;
+    }
+
+    function updateScenePreview(scene, imageUrl) {
+      if (!scene) return;
+      if (imageUrl) scenePreviewCache.set(scene.id, imageUrl);
+      const preview = toolbar.querySelector(`[data-preview-id="${CSS.escape(scene.id)}"]`);
+      if (!preview) return;
+      const resolved = scenePreviewImage(scene);
+      preview.className = ['scene-preview', previewClass(scene), resolved ? 'has-image' : ''].filter(Boolean).join(' ');
+      preview.style.backgroundImage = resolved ? `url("${resolved}")` : '';
+      if (!resolved && scene.type === 'flow') preview.innerHTML = flowPreviewMarkup(scene);
+      else preview.innerHTML = '';
+    }
+
+    async function refreshScenePreviews() {
+      const sourceScenes = scenes.filter((scene) => (scene.type === 'window' || scene.type === 'device') && (scene.sourceId || scene.sourceName));
+      if (sourceScenes.length) {
+        try {
+          const sources = await ipcRenderer.invoke('get-sources');
+          sourceScenes.forEach((scene) => {
+            const source = sources.find((item) => item.id === scene.sourceId)
+              || sources.find((item) => item.name === scene.sourceName)
+              || sources.find((item) => scene.sourceName && item.name.toLowerCase() === scene.sourceName.toLowerCase());
+            if (source && source.thumbnail) updateScenePreview(scene, source.thumbnail);
+          });
+        } catch (_) {}
+      }
+
+      const activeScene = sceneById(activeId);
+      if (activeScene && activeScene.type === 'url') {
+        const webview = urlWebviews.get(activeScene.id);
+        if (webview && typeof webview.capturePage === 'function') {
+          try {
+            const image = await webview.capturePage();
+            if (image && image.toDataURL) updateScenePreview(activeScene, image.toDataURL());
+          } catch (_) {}
+        }
+      }
+
+      scenes.forEach((scene) => updateScenePreview(scene));
+    }
+
+    function scheduleScenePreviewRefresh() {
+      if (thumbnailRefreshTimer) return;
+      thumbnailRefreshTimer = setInterval(refreshScenePreviews, 5000);
+    }
+
     function renderToolbar() {
       const ordered = orderedScenes();
       toolbar.innerHTML = '';
@@ -895,7 +1008,16 @@
 
         const button = document.createElement('button');
         button.className = 'scene-button' + (scene.id === activeId ? ' active' : '');
-        button.textContent = scene.name;
+        button.title = scene.name;
+        button.setAttribute('aria-label', scene.name);
+        const preview = document.createElement('span');
+        preview.className = `scene-preview ${previewClass(scene)}`;
+        preview.dataset.previewId = scene.id;
+        const label = document.createElement('span');
+        label.className = 'scene-button-label';
+        label.textContent = scene.name;
+        button.appendChild(preview);
+        button.appendChild(label);
         button.addEventListener('click', () => showScene(scene.id));
 
         const edit = document.createElement('button');
@@ -909,6 +1031,7 @@
         slot.appendChild(button);
         slot.appendChild(edit);
         toolbar.appendChild(slot);
+        updateScenePreview(scene);
       });
 
       const add = document.createElement('button');
@@ -945,6 +1068,7 @@
       settings.setAttribute('aria-label', 'Global settings');
       settings.addEventListener('click', openGlobalSettings);
       toolbar.appendChild(settings);
+      scheduleScenePreviewRefresh();
     }
 
     function addScene() {
@@ -1098,7 +1222,10 @@
 
       webview.addEventListener('did-start-loading', armTimeout);
       webview.addEventListener('did-stop-loading', clearSceneTimer);
-      webview.addEventListener('did-finish-load', clearSceneTimer);
+      webview.addEventListener('did-finish-load', () => {
+        clearSceneTimer();
+        setTimeout(refreshScenePreviews, 450);
+      });
       webview.addEventListener('dom-ready', () => startWebviewHealthCheck(scene, webview));
       webview.addEventListener('did-fail-load', (event) => {
         clearWebviewRecoveryTimer(scene.id);
@@ -1428,6 +1555,65 @@
       quickTimeDetectTimer = null;
     }
 
+    function stopPermissionRecovery() {
+      if (permissionRecoveryTimer) clearInterval(permissionRecoveryTimer);
+      permissionRecoveryTimer = null;
+    }
+
+    function clearCaptureSource(scene) {
+      if (!scene) return;
+      scene.sourceId = '';
+      scene.sourceName = '';
+      saveScenes();
+      scenePreviewCache.delete(scene.id);
+      updateScenePreview(scene);
+    }
+
+    function isScreenPermissionBlocked(permission) {
+      return permission === 'denied' || permission === 'restricted';
+    }
+
+    function isScreenPermissionPending(permission) {
+      return permission === 'not-determined' || permission === 'unknown';
+    }
+
+    function startPermissionRecovery(scene, options = {}) {
+      stopPermissionRecovery();
+      if (!scene || (scene.type !== 'device' && scene.type !== 'window')) return;
+      permissionPromptSceneId = scene.id;
+      renderToolbar();
+      if (options.clearSource) clearCaptureSource(scene);
+      if (scene.type === 'device') {
+        setQuickTimeStep('recording', 'fail');
+        updateDeviceDiagnostics({
+          permission: options.permission || deviceDiagnostics.permission,
+          selectedSource: scene.sourceName || scene.sourceId || 'none',
+          staleSource: Boolean(options.clearSource),
+          failure: options.message || 'Screen Recording permission is blocked.'
+        });
+      }
+      showStatus(scene.type === 'device' ? deviceStatus : windowStatus, options.message || 'Screen Recording is blocked. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.');
+      permissionRecoveryTimer = setInterval(async () => {
+        let permission = 'unknown';
+        try {
+          permission = await ipcRenderer.invoke('check-screen-permission');
+        } catch (_) {}
+        if (scene.type === 'device') await refreshDeviceDiagnostics({ permission, failure: isScreenPermissionBlocked(permission) ? 'Waiting for Screen Recording permission.' : '' });
+        updatePermissionDetail();
+        if (permission !== 'granted') return;
+        stopPermissionRecovery();
+        permissionPromptSceneId = '';
+        renderToolbar();
+        hideStatus(scene.type === 'device' ? deviceStatus : windowStatus);
+        if (scene.type === 'device') {
+          document.getElementById('selected-device-label').textContent = 'Permission is on. Reconnecting QuickTime capture...';
+          await recoverQuickTimeCapture();
+        } else {
+          await showScene(scene.id);
+        }
+      }, 1500);
+    }
+
     function updateDeviceDiagnostics(patch = {}) {
       deviceDiagnostics = { ...deviceDiagnostics, ...patch };
       if (!deviceDiagnosticsEl) return;
@@ -1486,6 +1672,18 @@
 
     async function detectQuickTimeSource(autoPick = true) {
       await refreshDeviceDiagnostics({ failure: '' });
+      const permission = await ipcRenderer.invoke('check-screen-permission');
+      if (isScreenPermissionBlocked(permission) || isScreenPermissionPending(permission)) {
+        const scene = sceneById(editingId) || sceneById(activeId);
+        startPermissionRecovery(scene, {
+          permission,
+          clearSource: isScreenPermissionBlocked(permission),
+          message: isScreenPermissionBlocked(permission)
+            ? 'Screen Recording permission is blocked. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.'
+            : 'Screen Recording permission is not granted yet. Open Apple Settings if CueVue appears, then return here; CueVue will retry automatically.'
+        });
+        return false;
+      }
       const sources = await getOrderedSources('device');
       updateDeviceDiagnostics({ sources });
       const preferred = sources.find((source) => rankSource(source, 'device') <= 5);
@@ -1498,6 +1696,52 @@
       return true;
     }
 
+    async function recoverQuickTimeCapture() {
+      const scene = sceneById(activeId);
+      if (!scene || scene.type !== 'device') return false;
+      editingId = scene.id;
+      stopQuickTimeDetection();
+      document.getElementById('device-fallback').classList.remove('open');
+      setQuickTimeStep('opened', 'active');
+      setQuickTimeStep('recording', 'active');
+      const status = await ipcRenderer.invoke('quicktime-status');
+      if (!status || !status.running) {
+        const launched = await ipcRenderer.invoke('quicktime-new-movie-recording');
+        await refreshDeviceDiagnostics({ quickTimeLaunched: Boolean(launched && launched.ok), failure: launched && !launched.ok ? launched.message : '' });
+        if (!launched || !launched.ok) {
+          setQuickTimeStep('opened', 'fail');
+          document.getElementById('selected-device-label').textContent = launched && launched.message ? launched.message : 'QuickTime could not be launched.';
+          return false;
+        }
+      }
+      setQuickTimeStep('opened', 'done');
+      let attempts = 0;
+      return new Promise((resolve) => {
+        quickTimeDetectTimer = setInterval(async () => {
+          attempts += 1;
+          try {
+            if (await detectQuickTimeSource(true)) {
+              stopQuickTimeDetection();
+              hideStatus(deviceStatus);
+              resolve(true);
+              return;
+            }
+          } catch (error) {
+            updateDeviceDiagnostics({ failure: error.message || 'QuickTime reconnect failed.' });
+          }
+          document.getElementById('selected-device-label').textContent = 'Reconnecting QuickTime capture. Keep the Movie Recording window open and iPhone selected.';
+          if (attempts >= 24) {
+            stopQuickTimeDetection();
+            setQuickTimeStep('recording', 'fail');
+            document.getElementById('selected-device-label').textContent = 'QuickTime is open, but CueVue cannot see the iPhone window yet. Choose Window Manually or retry.';
+            updateDeviceDiagnostics({ failure: 'QuickTime reconnect timed out.' });
+            showDeviceFallback();
+            resolve(false);
+          }
+        }, 1000);
+      });
+    }
+
     async function scanSources(kind, autoPick = false, showDeviceGrid = false) {
       const grid = kind === 'device'
         ? (showDeviceGrid ? document.getElementById('device-source-grid') : null)
@@ -1505,6 +1749,21 @@
       if (grid) grid.innerHTML = `<p class="muted">Scanning ${kind === 'window' ? 'windows and screens' : 'windows'}...</p>`;
       let sources = [];
       try {
+        if (kind === 'device') {
+          const permission = await ipcRenderer.invoke('check-screen-permission');
+          if (isScreenPermissionBlocked(permission) || isScreenPermissionPending(permission)) {
+            const scene = sceneById(editingId) || sceneById(activeId);
+            startPermissionRecovery(scene, {
+              permission,
+              clearSource: isScreenPermissionBlocked(permission),
+              message: isScreenPermissionBlocked(permission)
+                ? 'Screen Recording permission is blocked. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.'
+                : 'Screen Recording permission is not granted yet. Open Apple Settings if CueVue appears, then return here; CueVue will retry automatically.'
+            });
+            if (grid) grid.innerHTML = '<p class="muted">Waiting for Screen Recording permission. CueVue will rescan automatically.</p>';
+            return;
+          }
+        }
         sources = await getOrderedSources(kind);
         if (kind === 'device') await refreshDeviceDiagnostics({ sources, failure: '' });
       } catch (error) {
@@ -1583,6 +1842,19 @@
       setQuickTimeStep(null);
       document.getElementById('device-fallback').classList.remove('open');
       document.getElementById('selected-device-label').textContent = 'Opening QuickTime and looking for the Movie Recording window...';
+      const permission = await ipcRenderer.invoke('check-screen-permission');
+      if (isScreenPermissionBlocked(permission) || isScreenPermissionPending(permission)) {
+        const scene = sceneById(editingId) || sceneById(activeId);
+        startPermissionRecovery(scene, {
+          permission,
+          clearSource: isScreenPermissionBlocked(permission),
+          message: isScreenPermissionBlocked(permission)
+            ? 'Screen Recording permission is blocked. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.'
+            : 'Screen Recording permission is not granted yet. Open Apple Settings if CueVue appears, then return here; CueVue will retry automatically.'
+        });
+        ipcRenderer.send('open-screen-settings');
+        return;
+      }
       setQuickTimeStep('opened', 'active');
       const result = await ipcRenderer.invoke('quicktime-new-movie-recording');
       await refreshDeviceDiagnostics({ quickTimeLaunched: Boolean(result && result.ok), failure: result && !result.ok ? result.message : '' });
@@ -1631,10 +1903,10 @@
         detail.textContent = 'Permission is on. CueVue can list and capture windows.';
         detail.className = 'permission-ok';
       } else if (permission === 'denied' || permission === 'restricted') {
-        detail.textContent = 'Permission is blocked. Open Apple Settings, turn CueVue on, then quit and reopen CueVue.';
+        detail.textContent = 'Permission is blocked. Open Apple Settings, turn CueVue on, then return here; CueVue will retry automatically.';
         detail.className = 'muted';
       } else {
-        detail.textContent = 'Permission has not been granted yet. Open Apple Settings, turn CueVue on if it appears, then quit and reopen CueVue.';
+        detail.textContent = 'Permission is not granted yet. Open Apple Settings, turn CueVue on if it appears, then return here; CueVue will retry automatically.';
         detail.className = 'muted';
       }
     }
@@ -1673,11 +1945,12 @@
     async function restoreCapture(scene, video, statusEl) {
       if (scene.type === 'device') await refreshDeviceDiagnostics({ failure: '' });
       const permission = await ipcRenderer.invoke('check-screen-permission');
-      if (permission === 'denied' || permission === 'restricted') {
-        if (scene.type === 'device') updateDeviceDiagnostics({ permission, failure: 'Screen Recording permission is blocked.' });
-        if (!scene.sourceId && !scene.sourceName) {
-          showPermissionStatus(scene);
-        }
+      if (isScreenPermissionBlocked(permission) || isScreenPermissionPending(permission)) {
+        const message = isScreenPermissionBlocked(permission)
+          ? 'Screen Recording permission is blocked. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.'
+          : 'Screen Recording permission is not granted yet. Open Apple Settings if CueVue appears, then return here; CueVue will retry automatically.';
+        if (scene.type === 'device') updateDeviceDiagnostics({ permission, failure: message });
+        startPermissionRecovery(scene, { permission, message, clearSource: isScreenPermissionBlocked(permission) });
         return;
       }
       if (scene.id === permissionPromptSceneId) {
@@ -1695,12 +1968,15 @@
         || sources.find((item) => scene.sourceName && item.name.toLowerCase() === scene.sourceName.toLowerCase());
       if (!source) {
         if (scene.type === 'device') {
+          const staleSelection = scene.sourceName || scene.sourceId || '';
           updateDeviceDiagnostics({
             staleSource: Boolean(scene.sourceId || scene.sourceName),
-            selectedSource: scene.sourceName || scene.sourceId || '',
-            failure: 'Saved source is stale or no longer visible. Use Manual Source Picker or Set Up iPhone.'
+            selectedSource: staleSelection,
+            failure: 'Saved source is stale or no longer visible. CueVue cleared it and will look for QuickTime again.'
           });
-          showStatus(statusEl, 'Saved iPhone source is not available. Use Set Up iPhone or Choose Window Manually.');
+          clearCaptureSource(scene);
+          showStatus(statusEl, 'Saved iPhone source is stale. CueVue is looking for QuickTime again.');
+          await recoverQuickTimeCapture();
           return;
         }
         hideStatus(statusEl);
@@ -1754,6 +2030,12 @@
           failure: track ? '' : 'getUserMedia returned no video track.'
         });
         if (!track) throw new Error('Selected source returned no video track.');
+        if (isDeviceVideo) {
+          track.addEventListener('ended', () => {
+            updateDeviceDiagnostics({ videoTrack: false, playback: 'ended', failure: 'Capture track ended. Reconnecting QuickTime capture.' });
+            recoverQuickTimeCapture();
+          }, { once: true });
+        }
         try {
           await video.play();
         } catch (error) {
@@ -1786,14 +2068,26 @@
         return true;
       } catch (error) {
         showStatus(statusEl, `Capture failed: ${error.message || 'Unable to start selected source.'}`);
-        if (video === iphoneVideo) updateDeviceDiagnostics({
-          getUserMedia: 'failed',
-          videoSrcObject: Boolean(video.srcObject),
-          videoTrack: Boolean(video.srcObject && video.srcObject.getVideoTracks && video.srcObject.getVideoTracks()[0]),
-          videoDimensions: `${video.videoWidth || 0} x ${video.videoHeight || 0}`,
-          playback: video.paused ? 'failed' : 'unknown',
-          failure: error.message || 'Unable to start selected source.'
-        });
+        if (video === iphoneVideo) {
+          const permission = await ipcRenderer.invoke('check-screen-permission').catch(() => 'unknown');
+          updateDeviceDiagnostics({
+            permission,
+            getUserMedia: 'failed',
+            videoSrcObject: Boolean(video.srcObject),
+            videoTrack: Boolean(video.srcObject && video.srcObject.getVideoTracks && video.srcObject.getVideoTracks()[0]),
+            videoDimensions: `${video.videoWidth || 0} x ${video.videoHeight || 0}`,
+            playback: video.paused ? 'failed' : 'unknown',
+            failure: error.message || 'Unable to start selected source.'
+          });
+          if (isScreenPermissionBlocked(permission) || /permission|denied|notallowed|not allowed/i.test(error.message || '')) {
+            const scene = sceneById(activeId);
+            startPermissionRecovery(scene, {
+              permission,
+              clearSource: true,
+              message: 'Screen Recording permission blocked capture. Open Apple Settings, enable CueVue, then return here; CueVue will retry automatically.'
+            });
+          }
+        }
         return false;
       }
     }
@@ -2012,15 +2306,13 @@
       stopQuickTimeDetection();
       setQuickTimeStep('recording', 'active');
       document.getElementById('selected-device-label').textContent = 'Retrying QuickTime Movie Recording detection...';
-      try {
-        if (!(await detectQuickTimeSource(true))) {
-          setQuickTimeStep('recording', 'fail');
-          document.getElementById('selected-device-label').textContent = 'No QuickTime Movie Recording window found. Open QuickTime, choose the iPhone, then retry.';
-        }
-      } catch (error) {
-        setQuickTimeStep('recording', 'fail');
-        document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Screen Recording permission may be blocked.'}`;
+      const scene = sceneById(activeId);
+      if (scene && scene.type === 'device') {
+        clearCaptureSource(scene);
+        await recoverQuickTimeCapture();
+        return;
       }
+      await detectQuickTimeSource(true);
     });
     document.getElementById('manual-device-button').addEventListener('click', showDeviceFallback);
     document.getElementById('quicktime-help-button').addEventListener('click', () => ipcRenderer.send('open-url', 'https://support.apple.com/guide/quicktime-player/welcome/mac'));
@@ -2073,6 +2365,9 @@
 
     window.addEventListener('beforeunload', () => {
       stopStream();
+      stopQuickTimeDetection();
+      stopPermissionRecovery();
+      if (thumbnailRefreshTimer) clearInterval(thumbnailRefreshTimer);
       clearAllUrlWebviews();
     });
 

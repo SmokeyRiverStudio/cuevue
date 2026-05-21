@@ -3,6 +3,8 @@ name: Build CueVue DMG Release
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - "v*"
 
@@ -30,6 +32,15 @@ jobs:
       - name: Clean previous build output
         run: rm -rf dist
 
+      - name: Read package version
+        id: pkg
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "dmg=dist/CueVue-${version}-arm64.dmg" >> "$GITHUB_OUTPUT"
+
       - name: Build unsigned Apple Silicon DMG
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -39,19 +50,29 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="$(node -p "require('./package.json').version")"
-          dmg="dist/CueVue-${version}-arm64.dmg"
+          dmg="${{ steps.pkg.outputs.dmg }}"
           ls -lah dist/
           test -f "$dmg"
+          test -s "$dmg"
           ls -lh "$dmg"
 
-      - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload workflow artifact backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: CueVue-${{ steps.pkg.outputs.version }}-arm64-dmg
+          path: ${{ steps.pkg.outputs.dmg }}
+          if-no-files-found: error
+
+      - name: Publish GitHub Release asset
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: CueVue Beta ${{ github.ref_name }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || steps.pkg.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: CueVue Beta ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || steps.pkg.outputs.tag }}
           draft: false
           prerelease: true
-          files: dist/*.dmg
+          make_latest: true
+          fail_on_unmatched_files: true
+          files: ${{ steps.pkg.outputs.dmg }}

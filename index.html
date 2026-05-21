@@ -295,9 +295,9 @@
                   <div class="device-check" id="qt-check-selected">iPhone selected in QuickTime</div>
                   <div class="device-check" id="qt-check-connected">CueVue connected</div>
                 </div>
-                <p class="muted">QuickTime must stay open while CueVue captures it. After CueVue connects, it will try to minimize QuickTime.</p>
+                <p class="muted">QuickTime must stay open while CueVue captures it. If the movie window is unstable, choose any visible window or the full screen below.</p>
                 <div id="device-fallback" class="device-fallback">
-                  <p class="muted">Manual fallback: choose the QuickTime Movie Recording window below.</p>
+                  <p class="muted">Manual fallback: choose QuickTime Movie Recording, an iPhone window, another visible window, or the full screen.</p>
                   <div id="device-source-grid" class="source-grid"></div>
                 </div>
               </div>
@@ -1715,6 +1715,7 @@
       const scan = await queryCaptureSources('device');
       updateDeviceDiagnostics(scan.diagnostics);
       if (!scan.ok) {
+        showDeviceFallback();
         document.getElementById('selected-device-label').textContent = `Could not gather capture sources: ${scan.diagnostics.sourceScanError || 'unknown Electron error'}`;
         return false;
       }
@@ -1722,6 +1723,7 @@
         || scan.sources.find((source) => source.kind === 'window')
         || scan.sources[0];
       if (!preferred) {
+        showDeviceFallback();
         updateDeviceDiagnostics({
           failure: scan.allSources.length
             ? 'Sources were returned, but none could be selected.'
@@ -1784,7 +1786,7 @@
       const grid = kind === 'device'
         ? (showDeviceGrid ? document.getElementById('device-source-grid') : null)
         : document.getElementById('window-source-grid');
-      if (grid) grid.innerHTML = `<p class="muted">Scanning ${kind === 'window' ? 'windows and screens' : 'windows'}...</p>`;
+      if (grid) grid.innerHTML = `<p class="muted">Scanning windows and screens...</p>`;
       let sources = [];
       try {
         const scan = await queryCaptureSources(kind);
@@ -1803,7 +1805,7 @@
       }
       if (grid) grid.innerHTML = '';
       if (!sources.length) {
-        if (grid) grid.innerHTML = `<p class="muted">No ${kind === 'window' ? 'windows or screens' : 'windows'} found. Open the source you want to capture, then refresh.</p>`;
+        if (grid) grid.innerHTML = `<p class="muted">No windows or screens found. Open the source you want to capture, then refresh.</p>`;
         if (kind === 'device') document.getElementById('selected-device-label').textContent = 'Electron returned no capturable windows or screens. QuickTime may be visible but not capturable to CueVue yet.';
         if (kind === 'device') await refreshDeviceDiagnostics({ sources: [], failure: 'desktopCapturer returned no sources.' });
         return;
@@ -1864,6 +1866,57 @@
         setQuickTimeStep('connected', 'done');
         document.getElementById('selected-device-label').textContent = `Connected: ${source.name}. QuickTime must stay open.`;
       }
+    }
+
+    function isZeroDimensionCaptureError(error) {
+      return /0\s*x\s*0|dimensions stayed|black screen|black frame/i.test(error && error.message ? error.message : String(error || ''));
+    }
+
+    async function retryDeviceCaptureAfterBlackFrame(failedSource, video, statusEl, options = {}) {
+      if (options.blackFrameRecovery) return false;
+      const scene = sceneById(activeId);
+      if (!scene || scene.type !== 'device') return false;
+      updateDeviceDiagnostics({
+        staleSource: true,
+        failure: 'Selected source produced a 0 x 0 stream. CueVue is invalidating it and trying a fresh source.'
+      });
+      if (scene.sourceId === failedSource.id) {
+        scene.sourceId = '';
+        saveScenes();
+      }
+      scenePreviewCache.delete(scene.id);
+      updateScenePreview(scene);
+      const scan = await queryCaptureSources('device');
+      updateDeviceDiagnostics(scan.diagnostics);
+      if (!scan.ok || !scan.sources.length) {
+        showDeviceFallback();
+        document.getElementById('selected-device-label').textContent = scan.ok
+          ? 'Capture returned 0 x 0 and Electron has no fallback sources. Choose a source when one appears.'
+          : `Capture returned 0 x 0 and Electron scan failed: ${scan.diagnostics.sourceScanError || 'unknown error'}`;
+        return false;
+      }
+      const failedName = String(failedSource.name || '').toLowerCase();
+      const candidates = scan.sources.filter((source) => source.id !== failedSource.id);
+      const fallback = candidates.find((source) => String(source.name || '').toLowerCase() === failedName)
+        || candidates.find((source) => rankSource(source, 'device') <= 20)
+        || candidates.find((source) => source.kind === 'screen')
+        || candidates[0];
+      if (!fallback) {
+        showDeviceFallback();
+        document.getElementById('selected-device-label').textContent = 'Capture returned 0 x 0. Choose another visible source manually.';
+        return false;
+      }
+      scene.sourceId = fallback.id;
+      scene.sourceName = fallback.name;
+      saveScenes();
+      document.getElementById('device-fallback').classList.add('open');
+      document.getElementById('selected-device-label').textContent = `0 x 0 capture from ${failedSource.name}. Trying fallback: ${fallback.name}.`;
+      updateDeviceDiagnostics({
+        selectedSource: `${fallback.name} [${fallback.id}]`,
+        staleSource: true,
+        failure: `Auto-retrying fallback source after 0 x 0 stream from ${failedSource.name}.`
+      });
+      return startCapture(fallback, video, statusEl, { blackFrameRecovery: true });
     }
 
     async function openQuickTimeAndScan() {
@@ -1947,7 +2000,9 @@
         if (name.includes('iphone')) return 4;
         if (name.includes('ipad')) return 4;
         if (name.includes('quicktime')) return 5;
-        return 100;
+        if (source.kind === 'window') return 30;
+        if (source.kind === 'screen') return 50;
+        return 80;
       }
       if (kind === 'slides') {
         if (name.includes('powerpoint') && name.includes('slide')) return 0;
@@ -2006,7 +2061,7 @@
       await startCapture(source, video, statusEl);
     }
 
-    async function startCapture(source, video, statusEl) {
+    async function startCapture(source, video, statusEl, options = {}) {
       try {
         stopStream();
         const isDeviceVideo = video === iphoneVideo;
@@ -2095,12 +2150,16 @@
             playback: video.paused ? 'failed' : 'unknown',
             failure: error.message || 'Unable to start selected source.'
           });
+          if (isZeroDimensionCaptureError(error)) {
+            const recovered = await retryDeviceCaptureAfterBlackFrame(source, video, statusEl, options);
+            if (recovered) return true;
+          }
+          showDeviceFallback();
           if (/permission|denied|notallowed|not allowed/i.test(error.message || '')) {
-            const scene = sceneById(activeId);
-            startPermissionRecovery(scene, {
-              permission,
-              clearSource: false,
-              message: `getUserMedia failed after source selection: ${error.message || 'permission-related capture error'}`
+            document.getElementById('selected-device-label').textContent = `Source capture failed: ${error.message || 'permission-related capture error'}. Choose another visible source below.`;
+            updateDeviceDiagnostics({
+              permission: `${permission} (macOS API hint; capture failed after manual source selection)`,
+              failure: `getUserMedia failed after source selection: ${error.message || 'permission-related capture error'}`
             });
           }
         }

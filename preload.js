@@ -92,7 +92,7 @@ function injectRuntimeHotfix() {
     .scene-button-label::before { margin-right: 5px; opacity: .95; }
     .scene-button[aria-label="Flow"] .scene-button-label::before { content: "▦"; }
     .scene-button[aria-label*="Demo"] .scene-button-label::before { content: "◎"; }
-    .scene-button[aria-label="iPhone"] .scene-button-label::before { content: "▯"; }
+    .scene-button[aria-label="Mobile Device"] .scene-button-label::before { content: "▯"; }
     .scene-button[aria-label="Slides"] .scene-button-label::before { content: "▣"; }
     .device-diagnostics { box-shadow: 0 16px 50px rgba(0,0,0,.42); }
     .device-diagnostics dd { max-height: 96px; overflow: auto; }
@@ -163,7 +163,7 @@ function injectRuntimeHotfix() {
     manual.__cuevuePatched = true;
     manual.addEventListener('click', () => {
       openFallbackGrid();
-      setText('selected-device-label', 'Manual source picker opened - choose QuickTime, iPhone, Movie Recording, or the visible screen.');
+      setText('selected-device-label', 'Manual source picker opened - choose QuickTime, a mobile mirror window, Movie Recording, or the visible screen.');
       setTimeout(() => {
         if (typeof window.scanSources === 'function') window.scanSources('device', false, true);
       }, 100);
@@ -176,7 +176,7 @@ function injectRuntimeHotfix() {
       if (!label || button.__cuevueLabelPatched) return;
       button.__cuevueLabelPatched = true;
       const text = label.textContent || button.getAttribute('aria-label') || '';
-      if (/iphone|device/i.test(text)) button.setAttribute('aria-label', 'iPhone');
+      if (/iphone|device/i.test(text)) button.setAttribute('aria-label', 'Mobile Device');
       if (/slide/i.test(text)) button.setAttribute('aria-label', 'Slides');
       if (/flow|toc/i.test(text)) button.setAttribute('aria-label', 'Flow');
     });

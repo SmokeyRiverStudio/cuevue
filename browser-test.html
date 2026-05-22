@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CueVue Platform-Agnostic Edition</title>
+  <title>CueVue</title>
   <link rel="icon" href="buildResources/cuevue-logo.png">
   <style>
     :root {
@@ -71,8 +71,7 @@
       gap: 12px;
     }
 
-    .brand img,
-    .mini-logo {
+    .brand img {
       width: 46px;
       height: 46px;
       border-radius: 13px;
@@ -80,17 +79,11 @@
       object-fit: cover;
     }
 
-    .brand-title {
-      display: grid;
-      gap: 2px;
-    }
-
     .brand-title strong {
-      font-size: 17px;
+      font-size: 20px;
       letter-spacing: 0;
     }
 
-    .brand-title span,
     .status span,
     .scene-meta,
     .source-card p {
@@ -135,22 +128,8 @@
     }
 
     .workspace {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 304px;
+      display: block;
       min-height: 0;
-    }
-
-    .side {
-      min-height: 0;
-      padding: 18px;
-      overflow: auto;
-      background:
-        linear-gradient(180deg, rgba(18, 26, 27, 0.82), rgba(10, 15, 16, 0.72)),
-        rgba(13, 19, 20, 0.68);
-    }
-
-    .side {
-      border-left: 1px solid var(--line);
     }
 
     .section-title {
@@ -169,7 +148,7 @@
 
     .source-card {
       display: grid;
-      grid-template-columns: 70px minmax(0, 1fr);
+      grid-template-columns: 58px minmax(0, 1fr);
       align-items: center;
       gap: 12px;
       min-height: 82px;
@@ -194,16 +173,6 @@
         linear-gradient(135deg, rgba(255, 106, 79, 0.9), rgba(121, 216, 207, 0.74)),
         #122021;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
-    }
-
-    .thumb img,
-    .source-thumb img {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      object-fit: cover;
-      z-index: 2;
-      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
     }
 
     .thumb::before,
@@ -297,7 +266,7 @@
       pointer-events: auto;
     }
 
-    .brand-card {
+    .preview-card {
       display: grid;
       justify-items: center;
       gap: 18px;
@@ -310,21 +279,14 @@
       backdrop-filter: blur(12px);
     }
 
-    .brand-card img {
-      width: min(150px, 30vw);
-      height: min(150px, 30vw);
-      border-radius: 30px;
-      object-fit: cover;
-    }
-
-    .brand-card h1 {
+    .preview-card h1 {
       margin: 0;
       font-size: clamp(34px, 6vw, 72px);
       line-height: 0.98;
       letter-spacing: 0;
     }
 
-    .brand-card p {
+    .preview-card p {
       max-width: 560px;
       margin: 0;
       color: var(--muted);
@@ -366,8 +328,87 @@
       min-height: 100%;
     }
 
-    .capture-empty .brand-card {
+    .capture-empty .preview-card {
       width: min(640px, 88%);
+    }
+
+    .scene-glyph {
+      position: relative;
+      width: min(156px, 30vw);
+      height: min(112px, 22vw);
+      border: 1px solid rgba(248, 245, 237, 0.22);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(248, 245, 237, 0.12), transparent 34%),
+        linear-gradient(135deg, rgba(255, 106, 79, 0.46), rgba(121, 216, 207, 0.34));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 22px 48px rgba(0, 0, 0, 0.26);
+    }
+
+    .scene-glyph::before,
+    .scene-glyph::after,
+    .scene-mark::before,
+    .scene-mark::after {
+      content: "";
+      position: absolute;
+      border-radius: 6px;
+      background: rgba(248, 245, 237, 0.72);
+    }
+
+    .scene-glyph.capture::before,
+    .scene-glyph.window::before {
+      inset: 24px 34px;
+      border: 4px solid rgba(248, 245, 237, 0.76);
+      background: transparent;
+    }
+
+    .scene-glyph.capture::after {
+      left: 66px;
+      bottom: 24px;
+      width: 28px;
+      height: 28px;
+      transform: rotate(45deg);
+      background: var(--coral);
+    }
+
+    .scene-glyph.window::after {
+      left: 28px;
+      right: 28px;
+      top: 22px;
+      height: 12px;
+      background: rgba(248, 245, 237, 0.42);
+    }
+
+    .scene-glyph.slides::before {
+      left: 28px;
+      top: 24px;
+      width: 86px;
+      height: 52px;
+      background: rgba(248, 245, 237, 0.78);
+    }
+
+    .scene-glyph.slides::after {
+      right: 26px;
+      bottom: 24px;
+      width: 78px;
+      height: 46px;
+      background: rgba(244, 201, 93, 0.7);
+    }
+
+    .scene-glyph.url::before {
+      left: 24px;
+      right: 24px;
+      top: 28px;
+      height: 12px;
+      background: rgba(248, 245, 237, 0.38);
+    }
+
+    .scene-glyph.url::after {
+      left: 38px;
+      right: 38px;
+      bottom: 30px;
+      height: 36px;
+      border: 4px solid rgba(121, 216, 207, 0.72);
+      background: transparent;
     }
 
     .bottom-menu {
@@ -413,9 +454,26 @@
     }
 
     .scene-tab {
-      grid-template-columns: 40px minmax(70px, 1fr);
+      grid-template-columns: 34px minmax(70px, 1fr);
       gap: 10px;
-      min-width: 148px;
+      min-width: 150px;
+    }
+
+    .scene-item {
+      display: grid;
+      grid-template-columns: minmax(138px, 1fr) auto;
+      gap: 6px;
+      min-width: 214px;
+    }
+
+    .edit-tab {
+      min-height: 62px;
+      padding: 8px 12px;
+      border: 1px solid rgba(248, 245, 237, 0.12);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.045);
+      color: var(--muted);
+      font-weight: 750;
     }
 
     .utility-tab {
@@ -432,17 +490,75 @@
     }
 
     .scene-tab:hover,
+    .edit-tab:hover,
     .utility-tab:hover {
       transform: translateY(-1px);
       border-color: rgba(255, 255, 255, 0.28);
     }
 
-    .tab-thumb {
-      width: 38px;
-      height: 38px;
+    .scene-mark {
+      position: relative;
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
-      object-fit: cover;
+      background: linear-gradient(135deg, rgba(255, 106, 79, 0.9), rgba(121, 216, 207, 0.72));
       box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .scene-mark.flow {
+      background:
+        radial-gradient(circle at 32% 32%, var(--teal) 0 5px, transparent 6px),
+        radial-gradient(circle at 68% 35%, var(--gold) 0 4px, transparent 5px),
+        radial-gradient(circle at 48% 70%, var(--coral) 0 5px, transparent 6px),
+        #1b2c2d;
+    }
+
+    .scene-mark.capture::before,
+    .scene-mark.window::before {
+      inset: 7px 6px 9px;
+      border: 2px solid rgba(248, 245, 237, 0.72);
+      background: transparent;
+    }
+
+    .scene-mark.window::after {
+      left: 6px;
+      right: 6px;
+      top: 7px;
+      height: 5px;
+      background: rgba(248, 245, 237, 0.46);
+    }
+
+    .scene-mark.slides::before {
+      left: 7px;
+      top: 8px;
+      width: 16px;
+      height: 11px;
+      background: rgba(248, 245, 237, 0.74);
+    }
+
+    .scene-mark.slides::after {
+      right: 7px;
+      bottom: 8px;
+      width: 16px;
+      height: 11px;
+      background: rgba(244, 201, 93, 0.7);
+    }
+
+    .scene-mark.url::before {
+      left: 7px;
+      right: 7px;
+      top: 9px;
+      height: 4px;
+      background: rgba(248, 245, 237, 0.46);
+    }
+
+    .scene-mark.url::after {
+      left: 9px;
+      right: 9px;
+      bottom: 8px;
+      height: 10px;
+      border: 2px solid rgba(121, 216, 207, 0.72);
+      background: transparent;
     }
 
     .tab-label {
@@ -484,6 +600,75 @@
       backdrop-filter: blur(18px);
     }
 
+    .editor-panel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      bottom: 20px;
+      z-index: 12;
+      display: none;
+      width: min(420px, calc(100% - 40px));
+      padding: 16px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(10, 15, 16, 0.97);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .editor-panel.open {
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .editor-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .editor-head strong {
+      font-size: 16px;
+    }
+
+    .field-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid rgba(248, 245, 237, 0.14);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.075);
+      color: var(--ink);
+      font: inherit;
+      padding: 10px 11px;
+    }
+
+    .field textarea {
+      min-height: 82px;
+      resize: vertical;
+    }
+
     .settings-panel.open {
       display: grid;
       gap: 10px;
@@ -523,8 +708,19 @@
     }
 
     .source-thumb {
-      width: 70px;
+      width: 58px;
       height: 54px;
+    }
+
+    .stage-status {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      z-index: 8;
+      width: min(340px, calc(100% - 36px));
+      margin: 0;
+      background: rgba(9, 14, 15, 0.78);
+      backdrop-filter: blur(14px);
     }
 
     .source-card p {
@@ -532,14 +728,6 @@
     }
 
     @media (max-width: 1020px) {
-      .workspace {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .side {
-        display: none;
-      }
-
       .bottom-menu {
         grid-template-columns: 1fr;
       }
@@ -574,7 +762,7 @@
       }
 
       .stage,
-      .side {
+      .source-card {
         border: 0;
       }
 
@@ -594,8 +782,7 @@
       <div class="brand" aria-label="CueVue">
         <img src="buildResources/cuevue-logo.png" alt="CueVue logo">
         <div class="brand-title">
-          <strong>CueVue Platform-Agnostic Edition</strong>
-          <span>Browser control room for screen, QuickTime, and live windows</span>
+          <strong>CueVue</strong>
         </div>
       </div>
       <div class="top-actions">
@@ -609,13 +796,47 @@
       <section class="stage-wrap">
         <div class="stage" id="stage">
           <video class="capture-video" id="captureVideo" autoplay muted playsinline></video>
+          <div class="status stage-status">
+            <strong id="captureState">Ready</strong>
+            <span id="captureDetail">Browser capture uses the native source chooser over HTTPS.</span>
+          </div>
           <section class="scene-panel active" data-panel="capture">
             <div class="capture-empty" id="captureEmpty">
-              <div class="brand-card">
-                <img src="buildResources/cuevue-logo.png" alt="">
+              <div class="preview-card">
+                <div class="scene-glyph capture" aria-hidden="true"></div>
                 <h1>Choose a Capture Source</h1>
                 <p>Select Entire Screen, the QuickTime Movie Recording window, or any visible window from the browser picker.</p>
-                <button class="button primary" type="button" data-start-capture>Open Browser Picker</button>
+                <div class="source-list">
+                  <button class="source-card" type="button" data-start-capture>
+                    <span class="source-thumb window"></span>
+                    <span><strong>QuickTime Window</strong><p>Choose Movie Recording when visible.</p></span>
+                  </button>
+                  <button class="source-card" type="button" data-start-capture>
+                    <span class="source-thumb screen"></span>
+                    <span><strong>Entire Screen</strong><p>Select the full display for reliable fallback.</p></span>
+                  </button>
+                  <button class="source-card" type="button" data-start-capture>
+                    <span class="source-thumb"></span>
+                    <span><strong>Any Visible Window</strong><p>Manual picker for browser-safe capture.</p></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="scene-panel" data-panel="window">
+            <div class="preview-card">
+              <div class="scene-glyph window" aria-hidden="true"></div>
+              <h1>Window Capture</h1>
+              <p>Use the browser picker to select a single app window, presentation window, or shared display area.</p>
+              <div class="source-list">
+                <button class="source-card" type="button" data-start-capture>
+                  <span class="source-thumb window"></span>
+                  <span><strong>Choose Window</strong><p>Pick any visible window from the native browser picker.</p></span>
+                </button>
+                <button class="source-card" type="button" data-start-capture>
+                  <span class="source-thumb screen"></span>
+                  <span><strong>Fallback Screen</strong><p>Select the full display if a window is blocked.</p></span>
+                </button>
               </div>
             </div>
           </section>
@@ -627,43 +848,70 @@
             </div>
           </section>
           <section class="scene-panel" data-panel="slides">
-            <div class="brand-card">
-              <img src="buildResources/cuevue-logo.png" alt="">
+            <div class="preview-card">
+              <div class="scene-glyph slides" aria-hidden="true"></div>
               <h1>Slides</h1>
-              <p>Branded slide preview state for demo mode.</p>
+              <p>Stage slide content with a clean operator preview and quick switching from the bottom scene bar.</p>
             </div>
           </section>
           <section class="scene-panel" data-panel="url">
-            <div class="brand-card">
-              <img src="buildResources/cuevue-logo.png" alt="">
+            <div class="preview-card">
+              <div class="scene-glyph url" aria-hidden="true"></div>
               <h1>Live URL</h1>
-              <p>Branded browser source preview state for shared links and live pages.</p>
+              <p>Prepare a live web source for demos, references, or browser-first CueVue scenes.</p>
             </div>
           </section>
           <div class="settings-panel" id="settingsPanel" aria-live="polite">
-            <strong>CueVue Platform-Agnostic Edition</strong>
+            <strong>CueVue Browser Runtime</strong>
             <p>Browser runtime first. Use the native picker for screen, QuickTime, or any visible window, then keep scene control in the operator bar.</p>
+          </div>
+          <div class="editor-panel" id="editorPanel" aria-live="polite">
+            <div class="editor-head">
+              <strong id="editorTitle">Edit Scene</strong>
+              <button class="button" id="closeEditorBtn" type="button">Close</button>
+            </div>
+            <div class="field-grid" id="editorFields"></div>
+            <button class="button primary" id="editorCaptureBtn" type="button">Choose Capture Source</button>
           </div>
         </div>
 
         <div class="bottom-menu" aria-label="CueVue scene and utility controls">
           <nav class="scene-nav" aria-label="Scenes">
-            <button class="scene-tab" type="button" data-scene="flow">
-              <img class="tab-thumb" src="buildResources/cuevue-logo.png" alt="">
-              <span class="tab-label"><strong>Flow</strong><span>Concept map</span></span>
-            </button>
-            <button class="scene-tab active" type="button" data-scene="capture">
-              <img class="tab-thumb" src="buildResources/cuevue-logo.png" alt="">
-              <span class="tab-label"><strong>iPhone</strong><span>QuickTime or screen</span></span>
-            </button>
-            <button class="scene-tab" type="button" data-scene="slides">
-              <img class="tab-thumb" src="buildResources/cuevue-logo.png" alt="">
-              <span class="tab-label"><strong>Slides</strong><span>Deck preview</span></span>
-            </button>
-            <button class="scene-tab" type="button" data-scene="url">
-              <img class="tab-thumb" src="buildResources/cuevue-logo.png" alt="">
-              <span class="tab-label"><strong>URL Live</strong><span>Web source</span></span>
-            </button>
+            <div class="scene-item">
+              <button class="scene-tab" type="button" data-scene="flow">
+                <span class="scene-mark flow" aria-hidden="true"></span>
+                <span class="tab-label"><strong>Flow</strong><span>Concept map</span></span>
+              </button>
+              <button class="edit-tab" type="button" data-edit-scene="flow">Edit</button>
+            </div>
+            <div class="scene-item">
+              <button class="scene-tab" type="button" data-scene="url">
+                <span class="scene-mark url" aria-hidden="true"></span>
+                <span class="tab-label"><strong>URL Live</strong><span>Web source</span></span>
+              </button>
+              <button class="edit-tab" type="button" data-edit-scene="url">Edit</button>
+            </div>
+            <div class="scene-item">
+              <button class="scene-tab" type="button" data-scene="window">
+                <span class="scene-mark window" aria-hidden="true"></span>
+                <span class="tab-label"><strong>Window</strong><span>App capture</span></span>
+              </button>
+              <button class="edit-tab" type="button" data-edit-scene="window">Edit</button>
+            </div>
+            <div class="scene-item">
+              <button class="scene-tab active" type="button" data-scene="capture">
+                <span class="scene-mark capture" aria-hidden="true"></span>
+                <span class="tab-label"><strong>iPhone</strong><span>QuickTime</span></span>
+              </button>
+              <button class="edit-tab" type="button" data-edit-scene="capture">Edit</button>
+            </div>
+            <div class="scene-item">
+              <button class="scene-tab" type="button" data-scene="slides">
+                <span class="scene-mark slides" aria-hidden="true"></span>
+                <span class="tab-label"><strong>Slides</strong><span>Deck preview</span></span>
+              </button>
+              <button class="edit-tab" type="button" data-edit-scene="slides">Edit</button>
+            </div>
           </nav>
           <div class="utility-nav" aria-label="Utilities">
             <button class="utility-tab" id="settingsBtn" type="button">Settings</button>
@@ -672,27 +920,6 @@
         </div>
       </section>
 
-      <aside class="side">
-        <div class="status">
-          <strong id="captureState">Ready</strong>
-          <span id="captureDetail">Browser capture uses the native source chooser over HTTPS.</span>
-        </div>
-        <p class="section-title">Capture Sources</p>
-        <div class="source-list">
-          <button class="source-card" type="button" data-start-capture>
-            <span class="source-thumb screen"><img src="buildResources/cuevue-logo.png" alt=""></span>
-            <span><strong>Entire Screen</strong><p>Select the full display for reliable fallback.</p></span>
-          </button>
-          <button class="source-card" type="button" data-start-capture>
-            <span class="source-thumb window"><img src="buildResources/cuevue-logo.png" alt=""></span>
-            <span><strong>QuickTime Window</strong><p>Choose Movie Recording when visible.</p></span>
-          </button>
-          <button class="source-card" type="button" data-start-capture>
-            <span class="source-thumb"><img src="buildResources/cuevue-logo.png" alt=""></span>
-            <span><strong>Any Visible Window</strong><p>Manual picker for browser-safe capture.</p></span>
-          </button>
-        </div>
-      </aside>
     </section>
   </main>
 
@@ -707,12 +934,81 @@
     const settingsBtn = document.getElementById("settingsBtn");
     const refreshBtn = document.getElementById("refreshBtn");
     const settingsPanel = document.getElementById("settingsPanel");
+    const editorPanel = document.getElementById("editorPanel");
+    const editorTitle = document.getElementById("editorTitle");
+    const editorFields = document.getElementById("editorFields");
+    const closeEditorBtn = document.getElementById("closeEditorBtn");
+    const editorCaptureBtn = document.getElementById("editorCaptureBtn");
     let activeStream = null;
     let blackFrameTimer = null;
+
+    const editorConfig = {
+      flow: {
+        title: "Flow",
+        fields: [
+          ["Title", "Flow"],
+          ["Layout", "Three-step impact map"],
+          ["Notes", "Idea, impact, and next step"]
+        ]
+      },
+      url: {
+        title: "URL Live",
+        fields: [
+          ["Title", "URL Live"],
+          ["URL", "https://"],
+          ["Layout", "Browser preview"],
+          ["Notes", "Live web source"]
+        ]
+      },
+      window: {
+        title: "Window Capture",
+        fields: [
+          ["Source", "Visible app window"],
+          ["Title", "Window Capture"],
+          ["Capture Source", "Browser picker"],
+          ["Layout", "Contain"]
+        ]
+      },
+      capture: {
+        title: "iPhone Capture",
+        fields: [
+          ["Source", "QuickTime Movie Recording"],
+          ["Title", "iPhone Capture"],
+          ["Capture Source", "QuickTime window or entire screen"],
+          ["Notes", "Use full-screen fallback if window capture is blocked"]
+        ]
+      },
+      slides: {
+        title: "Slides",
+        fields: [
+          ["Source", "Slide deck"],
+          ["Title", "Slides"],
+          ["Layout", "Deck preview"],
+          ["Notes", "Presentation scene"]
+        ]
+      }
+    };
 
     function setStatus(label, detail) {
       captureState.textContent = label;
       captureDetail.textContent = detail;
+    }
+
+    function openEditor(scene) {
+      const config = editorConfig[scene] || editorConfig.capture;
+      editorTitle.textContent = `Edit ${config.title}`;
+      editorFields.innerHTML = config.fields.map(([label, value]) => {
+        const id = `editor-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+        if (label === "Notes") {
+          return `<div class="field"><label for="${id}">${label}</label><textarea id="${id}">${value}</textarea></div>`;
+        }
+        if (label === "Layout" || label === "Capture Source" || label === "Source") {
+          return `<div class="field"><label for="${id}">${label}</label><input id="${id}" value="${value}"></div>`;
+        }
+        return `<div class="field"><label for="${id}">${label}</label><input id="${id}" value="${value}"></div>`;
+      }).join("");
+      editorPanel.classList.add("open");
+      settingsPanel.classList.remove("open");
     }
 
     function stopCapture() {
@@ -779,7 +1075,12 @@
     refreshBtn.addEventListener("click", startCapture);
     settingsBtn.addEventListener("click", () => {
       settingsPanel.classList.toggle("open");
+      editorPanel.classList.remove("open");
     });
+    closeEditorBtn.addEventListener("click", () => {
+      editorPanel.classList.remove("open");
+    });
+    editorCaptureBtn.addEventListener("click", startCapture);
     fullscreenBtn.addEventListener("click", () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -793,6 +1094,11 @@
         const scene = button.dataset.scene;
         document.querySelectorAll(".scene-tab").forEach((tab) => tab.classList.toggle("active", tab === button));
         document.querySelectorAll(".scene-panel").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === scene));
+      });
+    });
+    document.querySelectorAll("[data-edit-scene]").forEach((button) => {
+      button.addEventListener("click", () => {
+        openEditor(button.dataset.editScene);
       });
     });
   </script>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CueVue Browser Test</title>
+  <title>CueVue Platform-Agnostic Edition</title>
   <link rel="icon" href="buildResources/cuevue-logo.png">
   <style>
     :root {
@@ -29,9 +29,9 @@
       height: 100%;
       margin: 0;
       background:
-        radial-gradient(circle at 18% 10%, rgba(121, 216, 207, 0.18), transparent 30%),
-        radial-gradient(circle at 84% 18%, rgba(255, 106, 79, 0.16), transparent 30%),
-        linear-gradient(145deg, #101617, #172121 48%, #0e1516);
+        radial-gradient(circle at 12% 8%, rgba(121, 216, 207, 0.12), transparent 28%),
+        radial-gradient(circle at 82% 14%, rgba(255, 106, 79, 0.1), transparent 30%),
+        linear-gradient(145deg, #060a0b, #11191a 45%, #0c1213);
       color: var(--ink);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       overflow: hidden;
@@ -55,10 +55,13 @@
       align-items: center;
       justify-content: space-between;
       gap: 18px;
-      padding: 14px 22px;
+      padding: 12px 22px;
       border-bottom: 1px solid var(--line);
-      background: rgba(11, 16, 17, 0.78);
-      backdrop-filter: blur(18px);
+      background:
+        linear-gradient(180deg, rgba(20, 29, 30, 0.94), rgba(9, 14, 15, 0.88)),
+        rgba(9, 14, 15, 0.92);
+      box-shadow: 0 16px 46px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(20px);
     }
 
     .brand {
@@ -83,7 +86,7 @@
     }
 
     .brand-title strong {
-      font-size: 18px;
+      font-size: 17px;
       letter-spacing: 0;
     }
 
@@ -133,20 +136,17 @@
 
     .workspace {
       display: grid;
-      grid-template-columns: 268px minmax(0, 1fr) 304px;
+      grid-template-columns: minmax(0, 1fr) 304px;
       min-height: 0;
     }
 
-    .rail,
     .side {
       min-height: 0;
       padding: 18px;
       overflow: auto;
-      background: rgba(13, 19, 20, 0.68);
-    }
-
-    .rail {
-      border-right: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(18, 26, 27, 0.82), rgba(10, 15, 16, 0.72)),
+        rgba(13, 19, 20, 0.68);
     }
 
     .side {
@@ -162,16 +162,14 @@
       text-transform: uppercase;
     }
 
-    .scene-list,
     .source-list {
       display: grid;
       gap: 12px;
     }
 
-    .scene-tab,
     .source-card {
       display: grid;
-      grid-template-columns: 76px minmax(0, 1fr);
+      grid-template-columns: 70px minmax(0, 1fr);
       align-items: center;
       gap: 12px;
       min-height: 82px;
@@ -181,11 +179,6 @@
       background: rgba(248, 245, 237, 0.055);
       text-align: left;
       transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
-    }
-
-    .scene-tab.active {
-      background: rgba(255, 106, 79, 0.13);
-      border-color: rgba(255, 106, 79, 0.62);
     }
 
     .thumb,
@@ -251,11 +244,6 @@
         linear-gradient(135deg, #203231, #79d8cf);
     }
 
-    .scene-copy {
-      min-width: 0;
-    }
-
-    .scene-copy strong,
     .source-card strong {
       display: block;
       overflow: hidden;
@@ -267,7 +255,7 @@
 
     .stage-wrap {
       display: grid;
-      grid-template-rows: minmax(0, 1fr) 88px;
+      grid-template-rows: minmax(0, 1fr) auto;
       min-width: 0;
       min-height: 0;
     }
@@ -382,38 +370,134 @@
       width: min(640px, 88%);
     }
 
-    .filmstrip {
+    .bottom-menu {
       display: grid;
-      grid-template-columns: repeat(4, minmax(120px, 1fr));
-      gap: 12px;
-      padding: 0 18px 18px;
-      min-width: 0;
-    }
-
-    .film-card {
-      display: flex;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
-      gap: 10px;
+      gap: 14px;
       min-width: 0;
+      margin: 0 18px 18px;
       padding: 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: rgba(248, 245, 237, 0.06);
+      background:
+        linear-gradient(180deg, rgba(30, 42, 43, 0.94), rgba(11, 17, 18, 0.94)),
+        rgba(11, 17, 18, 0.94);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
     }
 
-    .film-card img {
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
+    .scene-nav,
+    .utility-nav {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .scene-nav {
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .scene-tab,
+    .utility-tab {
+      display: grid;
+      align-items: center;
+      min-height: 62px;
+      padding: 8px 14px;
+      border: 1px solid rgba(248, 245, 237, 0.12);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.055);
+      text-align: left;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .scene-tab {
+      grid-template-columns: 40px minmax(70px, 1fr);
+      gap: 10px;
+      min-width: 148px;
+    }
+
+    .utility-tab {
+      min-width: 92px;
+      justify-items: center;
+      color: var(--muted);
+      font-weight: 750;
+    }
+
+    .scene-tab.active {
+      background: linear-gradient(180deg, rgba(255, 106, 79, 0.2), rgba(255, 106, 79, 0.08));
+      border-color: rgba(255, 106, 79, 0.66);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    .scene-tab:hover,
+    .utility-tab:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .tab-thumb {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
       object-fit: cover;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
     }
 
-    .film-card span {
+    .tab-label {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .tab-label strong {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: 12px;
+      color: var(--ink);
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+
+    .tab-label span {
+      overflow: hidden;
       color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .settings-panel {
+      position: absolute;
+      right: 20px;
+      bottom: 104px;
+      z-index: 10;
+      display: none;
+      width: min(320px, calc(100% - 40px));
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(12, 18, 19, 0.96);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .settings-panel.open {
+      display: grid;
+      gap: 10px;
+    }
+
+    .settings-panel strong {
+      font-size: 14px;
+    }
+
+    .settings-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .status {
@@ -449,15 +533,23 @@
 
     @media (max-width: 1020px) {
       .workspace {
-        grid-template-columns: 220px minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr);
       }
 
       .side {
         display: none;
       }
 
-      .filmstrip {
-        grid-template-columns: repeat(2, minmax(120px, 1fr));
+      .bottom-menu {
+        grid-template-columns: 1fr;
+      }
+
+      .utility-nav {
+        justify-content: stretch;
+      }
+
+      .utility-tab {
+        flex: 1;
       }
     }
 
@@ -481,7 +573,6 @@
         margin-bottom: 12px;
       }
 
-      .rail,
       .stage,
       .side {
         border: 0;
@@ -503,8 +594,8 @@
       <div class="brand" aria-label="CueVue">
         <img src="buildResources/cuevue-logo.png" alt="CueVue logo">
         <div class="brand-title">
-          <strong>CueVue Browser Test</strong>
-          <span>Screen, QuickTime, or visible window capture</span>
+          <strong>CueVue Platform-Agnostic Edition</strong>
+          <span>Browser control room for screen, QuickTime, and live windows</span>
         </div>
       </div>
       <div class="top-actions">
@@ -515,28 +606,6 @@
     </header>
 
     <section class="workspace">
-      <aside class="rail">
-        <p class="section-title">Scenes</p>
-        <div class="scene-list" id="sceneList">
-          <button class="scene-tab active" type="button" data-scene="capture">
-            <span class="thumb device"><img src="buildResources/cuevue-logo.png" alt=""></span>
-            <span class="scene-copy"><strong>iPhone Capture</strong><span class="scene-meta">QuickTime or screen</span></span>
-          </button>
-          <button class="scene-tab" type="button" data-scene="flow">
-            <span class="thumb flow"><img src="buildResources/cuevue-logo.png" alt=""></span>
-            <span class="scene-copy"><strong>Flow</strong><span class="scene-meta">Concept map</span></span>
-          </button>
-          <button class="scene-tab" type="button" data-scene="slides">
-            <span class="thumb slides"><img src="buildResources/cuevue-logo.png" alt=""></span>
-            <span class="scene-copy"><strong>Slides</strong><span class="scene-meta">Deck preview</span></span>
-          </button>
-          <button class="scene-tab" type="button" data-scene="url">
-            <span class="thumb url"><img src="buildResources/cuevue-logo.png" alt=""></span>
-            <span class="scene-copy"><strong>URL Live</strong><span class="scene-meta">Web source</span></span>
-          </button>
-        </div>
-      </aside>
-
       <section class="stage-wrap">
         <div class="stage" id="stage">
           <video class="capture-video" id="captureVideo" autoplay muted playsinline></video>
@@ -571,13 +640,35 @@
               <p>Branded browser source preview state for shared links and live pages.</p>
             </div>
           </section>
+          <div class="settings-panel" id="settingsPanel" aria-live="polite">
+            <strong>CueVue Platform-Agnostic Edition</strong>
+            <p>Browser runtime first. Use the native picker for screen, QuickTime, or any visible window, then keep scene control in the operator bar.</p>
+          </div>
         </div>
 
-        <div class="filmstrip" aria-label="Branded scene thumbnails">
-          <div class="film-card"><img src="buildResources/cuevue-logo.png" alt=""><span>iPhone / QuickTime</span></div>
-          <div class="film-card"><img src="buildResources/cuevue-logo.png" alt=""><span>Flow scene</span></div>
-          <div class="film-card"><img src="buildResources/cuevue-logo.png" alt=""><span>Slides preview</span></div>
-          <div class="film-card"><img src="buildResources/cuevue-logo.png" alt=""><span>URL live source</span></div>
+        <div class="bottom-menu" aria-label="CueVue scene and utility controls">
+          <nav class="scene-nav" aria-label="Scenes">
+            <button class="scene-tab" type="button" data-scene="flow">
+              <img class="tab-thumb" src="buildResources/cuevue-logo.png" alt="">
+              <span class="tab-label"><strong>Flow</strong><span>Concept map</span></span>
+            </button>
+            <button class="scene-tab active" type="button" data-scene="capture">
+              <img class="tab-thumb" src="buildResources/cuevue-logo.png" alt="">
+              <span class="tab-label"><strong>iPhone</strong><span>QuickTime or screen</span></span>
+            </button>
+            <button class="scene-tab" type="button" data-scene="slides">
+              <img class="tab-thumb" src="buildResources/cuevue-logo.png" alt="">
+              <span class="tab-label"><strong>Slides</strong><span>Deck preview</span></span>
+            </button>
+            <button class="scene-tab" type="button" data-scene="url">
+              <img class="tab-thumb" src="buildResources/cuevue-logo.png" alt="">
+              <span class="tab-label"><strong>URL Live</strong><span>Web source</span></span>
+            </button>
+          </nav>
+          <div class="utility-nav" aria-label="Utilities">
+            <button class="utility-tab" id="settingsBtn" type="button">Settings</button>
+            <button class="utility-tab" id="refreshBtn" type="button">Refresh</button>
+          </div>
         </div>
       </section>
 
@@ -613,6 +704,9 @@
     const captureBtn = document.getElementById("captureBtn");
     const stopBtn = document.getElementById("stopBtn");
     const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const settingsBtn = document.getElementById("settingsBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const settingsPanel = document.getElementById("settingsPanel");
     let activeStream = null;
     let blackFrameTimer = null;
 
@@ -682,6 +776,10 @@
     });
     captureBtn.addEventListener("click", startCapture);
     stopBtn.addEventListener("click", stopCapture);
+    refreshBtn.addEventListener("click", startCapture);
+    settingsBtn.addEventListener("click", () => {
+      settingsPanel.classList.toggle("open");
+    });
     fullscreenBtn.addEventListener("click", () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});

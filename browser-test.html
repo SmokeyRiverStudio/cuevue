@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CueVue Browser Test</title>
+  <link rel="icon" href="buildResources/cuevue-logo.png">
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f8f5ed;
+      --muted: #a9b0ae;
+      --line: rgba(248, 245, 237, 0.14);
+      --panel: rgba(18, 25, 26, 0.94);
+      --panel-soft: rgba(31, 44, 45, 0.88);
+      --coral: #ff6a4f;
+      --teal: #79d8cf;
+      --gold: #f4c95d;
+      --green: #9bd67d;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background:
+        radial-gradient(circle at 18% 10%, rgba(121, 216, 207, 0.18), transparent 30%),
+        radial-gradient(circle at 84% 18%, rgba(255, 106, 79, 0.16), transparent 30%),
+        linear-gradient(145deg, #101617, #172121 48%, #0e1516);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    button {
+      border: 0;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: 74px minmax(0, 1fr);
+      height: 100%;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(11, 16, 17, 0.78);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      min-width: 220px;
+      gap: 12px;
+    }
+
+    .brand img,
+    .mini-logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 13px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
+      object-fit: cover;
+    }
+
+    .brand-title {
+      display: grid;
+      gap: 2px;
+    }
+
+    .brand-title strong {
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .brand-title span,
+    .status span,
+    .scene-meta,
+    .source-card p {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.09);
+      border: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    .button.primary {
+      color: #111717;
+      background: linear-gradient(135deg, var(--coral), #ff886e);
+      border-color: rgba(255, 255, 255, 0.18);
+      font-weight: 700;
+    }
+
+    .button:hover,
+    .scene-tab:hover,
+    .source-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 268px minmax(0, 1fr) 304px;
+      min-height: 0;
+    }
+
+    .rail,
+    .side {
+      min-height: 0;
+      padding: 18px;
+      overflow: auto;
+      background: rgba(13, 19, 20, 0.68);
+    }
+
+    .rail {
+      border-right: 1px solid var(--line);
+    }
+
+    .side {
+      border-left: 1px solid var(--line);
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .scene-list,
+    .source-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .scene-tab,
+    .source-card {
+      display: grid;
+      grid-template-columns: 76px minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      min-height: 82px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.055);
+      text-align: left;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .scene-tab.active {
+      background: rgba(255, 106, 79, 0.13);
+      border-color: rgba(255, 106, 79, 0.62);
+    }
+
+    .thumb,
+    .source-thumb {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 76px;
+      height: 58px;
+      overflow: hidden;
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(255, 106, 79, 0.9), rgba(121, 216, 207, 0.74)),
+        #122021;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+    }
+
+    .thumb img,
+    .source-thumb img {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      object-fit: cover;
+      z-index: 2;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+    }
+
+    .thumb::before,
+    .source-thumb::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border: 3px solid rgba(255, 255, 255, 0.5);
+      border-radius: 7px;
+    }
+
+    .thumb.flow {
+      background:
+        radial-gradient(circle at 25% 25%, var(--teal) 0 9px, transparent 10px),
+        radial-gradient(circle at 72% 30%, var(--gold) 0 7px, transparent 8px),
+        radial-gradient(circle at 44% 72%, var(--coral) 0 10px, transparent 11px),
+        linear-gradient(135deg, #1a2929, #26413f);
+    }
+
+    .thumb.device,
+    .source-thumb.window {
+      background:
+        linear-gradient(90deg, transparent 28px, rgba(255, 255, 255, 0.52) 28px 31px, transparent 31px),
+        linear-gradient(135deg, rgba(255, 106, 79, 0.92), rgba(121, 216, 207, 0.72));
+    }
+
+    .thumb.slides {
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.32) 0 2px, transparent 2px 9px),
+        linear-gradient(135deg, #273a38, #f4c95d);
+      background-size: 10px 100%, auto;
+    }
+
+    .thumb.url,
+    .source-thumb.screen {
+      background:
+        linear-gradient(180deg, rgba(248, 245, 237, 0.24) 0 14px, transparent 14px),
+        linear-gradient(135deg, #203231, #79d8cf);
+    }
+
+    .scene-copy {
+      min-width: 0;
+    }
+
+    .scene-copy strong,
+    .source-card strong {
+      display: block;
+      overflow: hidden;
+      color: var(--ink);
+      font-size: 14px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stage-wrap {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) 88px;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .stage {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      margin: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #091011;
+      box-shadow: var(--shadow);
+    }
+
+    .capture-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #050909;
+    }
+
+    .scene-panel {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 34px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    .scene-panel.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .brand-card {
+      display: grid;
+      justify-items: center;
+      gap: 18px;
+      width: min(760px, 86vw);
+      padding: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background: rgba(18, 27, 28, 0.78);
+      text-align: center;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand-card img {
+      width: min(150px, 30vw);
+      height: min(150px, 30vw);
+      border-radius: 30px;
+      object-fit: cover;
+    }
+
+    .brand-card h1 {
+      margin: 0;
+      font-size: clamp(34px, 6vw, 72px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .brand-card p {
+      max-width: 560px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .flow-board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(150px, 1fr));
+      gap: clamp(12px, 3vw, 26px);
+      width: min(920px, 92%);
+      align-items: center;
+    }
+
+    .flow-node {
+      min-height: 126px;
+      padding: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.08);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.24);
+    }
+
+    .flow-node strong {
+      display: block;
+      margin-bottom: 10px;
+      font-size: clamp(18px, 2vw, 28px);
+    }
+
+    .flow-node span {
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .capture-empty {
+      display: grid;
+      place-items: center;
+      min-height: 100%;
+    }
+
+    .capture-empty .brand-card {
+      width: min(640px, 88%);
+    }
+
+    .filmstrip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 12px;
+      padding: 0 18px 18px;
+      min-width: 0;
+    }
+
+    .film-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.06);
+    }
+
+    .film-card img {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      object-fit: cover;
+    }
+
+    .film-card span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .status {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+    }
+
+    .status strong {
+      color: var(--green);
+      font-size: 13px;
+    }
+
+    .source-card {
+      width: 100%;
+      margin: 0;
+      grid-template-columns: 70px minmax(0, 1fr);
+      background: rgba(248, 245, 237, 0.07);
+    }
+
+    .source-thumb {
+      width: 70px;
+      height: 54px;
+    }
+
+    .source-card p {
+      margin: 3px 0 0;
+    }
+
+    @media (max-width: 1020px) {
+      .workspace {
+        grid-template-columns: 220px minmax(0, 1fr);
+      }
+
+      .side {
+        display: none;
+      }
+
+      .filmstrip {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      html,
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100%;
+      }
+
+      .topbar,
+      .workspace {
+        display: block;
+      }
+
+      .brand {
+        margin-bottom: 12px;
+      }
+
+      .rail,
+      .stage,
+      .side {
+        border: 0;
+      }
+
+      .stage {
+        height: min(70vh, 620px);
+      }
+
+      .flow-board {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand" aria-label="CueVue">
+        <img src="buildResources/cuevue-logo.png" alt="CueVue logo">
+        <div class="brand-title">
+          <strong>CueVue Browser Test</strong>
+          <span>Screen, QuickTime, or visible window capture</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="button" id="fullscreenBtn" type="button">Fullscreen</button>
+        <button class="button" id="stopBtn" type="button">Stop</button>
+        <button class="button primary" id="captureBtn" type="button">Choose Capture Source</button>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <aside class="rail">
+        <p class="section-title">Scenes</p>
+        <div class="scene-list" id="sceneList">
+          <button class="scene-tab active" type="button" data-scene="capture">
+            <span class="thumb device"><img src="buildResources/cuevue-logo.png" alt=""></span>
+            <span class="scene-copy"><strong>iPhone Capture</strong><span class="scene-meta">QuickTime or screen</span></span>
+          </button>
+          <button class="scene-tab" type="button" data-scene="flow">
+            <span class="thumb flow"><img src="buildResources/cuevue-logo.png" alt=""></span>
+            <span class="scene-copy"><strong>Flow</strong><span class="scene-meta">Concept map</span></span>
+          </button>
+          <button class="scene-tab" type="button" data-scene="slides">
+            <span class="thumb slides"><img src="buildResources/cuevue-logo.png" alt=""></span>
+            <span class="scene-copy"><strong>Slides</strong><span class="scene-meta">Deck preview</span></span>
+          </button>
+          <button class="scene-tab" type="button" data-scene="url">
+            <span class="thumb url"><img src="buildResources/cuevue-logo.png" alt=""></span>
+            <span class="scene-copy"><strong>URL Live</strong><span class="scene-meta">Web source</span></span>
+          </button>
+        </div>
+      </aside>
+
+      <section class="stage-wrap">
+        <div class="stage" id="stage">
+          <video class="capture-video" id="captureVideo" autoplay muted playsinline></video>
+          <section class="scene-panel active" data-panel="capture">
+            <div class="capture-empty" id="captureEmpty">
+              <div class="brand-card">
+                <img src="buildResources/cuevue-logo.png" alt="">
+                <h1>Choose a Capture Source</h1>
+                <p>Select Entire Screen, the QuickTime Movie Recording window, or any visible window from the browser picker.</p>
+                <button class="button primary" type="button" data-start-capture>Open Browser Picker</button>
+              </div>
+            </div>
+          </section>
+          <section class="scene-panel" data-panel="flow">
+            <div class="flow-board">
+              <article class="flow-node"><strong>Idea</strong><span>Anchor the moment with one clear visual cue.</span></article>
+              <article class="flow-node"><strong>Impact</strong><span>Connect the source to the demo outcome.</span></article>
+              <article class="flow-node"><strong>Next</strong><span>Move the story forward without breaking flow.</span></article>
+            </div>
+          </section>
+          <section class="scene-panel" data-panel="slides">
+            <div class="brand-card">
+              <img src="buildResources/cuevue-logo.png" alt="">
+              <h1>Slides</h1>
+              <p>Branded slide preview state for demo mode.</p>
+            </div>
+          </section>
+          <section class="scene-panel" data-panel="url">
+            <div class="brand-card">
+              <img src="buildResources/cuevue-logo.png" alt="">
+              <h1>Live URL</h1>
+              <p>Branded browser source preview state for shared links and live pages.</p>
+            </div>
+          </section>
+        </div>
+
+        <div class="filmstrip" aria-label="Branded scene thumbnails">
+          <div class="film-card"><img src="buildResources/cuevue-logo.png" alt=""><span>iPhone / QuickTime</span></div>
+          <div class="film-card"><img src="buildResources/cuevue-logo.png" alt=""><span>Flow scene</span></div>
+          <div class="film-card"><img src="buildResources/cuevue-logo.png" alt=""><span>Slides preview</span></div>
+          <div class="film-card"><img src="buildResources/cuevue-logo.png" alt=""><span>URL live source</span></div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="status">
+          <strong id="captureState">Ready</strong>
+          <span id="captureDetail">Browser capture uses the native source chooser over HTTPS.</span>
+        </div>
+        <p class="section-title">Capture Sources</p>
+        <div class="source-list">
+          <button class="source-card" type="button" data-start-capture>
+            <span class="source-thumb screen"><img src="buildResources/cuevue-logo.png" alt=""></span>
+            <span><strong>Entire Screen</strong><p>Select the full display for reliable fallback.</p></span>
+          </button>
+          <button class="source-card" type="button" data-start-capture>
+            <span class="source-thumb window"><img src="buildResources/cuevue-logo.png" alt=""></span>
+            <span><strong>QuickTime Window</strong><p>Choose Movie Recording when visible.</p></span>
+          </button>
+          <button class="source-card" type="button" data-start-capture>
+            <span class="source-thumb"><img src="buildResources/cuevue-logo.png" alt=""></span>
+            <span><strong>Any Visible Window</strong><p>Manual picker for browser-safe capture.</p></span>
+          </button>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const captureVideo = document.getElementById("captureVideo");
+    const captureEmpty = document.getElementById("captureEmpty");
+    const captureState = document.getElementById("captureState");
+    const captureDetail = document.getElementById("captureDetail");
+    const captureBtn = document.getElementById("captureBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    let activeStream = null;
+    let blackFrameTimer = null;
+
+    function setStatus(label, detail) {
+      captureState.textContent = label;
+      captureDetail.textContent = detail;
+    }
+
+    function stopCapture() {
+      clearTimeout(blackFrameTimer);
+      blackFrameTimer = null;
+      if (activeStream) {
+        activeStream.getTracks().forEach((track) => track.stop());
+      }
+      activeStream = null;
+      captureVideo.srcObject = null;
+      captureEmpty.style.display = "grid";
+      setStatus("Ready", "Open the browser picker again to choose screen, QuickTime, or another window.");
+    }
+
+    async function startCapture() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        setStatus("Browser unsupported", "Use current Chrome, Edge, or Safari over HTTPS.");
+        return;
+      }
+
+      clearTimeout(blackFrameTimer);
+      setStatus("Opening picker", "Choose Entire Screen, QuickTime Movie Recording, or any visible window.");
+
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            frameRate: { ideal: 30, max: 60 },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+
+        stopCapture();
+        activeStream = stream;
+        captureVideo.srcObject = stream;
+        captureEmpty.style.display = "none";
+        setStatus("Capture active", "If the selected source is blank, click Choose Capture Source and pick Entire Screen.");
+
+        const [videoTrack] = stream.getVideoTracks();
+        if (videoTrack) {
+          videoTrack.addEventListener("ended", () => {
+            stopCapture();
+            setStatus("Source ended", "The source disappeared. Reopen the picker and choose Entire Screen for fallback.");
+          });
+        }
+
+        blackFrameTimer = setTimeout(() => {
+          if (!captureVideo.videoWidth || !captureVideo.videoHeight) {
+            setStatus("No visible frames", "The selected window did not provide frames. Click Choose Capture Source and select Entire Screen.");
+            captureEmpty.style.display = "grid";
+          }
+        }, 2200);
+      } catch (error) {
+        setStatus("Picker closed", error && error.message ? error.message : "No source was selected.");
+      }
+    }
+
+    document.querySelectorAll("[data-start-capture]").forEach((button) => {
+      button.addEventListener("click", startCapture);
+    });
+    captureBtn.addEventListener("click", startCapture);
+    stopBtn.addEventListener("click", stopCapture);
+    fullscreenBtn.addEventListener("click", () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    document.querySelectorAll(".scene-tab").forEach((button) => {
+      button.addEventListener("click", () => {
+        const scene = button.dataset.scene;
+        document.querySelectorAll(".scene-tab").forEach((tab) => tab.classList.toggle("active", tab === button));
+        document.querySelectorAll(".scene-panel").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === scene));
+      });
+    });
+  </script>
+</body>
+</html>

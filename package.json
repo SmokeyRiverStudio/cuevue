@@ -48,6 +48,6 @@
       ]
     },
     "directories": {"output": "dist", "buildResources": "buildResources"},
-    "files": ["main.js", "preload.js", "index.html", "splash.html", "package.json"]
+    "files": ["main.js", "preload.js", "index.html", "splash.html", "package.json", "buildResources/icon-source.png"]
   }
 }

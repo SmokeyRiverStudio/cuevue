@@ -67,10 +67,10 @@
     .scene-slot { flex: 1; position: relative; min-width: 0; }
     .scene-button { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; border-radius: 6px; padding: 0; font-weight: 700; background: #242424; font-size: 12px; text-align: left; }
     .scene-button.active { border-color: #53687a; background: #303f4c; }
-    .scene-preview { position: absolute; inset: 0; display: grid; background: linear-gradient(135deg, #17313a, #0d1519 58%, #18231d); background-position: center; background-size: cover; opacity: .9; }
+    .scene-preview { position: absolute; inset: 0; display: grid; background-image: linear-gradient(135deg, rgba(23,49,58,.95), rgba(13,21,25,.94) 58%, rgba(24,35,29,.95)), url("buildResources/icon-source.png"); background-position: center, center; background-size: cover, 42px 42px; background-repeat: no-repeat; opacity: .9; }
     .scene-preview::before { content: "CueVue"; position: absolute; left: 8px; top: 7px; z-index: 1; color: rgba(236,247,244,.92); font-size: 11px; font-weight: 900; letter-spacing: 0; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
-    .scene-preview::after { content: ""; position: absolute; right: 8px; top: 8px; width: 18px; height: 18px; border-radius: 6px; background: linear-gradient(135deg, #8fd8c7, #91d18b); box-shadow: 0 4px 14px rgba(0,0,0,.35); }
-    .scene-preview.flow-preview { grid-template-rows: auto 1fr; gap: 4px; padding: 26px 6px 6px; background: linear-gradient(135deg, #17313a, #111719 58%, #203226); }
+    .scene-preview::after { content: ""; position: absolute; right: 8px; top: 8px; width: 18px; height: 18px; border-radius: 6px; background: url("buildResources/icon-source.png") center / contain no-repeat; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+    .scene-preview.flow-preview { grid-template-rows: auto 1fr; gap: 4px; padding: 26px 6px 6px; background-image: linear-gradient(135deg, rgba(23,49,58,.96), rgba(17,23,25,.95) 58%, rgba(32,50,38,.96)), url("buildResources/icon-source.png"); background-position: center, right 8px top 8px; background-size: cover, 22px 22px; background-repeat: no-repeat; }
     .scene-preview.flow-preview::before { content: "CueVue Flow"; }
     .flow-preview-title { position: relative; width: 70%; height: 7px; border-radius: 999px; background: #eef3f8; }
     .flow-preview-lines { position: relative; display: grid; gap: 3px; align-content: center; }
@@ -78,13 +78,13 @@
     .flow-preview-lines span:nth-child(2n) { width: 82%; background: rgba(145,209,139,.6); }
     .scene-preview.url-preview { grid-template-rows: 10px 1fr; background: #f5f7fb; }
     .scene-preview.url-preview::before { content: ""; background: linear-gradient(90deg, #ff766e 0 10px, #ffd166 10px 20px, #7bd88f 20px 30px, #d9e2ef 30px); }
-    .scene-preview.url-preview::after { content: ""; margin: 8px; border-radius: 4px; background: linear-gradient(#31465c 0 8px, transparent 8px 14px, #b5c1ce 14px 19px, transparent 19px 25px, #dfe6ee 25px 100%); }
+    .scene-preview.url-preview::after { content: ""; margin: 8px; border-radius: 4px; background: url("buildResources/icon-source.png") right 6px bottom 6px / 22px 22px no-repeat, linear-gradient(#31465c 0 8px, transparent 8px 14px, #b5c1ce 14px 19px, transparent 19px 25px, #dfe6ee 25px 100%); }
     .scene-preview.device-preview { place-items: center; background: linear-gradient(135deg, #071013, #121b20); }
     .scene-preview.device-preview::before { content: "CueVue iPhone"; }
-    .scene-preview.device-preview::after { content: ""; position: static; width: 28%; aspect-ratio: 9 / 19.5; border: 3px solid #c8c3ba; border-radius: 10px; background: linear-gradient(180deg, #050505, #12231e); box-shadow: 0 6px 20px rgba(0,0,0,.45); }
+    .scene-preview.device-preview::after { content: ""; position: static; width: 28%; aspect-ratio: 9 / 19.5; border: 3px solid #c8c3ba; border-radius: 10px; background: url("buildResources/icon-source.png") center / 70% auto no-repeat, linear-gradient(180deg, #050505, #12231e); box-shadow: 0 6px 20px rgba(0,0,0,.45); }
     .scene-preview.slides-preview { place-items: center; background: linear-gradient(135deg, #10151c, #0b1116); }
     .scene-preview.slides-preview::before { content: "CueVue Slides"; }
-    .scene-preview.slides-preview::after { content: ""; position: static; width: 70%; aspect-ratio: 16 / 9; border: 1px solid rgba(255,255,255,.18); background: linear-gradient(135deg, #182833, #21372f); box-shadow: 0 5px 18px rgba(0,0,0,.45); }
+    .scene-preview.slides-preview::after { content: ""; position: static; width: 70%; aspect-ratio: 16 / 9; border: 1px solid rgba(255,255,255,.18); background: url("buildResources/icon-source.png") center / 36% auto no-repeat, linear-gradient(135deg, #182833, #21372f); box-shadow: 0 5px 18px rgba(0,0,0,.45); }
     .scene-preview.has-image::after, .scene-preview.has-image::before { display: none; }
     .scene-button-label { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 16px 7px 5px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.76)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
     .edit-scene-button { position: absolute; right: 5px; top: 4px; width: 22px; height: 20px; min-height: 0; border: 0; border-radius: 5px; padding: 0; background: rgba(255,255,255,0.13); color: #fff; font-size: 13px; line-height: 1; }

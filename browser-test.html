@@ -47,7 +47,8 @@
     .app {
       display: grid;
       grid-template-rows: 74px minmax(0, 1fr);
-      height: 100%;
+      height: 100vh;
+      overflow: hidden;
     }
 
     .topbar {
@@ -129,7 +130,9 @@
 
     .workspace {
       display: block;
+      height: calc(100vh - 74px);
       min-height: 0;
+      padding: 18px 18px 118px;
     }
 
     .section-title {
@@ -223,17 +226,18 @@
     }
 
     .stage-wrap {
-      display: grid;
-      grid-template-rows: minmax(0, 1fr) auto;
+      display: block;
       min-width: 0;
+      height: 100%;
       min-height: 0;
     }
 
     .stage {
       position: relative;
       min-width: 0;
-      min-height: 0;
-      margin: 18px;
+      height: 100%;
+      min-height: 420px;
+      margin: 0;
       overflow: hidden;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -266,27 +270,29 @@
       pointer-events: auto;
     }
 
-    .preview-card {
+    .scene-surface {
       display: grid;
       justify-items: center;
       gap: 18px;
-      width: min(760px, 86vw);
+      width: min(920px, 92vw);
       padding: 32px;
       border: 1px solid rgba(255, 255, 255, 0.16);
       border-radius: 8px;
-      background: rgba(18, 27, 28, 0.78);
+      background:
+        linear-gradient(180deg, rgba(24, 35, 36, 0.76), rgba(11, 17, 18, 0.82)),
+        rgba(18, 27, 28, 0.78);
       text-align: center;
       backdrop-filter: blur(12px);
     }
 
-    .preview-card h1 {
+    .scene-surface h1 {
       margin: 0;
       font-size: clamp(34px, 6vw, 72px);
       line-height: 0.98;
       letter-spacing: 0;
     }
 
-    .preview-card p {
+    .scene-surface p {
       max-width: 560px;
       margin: 0;
       color: var(--muted);
@@ -328,8 +334,8 @@
       min-height: 100%;
     }
 
-    .capture-empty .preview-card {
-      width: min(640px, 88%);
+    .capture-empty .scene-surface {
+      width: min(820px, 90vw);
     }
 
     .scene-glyph {
@@ -412,15 +418,23 @@
     }
 
     .bottom-menu {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: 14px;
       min-width: 0;
-      margin: 0 18px 18px;
-      padding: 10px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
+      margin: 0;
+      padding: 10px 14px max(10px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line);
+      border-right: 0;
+      border-bottom: 0;
+      border-left: 0;
+      border-radius: 0;
       background:
         linear-gradient(180deg, rgba(30, 42, 43, 0.94), rgba(11, 17, 18, 0.94)),
         rgba(11, 17, 18, 0.94);
@@ -446,9 +460,9 @@
       align-items: center;
       min-height: 62px;
       padding: 8px 14px;
-      border: 1px solid rgba(248, 245, 237, 0.12);
+      border: 0;
       border-radius: 8px;
-      background: rgba(248, 245, 237, 0.055);
+      background: transparent;
       text-align: left;
       transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
     }
@@ -456,23 +470,31 @@
     .scene-tab {
       grid-template-columns: 34px minmax(70px, 1fr);
       gap: 10px;
-      min-width: 150px;
+      min-width: 0;
+      padding-right: 8px;
     }
 
     .scene-item {
       display: grid;
       grid-template-columns: minmax(138px, 1fr) auto;
-      gap: 6px;
+      align-items: stretch;
+      gap: 4px;
       min-width: 214px;
+      border: 1px solid rgba(248, 245, 237, 0.12);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.055);
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
     }
 
     .edit-tab {
-      min-height: 62px;
-      padding: 8px 12px;
-      border: 1px solid rgba(248, 245, 237, 0.12);
+      margin: 8px 8px 8px 0;
+      min-height: 0;
+      padding: 0 10px;
+      border: 1px solid rgba(248, 245, 237, 0.14);
       border-radius: 8px;
       background: rgba(248, 245, 237, 0.045);
       color: var(--muted);
+      font-size: 12px;
       font-weight: 750;
     }
 
@@ -483,13 +505,13 @@
       font-weight: 750;
     }
 
-    .scene-tab.active {
+    .scene-item:has(.scene-tab.active) {
       background: linear-gradient(180deg, rgba(255, 106, 79, 0.2), rgba(255, 106, 79, 0.08));
       border-color: rgba(255, 106, 79, 0.66);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
     }
 
-    .scene-tab:hover,
+    .scene-item:hover,
     .edit-tab:hover,
     .utility-tab:hover {
       transform: translateY(-1px);
@@ -728,8 +750,16 @@
     }
 
     @media (max-width: 1020px) {
+      .workspace {
+        padding-bottom: 190px;
+      }
+
       .bottom-menu {
         grid-template-columns: 1fr;
+      }
+
+      .stage {
+        height: calc(100vh - 260px);
       }
 
       .utility-nav {
@@ -767,7 +797,7 @@
       }
 
       .stage {
-        height: min(70vh, 620px);
+        height: calc(100vh - 260px);
       }
 
       .flow-board {
@@ -802,10 +832,10 @@
           </div>
           <section class="scene-panel active" data-panel="capture">
             <div class="capture-empty" id="captureEmpty">
-              <div class="preview-card">
+              <div class="scene-surface">
                 <div class="scene-glyph capture" aria-hidden="true"></div>
-                <h1>Choose a Capture Source</h1>
-                <p>Select Entire Screen, the QuickTime Movie Recording window, or any visible window from the browser picker.</p>
+                <h1 data-scene-title="capture">iPhone Capture</h1>
+                <p data-scene-notes="capture">Select Entire Screen, the QuickTime Movie Recording window, or any visible window from the browser picker.</p>
                 <div class="source-list">
                   <button class="source-card" type="button" data-start-capture>
                     <span class="source-thumb window"></span>
@@ -824,10 +854,10 @@
             </div>
           </section>
           <section class="scene-panel" data-panel="window">
-            <div class="preview-card">
+            <div class="scene-surface">
               <div class="scene-glyph window" aria-hidden="true"></div>
-              <h1>Window Capture</h1>
-              <p>Use the browser picker to select a single app window, presentation window, or shared display area.</p>
+              <h1 data-scene-title="window">Window Capture</h1>
+              <p data-scene-notes="window">Use the browser picker to select a single app window, presentation window, or shared display area.</p>
               <div class="source-list">
                 <button class="source-card" type="button" data-start-capture>
                   <span class="source-thumb window"></span>
@@ -842,23 +872,23 @@
           </section>
           <section class="scene-panel" data-panel="flow">
             <div class="flow-board">
-              <article class="flow-node"><strong>Idea</strong><span>Anchor the moment with one clear visual cue.</span></article>
-              <article class="flow-node"><strong>Impact</strong><span>Connect the source to the demo outcome.</span></article>
-              <article class="flow-node"><strong>Next</strong><span>Move the story forward without breaking flow.</span></article>
+              <article class="flow-node"><strong data-flow-title="0">Idea</strong><span data-flow-note="0">Anchor the moment with one clear visual cue.</span></article>
+              <article class="flow-node"><strong data-flow-title="1">Impact</strong><span data-flow-note="1">Connect the source to the demo outcome.</span></article>
+              <article class="flow-node"><strong data-flow-title="2">Next</strong><span data-flow-note="2">Move the story forward without breaking flow.</span></article>
             </div>
           </section>
           <section class="scene-panel" data-panel="slides">
-            <div class="preview-card">
+            <div class="scene-surface">
               <div class="scene-glyph slides" aria-hidden="true"></div>
-              <h1>Slides</h1>
-              <p>Stage slide content with a clean operator preview and quick switching from the bottom scene bar.</p>
+              <h1 data-scene-title="slides">Slides</h1>
+              <p data-scene-notes="slides">Stage slide content with a clean operator preview and quick switching from the bottom scene bar.</p>
             </div>
           </section>
           <section class="scene-panel" data-panel="url">
-            <div class="preview-card">
+            <div class="scene-surface">
               <div class="scene-glyph url" aria-hidden="true"></div>
-              <h1>Live URL</h1>
-              <p>Prepare a live web source for demos, references, or browser-first CueVue scenes.</p>
+              <h1 data-scene-title="url">URL Live</h1>
+              <p data-scene-notes="url">Prepare a live web source for demos, references, or browser-first CueVue scenes.</p>
             </div>
           </section>
           <div class="settings-panel" id="settingsPanel" aria-live="polite">
@@ -941,51 +971,91 @@
     const editorCaptureBtn = document.getElementById("editorCaptureBtn");
     let activeStream = null;
     let blackFrameTimer = null;
+    let activeScene = "capture";
 
     const editorConfig = {
       flow: {
         title: "Flow",
         fields: [
-          ["Title", "Flow"],
-          ["Layout", "Three-step impact map"],
-          ["Notes", "Idea, impact, and next step"]
+          { key: "title", label: "Title" },
+          { key: "layout", label: "Layout" },
+          { key: "notes", label: "Notes", type: "textarea" }
         ]
       },
       url: {
         title: "URL Live",
         fields: [
-          ["Title", "URL Live"],
-          ["URL", "https://"],
-          ["Layout", "Browser preview"],
-          ["Notes", "Live web source"]
+          { key: "title", label: "Title" },
+          { key: "url", label: "URL" },
+          { key: "layout", label: "Layout" },
+          { key: "notes", label: "Notes", type: "textarea" }
         ]
       },
       window: {
         title: "Window Capture",
         fields: [
-          ["Source", "Visible app window"],
-          ["Title", "Window Capture"],
-          ["Capture Source", "Browser picker"],
-          ["Layout", "Contain"]
+          { key: "source", label: "Source" },
+          { key: "title", label: "Title" },
+          { key: "captureSource", label: "Capture Source" },
+          { key: "layout", label: "Layout" }
         ]
       },
       capture: {
         title: "iPhone Capture",
         fields: [
-          ["Source", "QuickTime Movie Recording"],
-          ["Title", "iPhone Capture"],
-          ["Capture Source", "QuickTime window or entire screen"],
-          ["Notes", "Use full-screen fallback if window capture is blocked"]
+          { key: "source", label: "Source" },
+          { key: "title", label: "Title" },
+          { key: "captureSource", label: "Capture Source" },
+          { key: "notes", label: "Notes", type: "textarea" }
         ]
       },
       slides: {
         title: "Slides",
         fields: [
-          ["Source", "Slide deck"],
-          ["Title", "Slides"],
-          ["Layout", "Deck preview"],
-          ["Notes", "Presentation scene"]
+          { key: "source", label: "Source" },
+          { key: "title", label: "Title" },
+          { key: "layout", label: "Layout" },
+          { key: "notes", label: "Notes", type: "textarea" }
         ]
+      }
+    };
+
+    const sceneState = {
+      flow: {
+        title: "Flow",
+        layout: "Three-step impact map",
+        notes: "Idea, impact, and next step",
+        flowTitles: ["Idea", "Impact", "Next"],
+        flowNotes: [
+          "Anchor the moment with one clear visual cue.",
+          "Connect the source to the demo outcome.",
+          "Move the story forward without breaking flow."
+        ]
+      },
+      url: {
+        title: "URL Live",
+        url: "https://",
+        layout: "Browser preview",
+        notes: "Prepare a live web source for demos, references, or browser-first CueVue scenes."
+      },
+      window: {
+        source: "Visible app window",
+        title: "Window Capture",
+        captureSource: "Browser picker",
+        layout: "Contain",
+        notes: "Use the browser picker to select a single app window, presentation window, or shared display area."
+      },
+      capture: {
+        source: "QuickTime Movie Recording",
+        title: "iPhone Capture",
+        captureSource: "QuickTime window or entire screen",
+        notes: "Select Entire Screen, the QuickTime Movie Recording window, or any visible window from the browser picker."
+      },
+      slides: {
+        source: "Slide deck",
+        title: "Slides",
+        layout: "Deck preview",
+        notes: "Stage slide content with a clean operator preview and quick switching from the bottom scene bar."
       }
     };
 
@@ -994,19 +1064,59 @@
       captureDetail.textContent = detail;
     }
 
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function renderScene(scene) {
+      const state = sceneState[scene];
+      if (!state) return;
+      document.querySelectorAll(`[data-scene-title="${scene}"]`).forEach((node) => {
+        node.textContent = state.title || editorConfig[scene].title;
+      });
+      document.querySelectorAll(`[data-scene-notes="${scene}"]`).forEach((node) => {
+        node.textContent = state.notes || state.url || "";
+      });
+      const navLabel = document.querySelector(`[data-scene="${scene}"] .tab-label strong`);
+      if (navLabel) navLabel.textContent = state.title || editorConfig[scene].title;
+      if (scene === "flow") {
+        state.flowTitles.forEach((title, index) => {
+          const titleNode = document.querySelector(`[data-flow-title="${index}"]`);
+          const noteNode = document.querySelector(`[data-flow-note="${index}"]`);
+          if (titleNode) titleNode.textContent = title;
+          if (noteNode) noteNode.textContent = state.flowNotes[index];
+        });
+      }
+    }
+
+    function activateScene(scene) {
+      activeScene = scene;
+      document.querySelectorAll(".scene-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.scene === scene));
+      document.querySelectorAll(".scene-panel").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === scene));
+    }
+
     function openEditor(scene) {
       const config = editorConfig[scene] || editorConfig.capture;
+      const state = sceneState[scene] || sceneState.capture;
       editorTitle.textContent = `Edit ${config.title}`;
-      editorFields.innerHTML = config.fields.map(([label, value]) => {
+      editorFields.innerHTML = config.fields.map(({ key, label, type }) => {
         const id = `editor-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-        if (label === "Notes") {
-          return `<div class="field"><label for="${id}">${label}</label><textarea id="${id}">${value}</textarea></div>`;
+        const value = escapeHtml(state[key] || "");
+        if (type === "textarea") {
+          return `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" data-editor-key="${key}">${value}</textarea></div>`;
         }
-        if (label === "Layout" || label === "Capture Source" || label === "Source") {
-          return `<div class="field"><label for="${id}">${label}</label><input id="${id}" value="${value}"></div>`;
-        }
-        return `<div class="field"><label for="${id}">${label}</label><input id="${id}" value="${value}"></div>`;
+        return `<div class="field"><label for="${id}">${label}</label><input id="${id}" data-editor-key="${key}" value="${value}"></div>`;
       }).join("");
+      editorFields.querySelectorAll("[data-editor-key]").forEach((field) => {
+        field.addEventListener("input", () => {
+          state[field.dataset.editorKey] = field.value;
+          renderScene(scene);
+        });
+      });
       editorPanel.classList.add("open");
       settingsPanel.classList.remove("open");
     }
@@ -1091,16 +1201,16 @@
 
     document.querySelectorAll(".scene-tab").forEach((button) => {
       button.addEventListener("click", () => {
-        const scene = button.dataset.scene;
-        document.querySelectorAll(".scene-tab").forEach((tab) => tab.classList.toggle("active", tab === button));
-        document.querySelectorAll(".scene-panel").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === scene));
+        activateScene(button.dataset.scene);
       });
     });
     document.querySelectorAll("[data-edit-scene]").forEach((button) => {
       button.addEventListener("click", () => {
+        activateScene(button.dataset.editScene);
         openEditor(button.dataset.editScene);
       });
     });
+    Object.keys(sceneState).forEach(renderScene);
   </script>
 </body>
 </html>

@@ -39,6 +39,7 @@
     "publish": null,
     "dmg": {
       "title": "CueVue ${version}",
+      "icon": "buildResources/icon.icns",
       "format": "UDZO",
       "size": "1200m",
       "contents": [

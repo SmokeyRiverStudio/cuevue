@@ -270,6 +270,11 @@
       pointer-events: auto;
     }
 
+    .scene-panel[data-panel="flow"] {
+      place-items: stretch;
+      padding: 24px;
+    }
+
     .scene-surface {
       display: grid;
       justify-items: center;
@@ -300,32 +305,147 @@
       line-height: 1.55;
     }
 
-    .flow-board {
+    .flow-runtime {
       display: grid;
-      grid-template-columns: repeat(3, minmax(150px, 1fr));
-      gap: clamp(12px, 3vw, 26px);
-      width: min(920px, 92%);
-      align-items: center;
-    }
-
-    .flow-node {
-      min-height: 126px;
-      padding: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.16);
+      align-content: start;
+      gap: clamp(12px, 2vh, 22px);
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      padding: clamp(24px, 4vw, 48px);
+      overflow: auto;
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 8px;
-      background: rgba(248, 245, 237, 0.08);
-      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.24);
+      background:
+        linear-gradient(180deg, rgba(9, 14, 15, 0.42), rgba(9, 14, 15, 0.76)),
+        var(--flow-bg, linear-gradient(135deg, rgba(255, 106, 79, 0.16), rgba(121, 216, 207, 0.12))),
+        #091011;
+      background-position: center;
+      background-size: cover;
+      box-shadow: var(--shadow);
     }
 
-    .flow-node strong {
-      display: block;
-      margin-bottom: 10px;
-      font-size: clamp(18px, 2vw, 28px);
+    .flow-heading {
+      display: grid;
+      gap: 8px;
+      max-width: 820px;
     }
 
-    .flow-node span {
+    .flow-heading h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 72px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .flow-heading p {
+      margin: 0;
       color: var(--muted);
-      line-height: 1.4;
+      font-size: clamp(15px, 1.7vw, 22px);
+      line-height: 1.35;
+    }
+
+    .flow-rows {
+      display: grid;
+      gap: clamp(8px, 1.5vh, 14px);
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: clamp(14px, 3vw, 46px);
+      align-items: stretch;
+      min-height: 78px;
+    }
+
+    .flow-cell {
+      display: grid;
+      align-content: center;
+      gap: 4px;
+      padding: 13px 16px;
+      border: 1px solid rgba(248, 245, 237, 0.12);
+      border-radius: 8px;
+      background: rgba(9, 14, 15, 0.58);
+      backdrop-filter: blur(8px);
+    }
+
+    .flow-topic {
+      color: var(--ink);
+      font-size: clamp(18px, 2.2vw, 28px);
+      font-weight: 800;
+      line-height: 1.05;
+    }
+
+    .flow-subtopic,
+    .flow-subimpact {
+      color: var(--muted);
+      font-size: clamp(13px, 1.5vw, 18px);
+      line-height: 1.25;
+    }
+
+    .flow-impact {
+      display: block;
+      padding: 0;
+      background: transparent;
+      text-align: left;
+      color: var(--teal);
+      font-size: clamp(18px, 2.2vw, 28px);
+      font-weight: 800;
+      line-height: 1.05;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .flow-subimpact {
+      display: block;
+      padding: 0;
+      background: transparent;
+      text-align: left;
+      color: rgba(248, 245, 237, 0.78);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .flow-toggle-target {
+      cursor: pointer;
+    }
+
+    .flow-hidden {
+      opacity: 0.18;
+      transform: translateY(2px);
+    }
+
+    .flow-editor-row {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid rgba(248, 245, 237, 0.12);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.045);
+    }
+
+    .flow-editor-row-title {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .flow-editor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .toggle-line {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .toggle-line input {
+      accent-color: var(--coral);
     }
 
     .capture-empty {
@@ -800,8 +920,17 @@
         height: calc(100vh - 260px);
       }
 
-      .flow-board {
+      .flow-row,
+      .flow-editor-grid {
         grid-template-columns: 1fr;
+      }
+
+      .scene-panel[data-panel="flow"] {
+        padding: 14px;
+      }
+
+      .flow-runtime {
+        padding: 18px;
       }
     }
   </style>
@@ -871,10 +1000,12 @@
             </div>
           </section>
           <section class="scene-panel" data-panel="flow">
-            <div class="flow-board">
-              <article class="flow-node"><strong data-flow-title="0">Idea</strong><span data-flow-note="0">Anchor the moment with one clear visual cue.</span></article>
-              <article class="flow-node"><strong data-flow-title="1">Impact</strong><span data-flow-note="1">Connect the source to the demo outcome.</span></article>
-              <article class="flow-node"><strong data-flow-title="2">Next</strong><span data-flow-note="2">Move the story forward without breaking flow.</span></article>
+            <div class="flow-runtime" id="flowRuntime">
+              <header class="flow-heading">
+                <h1 id="flowHeader">Flow</h1>
+                <p id="flowSubheader">Map the idea, impact, and next move for the room.</p>
+              </header>
+              <div class="flow-rows" id="flowRows"></div>
             </div>
           </section>
           <section class="scene-panel" data-panel="slides">
@@ -889,6 +1020,7 @@
               <div class="scene-glyph url" aria-hidden="true"></div>
               <h1 data-scene-title="url">URL Live</h1>
               <p data-scene-notes="url">Prepare a live web source for demos, references, or browser-first CueVue scenes.</p>
+              <button class="button primary" id="urlRefreshBtn" type="button">Refresh URL</button>
             </div>
           </section>
           <div class="settings-panel" id="settingsPanel" aria-live="polite">
@@ -969,6 +1101,11 @@
     const editorFields = document.getElementById("editorFields");
     const closeEditorBtn = document.getElementById("closeEditorBtn");
     const editorCaptureBtn = document.getElementById("editorCaptureBtn");
+    const flowRuntime = document.getElementById("flowRuntime");
+    const flowHeader = document.getElementById("flowHeader");
+    const flowSubheader = document.getElementById("flowSubheader");
+    const flowRows = document.getElementById("flowRows");
+    const urlRefreshBtn = document.getElementById("urlRefreshBtn");
     let activeStream = null;
     let blackFrameTimer = null;
     let activeScene = "capture";
@@ -976,17 +1113,15 @@
     const editorConfig = {
       flow: {
         title: "Flow",
-        fields: [
-          { key: "title", label: "Title" },
-          { key: "layout", label: "Layout" },
-          { key: "notes", label: "Notes", type: "textarea" }
-        ]
+        fields: []
       },
       url: {
         title: "URL Live",
         fields: [
           { key: "title", label: "Title" },
           { key: "url", label: "URL" },
+          { key: "username", label: "Username Placeholder" },
+          { key: "password", label: "Password Placeholder" },
           { key: "layout", label: "Layout" },
           { key: "notes", label: "Notes", type: "textarea" }
         ]
@@ -1023,18 +1158,23 @@
     const sceneState = {
       flow: {
         title: "Flow",
-        layout: "Three-step impact map",
-        notes: "Idea, impact, and next step",
-        flowTitles: ["Idea", "Impact", "Next"],
-        flowNotes: [
-          "Anchor the moment with one clear visual cue.",
-          "Connect the source to the demo outcome.",
-          "Move the story forward without breaking flow."
+        backgroundImage: "",
+        header: "Flow",
+        subheader: "Map the idea, impact, and next move for the room.",
+        rows: [
+          { topic: "Topic 1", subtopic: "Subtopic 1", impact: "Impact 1", subimpact: "Subimpact 1", impactVisible: true, subimpactVisible: true },
+          { topic: "Topic 2", subtopic: "Subtopic 2", impact: "Impact 2", subimpact: "Subimpact 2", impactVisible: true, subimpactVisible: true },
+          { topic: "Topic 3", subtopic: "Subtopic 3", impact: "Impact 3", subimpact: "Subimpact 3", impactVisible: true, subimpactVisible: true },
+          { topic: "Topic 4", subtopic: "Subtopic 4", impact: "Impact 4", subimpact: "Subimpact 4", impactVisible: true, subimpactVisible: true },
+          { topic: "Topic 5", subtopic: "Subtopic 5", impact: "Impact 5", subimpact: "Subimpact 5", impactVisible: true, subimpactVisible: true },
+          { topic: "Topic 6", subtopic: "Subtopic 6", impact: "Impact 6", subimpact: "Subimpact 6", impactVisible: true, subimpactVisible: true }
         ]
       },
       url: {
         title: "URL Live",
         url: "https://",
+        username: "",
+        password: "",
         layout: "Browser preview",
         notes: "Prepare a live web source for demos, references, or browser-first CueVue scenes."
       },
@@ -1075,6 +1215,9 @@
     function renderScene(scene) {
       const state = sceneState[scene];
       if (!state) return;
+      if (scene === "flow") {
+        renderFlowScene();
+      }
       document.querySelectorAll(`[data-scene-title="${scene}"]`).forEach((node) => {
         node.textContent = state.title || editorConfig[scene].title;
       });
@@ -1083,14 +1226,88 @@
       });
       const navLabel = document.querySelector(`[data-scene="${scene}"] .tab-label strong`);
       if (navLabel) navLabel.textContent = state.title || editorConfig[scene].title;
-      if (scene === "flow") {
-        state.flowTitles.forEach((title, index) => {
-          const titleNode = document.querySelector(`[data-flow-title="${index}"]`);
-          const noteNode = document.querySelector(`[data-flow-note="${index}"]`);
-          if (titleNode) titleNode.textContent = title;
-          if (noteNode) noteNode.textContent = state.flowNotes[index];
+    }
+
+    function renderFlowScene() {
+      const state = sceneState.flow;
+      flowHeader.textContent = state.header || state.title || "Flow";
+      flowSubheader.textContent = state.subheader || "";
+      flowRuntime.style.setProperty("--flow-bg", state.backgroundImage ? `url("${state.backgroundImage}")` : "linear-gradient(135deg, rgba(255, 106, 79, 0.16), rgba(121, 216, 207, 0.12))");
+      flowRows.innerHTML = state.rows.map((row, index) => `
+        <article class="flow-row" data-flow-row="${index}">
+          <div class="flow-cell">
+            <strong class="flow-topic">${escapeHtml(row.topic)}</strong>
+            <span class="flow-subtopic">${escapeHtml(row.subtopic)}</span>
+          </div>
+          <div class="flow-cell">
+            <button class="flow-impact flow-toggle-target ${row.impactVisible ? "" : "flow-hidden"}" type="button" data-toggle-impact="${index}" onclick="toggleFlowImpact(${index})">${escapeHtml(row.impact)}</button>
+            <button class="flow-subimpact flow-toggle-target ${row.subimpactVisible ? "" : "flow-hidden"}" type="button" data-toggle-subimpact="${index}" onclick="toggleFlowSubimpact(${index})">${escapeHtml(row.subimpact)}</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function toggleFlowImpact(index) {
+      const row = sceneState.flow.rows[index];
+      row.impactVisible = !row.impactVisible;
+      renderFlowScene();
+    }
+
+    function toggleFlowSubimpact(index) {
+      const row = sceneState.flow.rows[index];
+      row.subimpactVisible = !row.subimpactVisible;
+      renderFlowScene();
+    }
+
+    function renderFlowEditor() {
+      const state = sceneState.flow;
+      editorTitle.textContent = "Edit Flow";
+      editorFields.innerHTML = `
+        <div class="field"><label for="flow-background">Custom Background Image</label><input id="flow-background" data-flow-key="backgroundImage" value="${escapeHtml(state.backgroundImage)}" placeholder="https://..."></div>
+        <div class="field"><label for="flow-header">Header</label><input id="flow-header" data-flow-key="header" value="${escapeHtml(state.header)}"></div>
+        <div class="field"><label for="flow-subheader">Subheader</label><input id="flow-subheader" data-flow-key="subheader" value="${escapeHtml(state.subheader)}"></div>
+        ${state.rows.map((row, index) => `
+          <section class="flow-editor-row">
+            <strong class="flow-editor-row-title">Row ${index + 1}</strong>
+            <div class="flow-editor-grid">
+              <div class="field"><label>Topic ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="topic" value="${escapeHtml(row.topic)}"></div>
+              <div class="field"><label>Impact ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="impact" value="${escapeHtml(row.impact)}"></div>
+              <div class="field"><label>Subtopic ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="subtopic" value="${escapeHtml(row.subtopic)}"></div>
+              <div class="field"><label>Subimpact ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="subimpact" value="${escapeHtml(row.subimpact)}"></div>
+            </div>
+            <label class="toggle-line"><input type="checkbox" data-flow-row="${index}" data-flow-toggle-key="impactVisible" ${row.impactVisible ? "checked" : ""}> Impact visible</label>
+            <label class="toggle-line"><input type="checkbox" data-flow-row="${index}" data-flow-toggle-key="subimpactVisible" ${row.subimpactVisible ? "checked" : ""}> Subimpact visible</label>
+          </section>
+        `).join("")}
+      `;
+      editorFields.querySelectorAll("[data-flow-key]").forEach((field) => {
+        field.addEventListener("input", () => {
+          state[field.dataset.flowKey] = field.value;
+          renderScene("flow");
         });
+      });
+      editorFields.querySelectorAll("[data-flow-row-key]").forEach((field) => {
+        field.addEventListener("input", () => {
+          state.rows[Number(field.dataset.flowRow)][field.dataset.flowRowKey] = field.value;
+          renderScene("flow");
+        });
+      });
+      editorFields.querySelectorAll("[data-flow-toggle-key]").forEach((field) => {
+        field.addEventListener("change", () => {
+          state.rows[Number(field.dataset.flowRow)][field.dataset.flowToggleKey] = field.checked;
+          renderScene("flow");
+        });
+      });
+      editorPanel.classList.add("open");
+      settingsPanel.classList.remove("open");
+    }
+
+    function refreshUrlScene() {
+      if (activeScene !== "url") {
+        startCapture();
+        return;
       }
+      setStatus("URL refreshed", sceneState.url.url ? `Prepared ${sceneState.url.url}` : "URL scene refreshed.");
     }
 
     function activateScene(scene) {
@@ -1100,6 +1317,10 @@
     }
 
     function openEditor(scene) {
+      if (scene === "flow") {
+        renderFlowEditor();
+        return;
+      }
       const config = editorConfig[scene] || editorConfig.capture;
       const state = sceneState[scene] || sceneState.capture;
       editorTitle.textContent = `Edit ${config.title}`;
@@ -1182,7 +1403,8 @@
     });
     captureBtn.addEventListener("click", startCapture);
     stopBtn.addEventListener("click", stopCapture);
-    refreshBtn.addEventListener("click", startCapture);
+    refreshBtn.addEventListener("click", refreshUrlScene);
+    urlRefreshBtn.addEventListener("click", refreshUrlScene);
     settingsBtn.addEventListener("click", () => {
       settingsPanel.classList.toggle("open");
       editorPanel.classList.remove("open");

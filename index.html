@@ -1717,11 +1717,9 @@
       if (!scan.ok) {
         showDeviceFallback();
         document.getElementById('selected-device-label').textContent = `Could not gather capture sources: ${scan.diagnostics.sourceScanError || 'unknown Electron error'}`;
-        return false;
+        return autoPick ? startFullscreenDeviceFallback(`Source enumeration failed; using full-screen fallback. ${scan.diagnostics.sourceScanError || ''}`) : false;
       }
-      const preferred = scan.sources.find((source) => rankSource(source, 'device') <= 20)
-        || scan.sources.find((source) => source.kind === 'window')
-        || scan.sources[0];
+      const preferred = scan.sources.find((source) => rankSource(source, 'device') <= 20);
       if (!preferred) {
         showDeviceFallback();
         updateDeviceDiagnostics({
@@ -1729,7 +1727,7 @@
             ? 'Sources were returned, but none could be selected.'
             : 'No capturable windows or screens returned by Electron.'
         });
-        return false;
+        return autoPick ? startFullscreenDeviceFallback('No QuickTime/iPhone source was selectable; using full-screen fallback.') : false;
       }
       setQuickTimeStep('recording', 'done');
       if (autoPick) await selectCaptureSource('device', preferred);
@@ -1773,9 +1771,8 @@
           if (attempts >= 24) {
             stopQuickTimeDetection();
             setQuickTimeStep('recording', 'fail');
-            document.getElementById('selected-device-label').textContent = 'QuickTime is open, but CueVue cannot see the iPhone window yet. Choose Window Manually or retry.';
-            updateDeviceDiagnostics({ failure: 'QuickTime reconnect timed out.' });
             showDeviceFallback();
+            await startFullscreenDeviceFallback('QuickTime reconnect timed out; using full-screen fallback.');
             resolve(false);
           }
         }, 1000);
@@ -1872,6 +1869,41 @@
       return /0\s*x\s*0|dimensions stayed|black screen|black frame/i.test(error && error.message ? error.message : String(error || ''));
     }
 
+    function fallbackScreenSource(scan) {
+      const sources = scan && Array.isArray(scan.sources) ? scan.sources : [];
+      return sources.find((source) => source.kind === 'screen')
+        || sources.find((source) => String(source.id || '').startsWith('screen:'))
+        || { id: 'screen:0:0', name: 'Entire Screen', kind: 'screen', thumbnail: '' };
+    }
+
+    async function startFullscreenDeviceFallback(reason, options = {}) {
+      if (options.fullscreenFallback) return false;
+      const scene = sceneById(activeId);
+      if (!scene || scene.type !== 'device') return false;
+      stopQuickTimeDetection();
+      stopPermissionRecovery();
+      document.getElementById('device-fallback').classList.add('open');
+      document.getElementById('selected-device-label').textContent = 'QuickTime capture failed. Switching to full-screen capture for demo reliability.';
+      let scan = { ok: false, sources: [], diagnostics: { sourceScanError: '' } };
+      try {
+        scan = await queryCaptureSources('device');
+        updateDeviceDiagnostics(scan.diagnostics);
+      } catch (error) {
+        updateDeviceDiagnostics({ failure: error.message || 'Full-screen fallback source scan failed.' });
+      }
+      const fallback = fallbackScreenSource(scan);
+      scene.sourceId = fallback.id;
+      scene.sourceName = fallback.name;
+      saveScenes();
+      updateDeviceDiagnostics({
+        selectedSource: `${fallback.name} [${fallback.id}]`,
+        staleSource: false,
+        failure: reason || 'Using full-screen capture fallback.'
+      });
+      showStatus(deviceStatus, 'Using full-screen fallback. Keep the iPhone mirror visible on screen.');
+      return startCapture(fallback, iphoneVideo, deviceStatus, { fullscreenFallback: true });
+    }
+
     async function retryDeviceCaptureAfterBlackFrame(failedSource, video, statusEl, options = {}) {
       if (options.blackFrameRecovery) return false;
       const scene = sceneById(activeId);
@@ -1889,18 +1921,12 @@
       const scan = await queryCaptureSources('device');
       updateDeviceDiagnostics(scan.diagnostics);
       if (!scan.ok || !scan.sources.length) {
-        showDeviceFallback();
-        document.getElementById('selected-device-label').textContent = scan.ok
-          ? 'Capture returned 0 x 0 and Electron has no fallback sources. Choose a source when one appears.'
-          : `Capture returned 0 x 0 and Electron scan failed: ${scan.diagnostics.sourceScanError || 'unknown error'}`;
-        return false;
+        return startFullscreenDeviceFallback(scan.ok
+          ? 'Capture returned 0 x 0 and Electron has no listed sources; using full-screen fallback.'
+          : `Capture returned 0 x 0 and source scan failed; using full-screen fallback. ${scan.diagnostics.sourceScanError || ''}`, options);
       }
-      const failedName = String(failedSource.name || '').toLowerCase();
-      const candidates = scan.sources.filter((source) => source.id !== failedSource.id);
-      const fallback = candidates.find((source) => String(source.name || '').toLowerCase() === failedName)
-        || candidates.find((source) => rankSource(source, 'device') <= 20)
-        || candidates.find((source) => source.kind === 'screen')
-        || candidates[0];
+      const fallback = scan.sources.find((source) => source.id !== failedSource.id && source.kind === 'screen')
+        || fallbackScreenSource(scan);
       if (!fallback) {
         showDeviceFallback();
         document.getElementById('selected-device-label').textContent = 'Capture returned 0 x 0. Choose another visible source manually.';
@@ -1945,16 +1971,16 @@
         } catch (error) {
           stopQuickTimeDetection();
           setQuickTimeStep('recording', 'fail');
-          document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Screen Recording permission may be blocked.'}`;
+          document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Electron capture scan failed.'}`;
+          await startFullscreenDeviceFallback(`QuickTime scan failed; using full-screen fallback. ${error.message || ''}`);
           return;
         }
         document.getElementById('selected-device-label').textContent = 'Looking for QuickTime Movie Recording. Choose the iPhone in QuickTime if it is not already showing.';
         if (attempts >= 20) {
           stopQuickTimeDetection();
           setQuickTimeStep('recording', 'fail');
-          document.getElementById('selected-device-label').textContent = 'In QuickTime Player choose File > New Movie Recording and select iPhone from camera dropdown.';
-          updateDeviceDiagnostics({ failure: 'QuickTime recording window missing or iPhone source not visible after detection timeout.' });
           showDeviceFallback();
+          await startFullscreenDeviceFallback('QuickTime recording window was not capturable; using full-screen fallback.');
         }
       }, 1000);
     }
@@ -2029,8 +2055,8 @@
       } catch (error) {
         if (scene.type === 'device') {
           updateDeviceDiagnostics({ failure: error.message || 'Electron failed to enumerate capture sources.' });
-          showStatus(statusEl, `Capture source scan failed: ${error.message || 'Electron failed to enumerate capture sources.'}`);
           showDeviceFallback();
+          await startFullscreenDeviceFallback(`Source scan failed; using full-screen fallback. ${error.message || ''}`);
         }
         return;
       }
@@ -2046,8 +2072,8 @@
             failure: 'Saved source is stale or no longer visible. CueVue cleared it and will look for QuickTime again.'
           });
           clearCaptureSource(scene);
-          showStatus(statusEl, 'Saved iPhone source is stale. CueVue is looking for QuickTime again.');
-          await recoverQuickTimeCapture();
+          showDeviceFallback();
+          await startFullscreenDeviceFallback('Saved QuickTime/iPhone source disappeared; using full-screen fallback.');
           return;
         }
         hideStatus(statusEl);
@@ -2103,8 +2129,8 @@
         if (!track) throw new Error('Selected source returned no video track.');
         if (isDeviceVideo) {
           track.addEventListener('ended', () => {
-            updateDeviceDiagnostics({ videoTrack: false, playback: 'ended', failure: 'Capture track ended. Reconnecting QuickTime capture.' });
-            recoverQuickTimeCapture();
+            updateDeviceDiagnostics({ videoTrack: false, playback: 'ended', failure: 'Capture track ended. Switching to full-screen fallback.' });
+            startFullscreenDeviceFallback('Capture track ended; using full-screen fallback.');
           }, { once: true });
         }
         try {
@@ -2162,6 +2188,8 @@
               failure: `getUserMedia failed after source selection: ${error.message || 'permission-related capture error'}`
             });
           }
+          const recovered = await startFullscreenDeviceFallback(`Selected source failed; using full-screen fallback. ${error.message || ''}`, options);
+          if (recovered) return true;
         }
         return false;
       }

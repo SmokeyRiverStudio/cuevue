@@ -357,12 +357,14 @@
     .flow-rows {
       display: grid;
       gap: clamp(4px, .65vh, 7px);
+      justify-self: center;
+      width: min(860px, 100%);
     }
 
     .flow-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, .82fr) auto;
-      gap: clamp(6px, .8vw, 10px);
+      grid-template-columns: minmax(0, 1fr) minmax(0, .52fr) auto;
+      gap: clamp(4px, .48vw, 6px);
       align-items: center;
       min-height: 44px;
       padding: 5px 7px;
@@ -373,11 +375,7 @@
       backdrop-filter: blur(8px);
     }
 
-    .flow-row.row-hidden {
-      display: none;
-    }
-
-    .flow-row.row-visible {
+    .flow-row.revealed {
       border-color: rgba(121, 216, 207, 0.24);
       box-shadow: inset 0 0 0 1px rgba(121, 216, 207, 0.08), 0 12px 32px rgba(0, 0, 0, 0.18);
     }
@@ -407,7 +405,7 @@
     }
 
     .flow-impact {
-      display: block;
+      display: none;
       padding: 0;
       background: transparent;
       text-align: left;
@@ -419,7 +417,7 @@
     }
 
     .flow-subimpact {
-      display: block;
+      display: none;
       padding: 0;
       background: transparent;
       text-align: left;
@@ -431,12 +429,17 @@
       cursor: pointer;
     }
 
+    .flow-row.revealed .flow-impact,
+    .flow-row.revealed .flow-subimpact {
+      display: block;
+    }
+
     .flow-connector {
       display: none;
     }
 
     .row-check {
-      display: grid;
+      display: none;
       place-items: center;
       width: 28px;
       height: 28px;
@@ -447,6 +450,10 @@
       box-shadow: 0 0 18px rgba(121, 216, 207, 0.14);
       font-size: 16px;
       font-weight: 900;
+    }
+
+    .flow-row.revealed .row-check {
+      display: grid;
     }
 
     .flow-editor-row {
@@ -643,7 +650,7 @@
     }
 
     .scene-tab {
-      grid-template-columns: 34px minmax(70px, 1fr);
+      grid-template-columns: minmax(70px, 1fr);
       gap: 10px;
       min-width: 0;
       padding-right: 8px;
@@ -663,6 +670,7 @@
 
     .edit-tab {
       margin: 8px 8px 8px 0;
+      width: 32px;
       min-height: 0;
       padding: 0 10px;
       border: 1px solid rgba(248, 245, 237, 0.14);
@@ -671,6 +679,10 @@
       color: var(--muted);
       font-size: 12px;
       font-weight: 750;
+    }
+
+    .scene-tab .scene-mark {
+      display: none;
     }
 
     .utility-tab {
@@ -774,6 +786,7 @@
     }
 
     .tab-label span {
+      display: none;
       overflow: hidden;
       color: var(--muted);
       font-size: 11px;
@@ -810,6 +823,30 @@
       background: rgba(12, 18, 19, 0.96);
       box-shadow: var(--shadow);
       backdrop-filter: blur(18px);
+    }
+
+    .fancy-cursor-dot {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 100;
+      width: 34px;
+      height: 34px;
+      border: 2px solid rgba(121, 216, 207, .95);
+      border-radius: 999px;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 0 7px rgba(121, 216, 207, .14), 0 0 24px rgba(121, 216, 207, .52);
+    }
+
+    body.cursor-fancy,
+    body.cursor-fancy * {
+      cursor: none !important;
+    }
+
+    body.cursor-fancy .fancy-cursor-dot {
+      opacity: 1;
     }
 
     .notes-panel.open {
@@ -1191,7 +1228,7 @@
             </label>
             <p>Browser runtime keeps capture in the native picker while preserving CueVue operator controls.</p>
           </div>
-          <div class="notes-panel" id="notesPanel" aria-live="polite">
+          <div class="notes-panel" id="notesPanel" aria-live="polite" hidden>
             <strong id="notesTitle">CueVue Notes</strong>
             <span class="scene-meta" id="notesMeta">Current scene</span>
             <textarea id="notesText" placeholder="Scene or slide notes"></textarea>
@@ -1217,44 +1254,9 @@
         </div>
 
         <div class="bottom-menu" aria-label="CueVue scene and utility controls">
-          <nav class="scene-nav" aria-label="Scenes">
-            <div class="scene-item">
-              <button class="scene-tab" type="button" data-scene="flow">
-                <span class="scene-mark flow" aria-hidden="true"></span>
-                <span class="tab-label"><strong>Flow</strong><span>Concept map</span></span>
-              </button>
-              <button class="edit-tab" type="button" data-edit-scene="flow">Edit</button>
-            </div>
-            <div class="scene-item">
-              <button class="scene-tab" type="button" data-scene="url">
-                <span class="scene-mark url" aria-hidden="true"></span>
-                <span class="tab-label"><strong>URL Live</strong><span>Web source</span></span>
-              </button>
-              <button class="edit-tab" type="button" data-edit-scene="url">Edit</button>
-            </div>
-            <div class="scene-item">
-              <button class="scene-tab" type="button" data-scene="window">
-                <span class="scene-mark window" aria-hidden="true"></span>
-                <span class="tab-label"><strong>Window</strong><span>App capture</span></span>
-              </button>
-              <button class="edit-tab" type="button" data-edit-scene="window">Edit</button>
-            </div>
-            <div class="scene-item">
-              <button class="scene-tab active" type="button" data-scene="capture">
-                <span class="scene-mark capture" aria-hidden="true"></span>
-                <span class="tab-label"><strong>Mobile Device Capture</strong><span>Window source</span></span>
-              </button>
-              <button class="edit-tab" type="button" data-edit-scene="capture">Edit</button>
-            </div>
-            <div class="scene-item">
-              <button class="scene-tab" type="button" data-scene="slides">
-                <span class="scene-mark slides" aria-hidden="true"></span>
-                <span class="tab-label"><strong>Slides</strong><span>Deck preview</span></span>
-              </button>
-              <button class="edit-tab" type="button" data-edit-scene="slides">Edit</button>
-            </div>
-          </nav>
+          <nav class="scene-nav" id="sceneNav" aria-label="Scenes"></nav>
           <div class="utility-nav" aria-label="Utilities">
+            <button class="utility-tab" id="addSceneBtn" type="button">+</button>
             <button class="utility-tab" id="refreshBtn" type="button">Refresh</button>
             <button class="utility-tab" id="notesBtn" type="button">Notes</button>
             <button class="utility-tab" id="settingsBtn" type="button">Settings</button>
@@ -1264,6 +1266,7 @@
 
     </section>
   </main>
+  <div class="fancy-cursor-dot" id="fancyCursorDot"></div>
 
   <script>
     const captureVideo = document.getElementById("captureVideo");
@@ -1276,6 +1279,8 @@
     const settingsBtn = document.getElementById("settingsBtn");
     const refreshBtn = document.getElementById("refreshBtn");
     const notesBtn = document.getElementById("notesBtn");
+    const addSceneBtn = document.getElementById("addSceneBtn");
+    const sceneNav = document.getElementById("sceneNav");
     const settingsPanel = document.getElementById("settingsPanel");
     const notesPanel = document.getElementById("notesPanel");
     const notesTitle = document.getElementById("notesTitle");
@@ -1304,11 +1309,16 @@
     const slideCounter = document.getElementById("slideCounter");
     const prevSlideBtn = document.getElementById("prevSlideBtn");
     const nextSlideBtn = document.getElementById("nextSlideBtn");
+    const fancyCursorDot = document.getElementById("fancyCursorDot");
+    const SETTINGS_KEY = "cuevue_browser_settings_v2";
     let activeStream = null;
     let blackFrameTimer = null;
     let activeScene = "capture";
     let editingScene = "capture";
     let notesWindow = null;
+    let sceneOrder = ["flow", "url", "window", "capture", "slides"];
+    let sceneCounter = 1;
+    let globalSettings = loadSettings();
 
     const editorConfig = {
       flow: {
@@ -1366,12 +1376,12 @@
         header: "Flow",
         subheader: "Map the idea, impact, and next move for the room.",
         rows: [
-          { topic: "Topic 1", subtopic: "Subtopic 1", impact: "Impact 1", subimpact: "Subimpact 1", visible: true },
-          { topic: "Topic 2", subtopic: "Subtopic 2", impact: "Impact 2", subimpact: "Subimpact 2", visible: true },
-          { topic: "Topic 3", subtopic: "Subtopic 3", impact: "Impact 3", subimpact: "Subimpact 3", visible: true },
-          { topic: "Topic 4", subtopic: "Subtopic 4", impact: "Impact 4", subimpact: "Subimpact 4", visible: true },
-          { topic: "Topic 5", subtopic: "Subtopic 5", impact: "Impact 5", subimpact: "Subimpact 5", visible: true },
-          { topic: "Topic 6", subtopic: "Subtopic 6", impact: "Impact 6", subimpact: "Subimpact 6", visible: true }
+          { topic: "Topic 1", subtopic: "Subtopic 1", impact: "Impact 1", subimpact: "Subimpact 1", revealed: false },
+          { topic: "Topic 2", subtopic: "Subtopic 2", impact: "Impact 2", subimpact: "Subimpact 2", revealed: false },
+          { topic: "Topic 3", subtopic: "Subtopic 3", impact: "Impact 3", subimpact: "Subimpact 3", revealed: false },
+          { topic: "Topic 4", subtopic: "Subtopic 4", impact: "Impact 4", subimpact: "Subimpact 4", revealed: false },
+          { topic: "Topic 5", subtopic: "Subtopic 5", impact: "Impact 5", subimpact: "Subimpact 5", revealed: false },
+          { topic: "Topic 6", subtopic: "Subtopic 6", impact: "Impact 6", subimpact: "Subimpact 6", revealed: false }
         ]
       },
       url: {
@@ -1418,6 +1428,18 @@
       slides: sceneState.slides.notes
     };
 
+    function loadSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+        if (saved && typeof saved === "object") return { cursorMode: saved.cursorMode || "auto" };
+      } catch (_) {}
+      return { cursorMode: "auto" };
+    }
+
+    function saveSettings() {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(globalSettings));
+    }
+
     function setStatus(label, detail) {
       captureState.textContent = label;
       captureDetail.textContent = detail;
@@ -1455,25 +1477,58 @@
       element.style.backgroundPosition = image ? "center" : "";
     }
 
+    function sceneTypeFor(id) {
+      return sceneState[id] && sceneState[id].type ? sceneState[id].type : id;
+    }
+
+    function sceneIconClass(id) {
+      const type = sceneTypeFor(id);
+      return type === "capture" ? "capture" : type;
+    }
+
+    function renderSceneNav() {
+      sceneNav.innerHTML = sceneOrder.map((id) => {
+        const state = sceneState[id];
+        if (!state) return "";
+        const name = state.title || editorConfig[sceneTypeFor(id)].title;
+        return `
+          <div class="scene-item">
+            <button class="scene-tab ${id === activeScene ? "active" : ""}" type="button" data-scene="${id}">
+              <span class="scene-mark ${sceneIconClass(id)}" aria-hidden="true"></span>
+              <span class="tab-label"><strong>${escapeHtml(name)}</strong><span></span></span>
+            </button>
+            <button class="edit-tab" type="button" data-edit-scene="${id}" aria-label="Edit ${escapeHtml(name)}">✎</button>
+          </div>
+        `;
+      }).join("");
+      sceneNav.querySelectorAll(".scene-tab").forEach((button) => {
+        button.addEventListener("click", () => activateScene(button.dataset.scene));
+      });
+      sceneNav.querySelectorAll("[data-edit-scene]").forEach((button) => {
+        button.addEventListener("click", () => openEditor(button.dataset.editScene));
+      });
+    }
+
     function renderScene(scene) {
       const state = sceneState[scene];
       if (!state) return;
-      if (scene === "flow") {
-        renderFlowScene();
+      const type = sceneTypeFor(scene);
+      if (type === "flow") {
+        renderFlowScene(scene);
       }
-      if (scene === "capture") {
+      if (type === "capture") {
         applyBackground(captureSurface, state.backgroundImage);
       }
-      if (scene === "window") {
+      if (type === "window") {
         applyBackground(windowSurface, state.backgroundImage);
       }
-      if (scene === "url") {
+      if (type === "url") {
         applyBackground(urlEmpty, state.backgroundImage);
-        renderUrlScene();
+        renderUrlScene(false, scene);
       }
-      if (scene === "slides") {
+      if (type === "slides") {
         applyBackground(slideFrame, state.backgroundImage);
-        renderSlides();
+        renderSlides(scene);
       }
       document.querySelectorAll(`[data-scene-title="${scene}"]`).forEach((node) => {
         node.textContent = state.title || editorConfig[scene].title;
@@ -1481,18 +1536,17 @@
       document.querySelectorAll(`[data-scene-notes="${scene}"]`).forEach((node) => {
         node.textContent = state.notes || state.url || "";
       });
-      const navLabel = document.querySelector(`[data-scene="${scene}"] .tab-label strong`);
-      if (navLabel) navLabel.textContent = state.title || editorConfig[scene].title;
+      renderSceneNav();
       updateNotesContext();
     }
 
-    function renderFlowScene() {
-      const state = sceneState.flow;
+    function renderFlowScene(scene = activeScene) {
+      const state = sceneState[scene] || sceneState.flow;
       flowHeader.textContent = state.header || state.title || "Flow";
       flowSubheader.textContent = state.subheader || "";
       flowRuntime.style.setProperty("--flow-bg", state.backgroundImage ? `url("${state.backgroundImage}")` : "linear-gradient(135deg, rgba(255, 106, 79, 0.16), rgba(121, 216, 207, 0.12))");
-      flowRows.innerHTML = state.rows.map((row, index) => row.visible ? `
-        <article class="flow-row ${row.visible ? "row-visible" : "row-hidden"}" data-flow-row="${index}" onclick="toggleFlowRow(${index})">
+      flowRows.innerHTML = state.rows.map((row, index) => `
+        <article class="flow-row ${row.revealed ? "revealed" : ""}" data-flow-row="${index}" onclick="toggleFlowRow(${index})">
           <div class="flow-cell">
             <strong class="flow-topic">${escapeHtml(row.topic)}</strong>
             <span class="flow-subtopic">${escapeHtml(row.subtopic)}</span>
@@ -1501,14 +1555,14 @@
             <strong class="flow-impact">${escapeHtml(row.impact)}</strong>
             <span class="flow-subimpact">${escapeHtml(row.subimpact)}</span>
           </div>
-          <span class="row-check" aria-hidden="true">${row.visible ? "✓" : ""}</span>
+          <span class="row-check" aria-hidden="true">✓</span>
         </article>
-      ` : "").join("");
+      `).join("");
     }
 
     function toggleFlowRow(index) {
       const row = sceneState.flow.rows[index];
-      row.visible = !row.visible;
+      row.revealed = !row.revealed;
       renderFlowScene();
     }
 
@@ -1516,6 +1570,7 @@
       const state = sceneState.flow;
       editorTitle.textContent = "Edit Flow";
       editorFields.innerHTML = `
+        <div class="field"><label for="flow-title">Scene Name</label><input id="flow-title" data-flow-key="title" value="${escapeHtml(state.title)}"></div>
         <div class="field"><label for="flow-background">Custom Background Image</label><input id="flow-background" data-flow-key="backgroundImage" type="file" accept="image/*"></div>
         <div class="field"><label for="flow-header">Header</label><input id="flow-header" data-flow-key="header" value="${escapeHtml(state.header)}"></div>
         <div class="field"><label for="flow-subheader">Subheader</label><input id="flow-subheader" data-flow-key="subheader" value="${escapeHtml(state.subheader)}"></div>
@@ -1528,7 +1583,6 @@
               <div class="field"><label>Subtopic ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="subtopic" value="${escapeHtml(row.subtopic)}"></div>
               <div class="field"><label>Subimpact ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="subimpact" value="${escapeHtml(row.subimpact)}"></div>
             </div>
-            <label class="toggle-line"><input type="checkbox" data-flow-row="${index}" data-flow-toggle-key="visible" ${row.visible ? "checked" : ""}> Row ${index + 1} Visible</label>
           </section>
         `).join("")}
       `;
@@ -1548,41 +1602,38 @@
       editorFields.querySelectorAll("[data-flow-row-key]").forEach((field) => {
         field.addEventListener("input", () => {
           state.rows[Number(field.dataset.flowRow)][field.dataset.flowRowKey] = field.value;
-          renderScene("flow");
-        });
-      });
-      editorFields.querySelectorAll("[data-flow-toggle-key]").forEach((field) => {
-        field.addEventListener("change", () => {
-          state.rows[Number(field.dataset.flowRow)][field.dataset.flowToggleKey] = field.checked;
-          renderScene("flow");
+          renderScene(editingScene);
         });
       });
       editorPanel.classList.add("open");
       settingsPanel.classList.remove("open");
+      editorCaptureBtn.hidden = true;
     }
 
-    function renderUrlScene(force = false) {
-      const url = normalizeUrl(sceneState.url.url);
+    function renderUrlScene(force = false, scene = activeScene) {
+      const state = sceneState[scene] || sceneState.url;
+      const url = normalizeUrl(state.url);
       urlEmpty.style.display = url ? "none" : "grid";
       if (url && (force || urlFrame.src !== url)) {
-        sceneState.url.url = url;
+        state.url = url;
         urlFrame.src = url;
-        setStatus("URL loading", `Loading ${url}`);
+        setStatus("URL loading", `Loading ${url}. Browser test uses iframe and may be blocked by X-Frame-Options; Electron uses WebView/BrowserView for authenticated sites.`);
       }
     }
 
     function refreshActiveScene() {
-      if (activeScene === "url") {
-        renderUrlScene(true);
+      const type = sceneTypeFor(activeScene);
+      if (type === "url") {
+        renderUrlScene(true, activeScene);
         return;
       }
-      if (activeScene === "window" || activeScene === "capture") {
+      if (type === "window" || type === "capture") {
         startCapture();
         return;
       }
-      if (activeScene === "slides") {
-        renderSlides();
-        setStatus("Slides refreshed", `${sceneState.slides.slides.length} slides ready.`);
+      if (type === "slides") {
+        renderSlides(activeScene);
+        setStatus("Slides refreshed", `${(sceneState[activeScene].slides || []).length} slides ready.`);
         return;
       }
       renderScene(activeScene);
@@ -1599,20 +1650,23 @@
 
     function openEditor(scene) {
       editingScene = scene;
-      editorSceneSelect.value = scene;
-      if (scene === "flow") {
+      const type = sceneTypeFor(scene);
+      editorSceneSelect.value = type;
+      if (type === "flow") {
         renderFlowEditor();
         return;
       }
-      const config = editorConfig[scene] || editorConfig.capture;
+      const config = editorConfig[type] || editorConfig.capture;
       const state = sceneState[scene] || sceneState.capture;
       editorTitle.textContent = `Edit ${config.title}`;
-      const extraControls = scene === "url"
-        ? `<div class="field-grid"><button class="button primary" id="urlRefreshBtn" type="button">Refresh/Reconnect URL</button></div>`
-        : scene === "slides"
+      const extraControls = type === "url"
+        ? `<div class="field-grid"><p class="scene-meta">Browser-test URL scenes use iframe, so sites with X-Frame-Options/CSP may refuse to connect here. The Electron build must use WebView/BrowserView for those authenticated sites.</p><button class="button primary" id="urlRefreshBtn" type="button">Refresh/Reconnect URL</button><button class="button" id="urlPopoutBtn" type="button">Open URL In Separate Browser Window</button></div>`
+        : type === "slides"
           ? `<div class="field-grid"><button class="button primary" id="slidesUploadBtn" type="button">Upload Slides</button><input id="slidesUploadInput" type="file" accept="image/*" multiple hidden><div id="slideList" class="source-list"></div></div>`
-          : "";
-      editorFields.innerHTML = config.fields.map(({ key, label, type }) => {
+          : type === "capture"
+            ? `<div class="field-grid"><button class="button primary" id="quicktimeGuideBtn" type="button">Open QuickTime and Select Movie Recording</button><p class="scene-meta">Open QuickTime Player, choose File > New Movie Recording, select the mobile device in QuickTime, then choose that window as the capture source.</p></div>`
+            : "";
+      editorFields.innerHTML = `<div class="field"><label>Scene Name</label><input data-editor-key="title" value="${escapeHtml(state.title || config.title)}"></div>` + config.fields.filter(({ key }) => key !== "title").map(({ key, label, type }) => {
         const id = `editor-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
         const value = escapeHtml(state[key] || "");
         if (type === "file") {
@@ -1638,8 +1692,18 @@
       });
       const urlRefresh = document.getElementById("urlRefreshBtn");
       if (urlRefresh) urlRefresh.addEventListener("click", () => {
-        sceneState.url.url = normalizeUrl(sceneState.url.url);
-        renderUrlScene(true);
+        state.url = normalizeUrl(state.url);
+        renderUrlScene(true, scene);
+      });
+      const urlPopout = document.getElementById("urlPopoutBtn");
+      if (urlPopout) urlPopout.addEventListener("click", () => {
+        const url = normalizeUrl(state.url);
+        if (url) window.open(url, "cuevue-url-live");
+      });
+      const quicktimeGuide = document.getElementById("quicktimeGuideBtn");
+      if (quicktimeGuide) quicktimeGuide.addEventListener("click", () => {
+        window.open("quicktimeplayer://", "_blank");
+        setStatus("QuickTime workflow", "Open QuickTime Player, select File > New Movie Recording, choose the mobile device, then select that Movie Recording window as CueVue's capture source.");
       });
       const slidesUpload = document.getElementById("slidesUploadBtn");
       const slidesInput = document.getElementById("slidesUploadInput");
@@ -1647,10 +1711,11 @@
         slidesUpload.addEventListener("click", () => slidesInput.click());
         slidesInput.addEventListener("change", async () => {
           const files = Array.from(slidesInput.files || []).filter((file) => file.type.startsWith("image/"));
-          sceneState.slides.slides = await Promise.all(files.map(readLocalImage));
-          sceneState.slides.slideNotes = sceneState.slides.slides.map((_, index) => sceneState.slides.slideNotes[index] || "");
-          sceneState.slides.slideIndex = 0;
-          renderSlides();
+          const imported = await Promise.all(files.map(readLocalImage));
+          state.slides = (state.slides || []).concat(imported);
+          state.slideNotes = state.slides.map((_, index) => state.slideNotes[index] || "");
+          if (state.slides.length === imported.length) state.slideIndex = 0;
+          renderSlides(scene);
           renderSlideList();
           updateNotesContext();
         });
@@ -1659,27 +1724,48 @@
       editorPanel.classList.add("open");
       settingsPanel.classList.remove("open");
       notesPanel.classList.remove("open");
+      editorCaptureBtn.hidden = !(type === "window" || type === "capture");
     }
 
     function renderSlideList() {
       const list = document.getElementById("slideList");
       if (!list) return;
-      const slides = sceneState.slides.slides;
+      const slideScene = sceneState[editingScene] || sceneState.slides;
+      const slides = slideScene.slides || [];
       list.innerHTML = slides.length
-        ? slides.map((src, index) => `<button class="source-card" type="button" data-slide-index="${index}"><img class="source-thumb" src="${src}" alt=""><span><strong>Slide ${index + 1}</strong><p>${index === sceneState.slides.slideIndex ? "Current slide" : "Click to present"}</p></span></button>`).join("")
+        ? slides.map((src, index) => `<div class="source-card"><button type="button" data-slide-index="${index}" style="display:contents"><img class="source-thumb" src="${src}" alt=""><span><strong>Slide ${index + 1}</strong><p>${index === slideScene.slideIndex ? "Current slide" : "Click to present"}</p></span></button><button class="button" type="button" data-slide-up="${index}">↑</button><button class="button" type="button" data-slide-down="${index}">↓</button></div>`).join("")
         : `<p class="scene-meta">No slides uploaded yet.</p>`;
       list.querySelectorAll("[data-slide-index]").forEach((button) => {
         button.addEventListener("click", () => {
-          sceneState.slides.slideIndex = Number(button.dataset.slideIndex);
-          renderSlides();
+          slideScene.slideIndex = Number(button.dataset.slideIndex);
+          renderSlides(editingScene);
           renderSlideList();
           updateNotesContext();
         });
       });
+      list.querySelectorAll("[data-slide-up]").forEach((button) => {
+        button.addEventListener("click", () => moveSlide(Number(button.dataset.slideUp), -1));
+      });
+      list.querySelectorAll("[data-slide-down]").forEach((button) => {
+        button.addEventListener("click", () => moveSlide(Number(button.dataset.slideDown), 1));
+      });
     }
 
-    function renderSlides() {
-      const state = sceneState.slides;
+    function moveSlide(index, delta) {
+      const target = index + delta;
+      const slideScene = sceneState[editingScene] || sceneState.slides;
+      const slides = slideScene.slides || [];
+      if (target < 0 || target >= slides.length) return;
+      [slides[index], slides[target]] = [slides[target], slides[index]];
+      [slideScene.slideNotes[index], slideScene.slideNotes[target]] = [slideScene.slideNotes[target], slideScene.slideNotes[index]];
+      slideScene.slideIndex = target;
+      renderSlides(editingScene);
+      renderSlideList();
+      updateNotesContext();
+    }
+
+    function renderSlides(scene = activeScene) {
+      const state = sceneState[scene] || sceneState.slides;
       const slides = state.slides || [];
       const hasSlides = slides.length > 0;
       slideEmpty.style.display = hasSlides ? "none" : "grid";
@@ -1692,24 +1778,26 @@
     }
 
     function changeSlide(delta) {
-      const state = sceneState.slides;
+      const state = sceneState[activeScene] || sceneState.slides;
       if (!state.slides.length) return;
       state.slideIndex = Math.max(0, Math.min(state.slideIndex + delta, state.slides.length - 1));
-      renderSlides();
+      renderSlides(activeScene);
       renderSlideList();
       updateNotesContext();
     }
 
     function currentNotesKey() {
-      if (activeScene === "slides" && sceneState.slides.slides.length) {
-        return `slides:${sceneState.slides.slideIndex}`;
+      const state = sceneState[activeScene] || sceneState.slides;
+      if (sceneTypeFor(activeScene) === "slides" && state.slides && state.slides.length) {
+        return `${activeScene}:slide:${state.slideIndex}`;
       }
       return activeScene;
     }
 
     function updateNotesContext() {
       const sceneTitle = sceneState[activeScene] && sceneState[activeScene].title ? sceneState[activeScene].title : activeScene;
-      const slideLabel = activeScene === "slides" && sceneState.slides.slides.length ? `Slide ${sceneState.slides.slideIndex + 1}` : "";
+      const state = sceneState[activeScene] || {};
+      const slideLabel = sceneTypeFor(activeScene) === "slides" && state.slides && state.slides.length ? `Slide ${state.slideIndex + 1}` : "";
       const key = currentNotesKey();
       notesTitle.textContent = sceneTitle;
       notesMeta.textContent = slideLabel || "Scene notes";
@@ -1756,6 +1844,8 @@
         captureVideo.srcObject = stream;
         captureEmpty.style.display = "none";
         stage.classList.add("has-capture");
+        window.focus();
+        document.body.focus();
         setStatus("Capture active", "If the selected source is blank, click Choose Capture Source and pick Entire Screen.");
 
         const [videoTrack] = stream.getVideoTracks();
@@ -1774,8 +1864,49 @@
           }
         }, 2200);
       } catch (error) {
+        window.focus();
         setStatus("Picker closed", error && error.message ? error.message : "No source was selected.");
       }
+    }
+
+    function openNotesWindow() {
+      const features = "popup=yes,width=380,height=560,left=80,top=80";
+      notesWindow = window.open("", "cuevue-notes", features);
+      updateNotesContext();
+    }
+
+    function applyCursorMode() {
+      document.body.classList.toggle("cursor-fancy", globalSettings.cursorMode === "fancy");
+      if (globalSettings.cursorMode === "hide") document.body.style.cursor = "none";
+      else document.body.style.cursor = "";
+    }
+
+    function addScene() {
+      const type = window.prompt("Scene type: Flow, URL Live, Window Capture, Mobile Device Capture, or Slides", "Flow");
+      if (!type) return;
+      const normalized = type.toLowerCase();
+      const sceneType = normalized.includes("url") ? "url"
+        : normalized.includes("window") ? "window"
+          : normalized.includes("mobile") || normalized.includes("capture") ? "capture"
+            : normalized.includes("slide") ? "slides"
+              : "flow";
+      sceneCounter += 1;
+      const id = `scene-${Date.now().toString(36)}-${sceneCounter}`;
+      const base = sceneType === "flow"
+        ? { ...sceneState.flow, rows: sceneState.flow.rows.map((row) => ({ ...row, revealed: false })) }
+        : { ...sceneState[sceneType] };
+      base.type = sceneType;
+      base.title = window.prompt("Scene name", editorConfig[sceneType].title) || editorConfig[sceneType].title;
+      if (sceneType === "slides") {
+        base.slides = [];
+        base.slideIndex = 0;
+        base.slideNotes = [];
+      }
+      sceneState[id] = base;
+      sceneNotes[id] = base.notes || "";
+      sceneOrder.push(id);
+      renderSceneNav();
+      openEditor(id);
     }
 
     document.querySelectorAll("[data-start-capture]").forEach((button) => {
@@ -1784,14 +1915,16 @@
     captureBtn.addEventListener("click", startCapture);
     stopBtn.addEventListener("click", stopCapture);
     refreshBtn.addEventListener("click", refreshActiveScene);
+    addSceneBtn.addEventListener("click", addScene);
     settingsBtn.addEventListener("click", () => {
+      const cursorSetting = document.getElementById("cursorSetting");
+      if (cursorSetting) cursorSetting.value = globalSettings.cursorMode || "auto";
       settingsPanel.classList.toggle("open");
       editorPanel.classList.remove("open");
       notesPanel.classList.remove("open");
     });
     notesBtn.addEventListener("click", () => {
-      updateNotesContext();
-      notesPanel.classList.toggle("open");
+      openNotesWindow();
       settingsPanel.classList.remove("open");
       editorPanel.classList.remove("open");
     });
@@ -1800,8 +1933,7 @@
       updateNotesContext();
     });
     popoutNotesBtn.addEventListener("click", () => {
-      notesWindow = window.open("", "cuevue-notes", "width=380,height=560,alwaysOnTop=yes");
-      updateNotesContext();
+      openNotesWindow();
     });
     closeEditorBtn.addEventListener("click", () => {
       editorPanel.classList.remove("open");
@@ -1818,22 +1950,25 @@
       }
     });
 
-    document.querySelectorAll(".scene-tab").forEach((button) => {
-      button.addEventListener("click", () => {
-        activateScene(button.dataset.scene);
-      });
-    });
-    document.querySelectorAll("[data-edit-scene]").forEach((button) => {
-      button.addEventListener("click", () => {
-        openEditor(button.dataset.editScene);
-      });
+    document.getElementById("cursorSetting").addEventListener("change", (event) => {
+      globalSettings.cursorMode = event.target.value;
+      saveSettings();
+      applyCursorMode();
     });
     prevSlideBtn.addEventListener("click", () => changeSlide(-1));
     nextSlideBtn.addEventListener("click", () => changeSlide(1));
     urlFrame.addEventListener("load", () => {
-      if (sceneState.url.url) setStatus("URL loaded", sceneState.url.url);
+      const state = sceneState[activeScene] || sceneState.url;
+      if (state.url) setStatus("URL loaded", state.url);
     });
+    document.addEventListener("mousemove", (event) => {
+      if (globalSettings.cursorMode !== "fancy") return;
+      fancyCursorDot.style.left = `${event.clientX}px`;
+      fancyCursorDot.style.top = `${event.clientY}px`;
+    });
+    renderSceneNav();
     Object.keys(sceneState).forEach(renderScene);
+    applyCursorMode();
     updateNotesContext();
   </script>
 </body>

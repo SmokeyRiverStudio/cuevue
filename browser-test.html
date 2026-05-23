@@ -1311,6 +1311,7 @@
     const nextSlideBtn = document.getElementById("nextSlideBtn");
     const fancyCursorDot = document.getElementById("fancyCursorDot");
     const SETTINGS_KEY = "cuevue_browser_settings_v2";
+    const WORKSPACE_KEY = "cuevue_browser_workspace_v3";
     let activeStream = null;
     let blackFrameTimer = null;
     let activeScene = "capture";
@@ -1428,6 +1429,48 @@
       slides: sceneState.slides.notes
     };
 
+    function cloneScene(scene) {
+      return JSON.parse(JSON.stringify(scene));
+    }
+
+    function saveWorkspace() {
+      const stateCopy = {};
+      Object.entries(sceneState).forEach(([id, scene]) => {
+        stateCopy[id] = cloneScene(scene);
+        if (Array.isArray(stateCopy[id].rows)) {
+          stateCopy[id].rows = stateCopy[id].rows.map((row) => ({ ...row, revealed: false }));
+        }
+      });
+      localStorage.setItem(WORKSPACE_KEY, JSON.stringify({
+        activeScene,
+        sceneCounter,
+        sceneOrder,
+        sceneState: stateCopy,
+        sceneNotes
+      }));
+    }
+
+    function loadWorkspace() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(WORKSPACE_KEY));
+        if (!saved || typeof saved !== "object") return;
+        if (Array.isArray(saved.sceneOrder) && saved.sceneOrder.length) sceneOrder = saved.sceneOrder;
+        if (Number.isFinite(saved.sceneCounter)) sceneCounter = saved.sceneCounter;
+        if (saved.sceneState && typeof saved.sceneState === "object") {
+          Object.keys(sceneState).forEach((key) => delete sceneState[key]);
+          Object.assign(sceneState, saved.sceneState);
+          Object.values(sceneState).forEach((scene) => {
+            if (Array.isArray(scene.rows)) scene.rows.forEach((row) => { row.revealed = false; });
+          });
+        }
+        if (saved.sceneNotes && typeof saved.sceneNotes === "object") {
+          Object.keys(sceneNotes).forEach((key) => delete sceneNotes[key]);
+          Object.assign(sceneNotes, saved.sceneNotes);
+        }
+        if (saved.activeScene && sceneState[saved.activeScene]) activeScene = saved.activeScene;
+      } catch (_) {}
+    }
+
     function loadSettings() {
       try {
         const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
@@ -1530,10 +1573,10 @@
         applyBackground(slideFrame, state.backgroundImage);
         renderSlides(scene);
       }
-      document.querySelectorAll(`[data-scene-title="${scene}"]`).forEach((node) => {
-        node.textContent = state.title || editorConfig[scene].title;
+      document.querySelectorAll(`[data-scene-title="${type}"]`).forEach((node) => {
+        node.textContent = state.title || editorConfig[type].title;
       });
-      document.querySelectorAll(`[data-scene-notes="${scene}"]`).forEach((node) => {
+      document.querySelectorAll(`[data-scene-notes="${type}"]`).forEach((node) => {
         node.textContent = state.notes || state.url || "";
       });
       renderSceneNav();
@@ -1561,13 +1604,14 @@
     }
 
     function toggleFlowRow(index) {
-      const row = sceneState.flow.rows[index];
+      const flowScene = sceneTypeFor(activeScene) === "flow" ? sceneState[activeScene] : sceneState.flow;
+      const row = flowScene.rows[index];
       row.revealed = !row.revealed;
-      renderFlowScene();
+      renderFlowScene(activeScene);
     }
 
     function renderFlowEditor() {
-      const state = sceneState.flow;
+      const state = sceneState[editingScene] || sceneState.flow;
       editorTitle.textContent = "Edit Flow";
       editorFields.innerHTML = `
         <div class="field"><label for="flow-title">Scene Name</label><input id="flow-title" data-flow-key="title" value="${escapeHtml(state.title)}"></div>
@@ -1592,17 +1636,20 @@
             const file = field.files && field.files[0];
             if (!file) return;
             state[field.dataset.flowKey] = await readLocalImage(file);
-            renderScene("flow");
+            renderScene(editingScene);
+            saveWorkspace();
             return;
           }
           state[field.dataset.flowKey] = field.value;
-          renderScene("flow");
+          renderScene(editingScene);
+          saveWorkspace();
         });
       });
       editorFields.querySelectorAll("[data-flow-row-key]").forEach((field) => {
         field.addEventListener("input", () => {
           state.rows[Number(field.dataset.flowRow)][field.dataset.flowRowKey] = field.value;
           renderScene(editingScene);
+          saveWorkspace();
         });
       });
       editorPanel.classList.add("open");
@@ -1643,9 +1690,11 @@
     function activateScene(scene) {
       activeScene = scene;
       document.querySelectorAll(".scene-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.scene === scene));
-      document.querySelectorAll(".scene-panel").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === scene));
+      const type = sceneTypeFor(scene);
+      document.querySelectorAll(".scene-panel").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === type));
       renderScene(scene);
       updateNotesContext();
+      saveWorkspace();
     }
 
     function openEditor(scene) {
@@ -1684,10 +1733,12 @@
             if (!file) return;
             state[field.dataset.editorKey] = await readLocalImage(file);
             renderScene(scene);
+            saveWorkspace();
             return;
           }
           state[field.dataset.editorKey] = field.value;
           renderScene(scene);
+          saveWorkspace();
         });
       });
       const urlRefresh = document.getElementById("urlRefreshBtn");
@@ -1718,6 +1769,7 @@
           renderSlides(scene);
           renderSlideList();
           updateNotesContext();
+          saveWorkspace();
         });
         renderSlideList();
       }
@@ -1762,6 +1814,7 @@
       renderSlides(editingScene);
       renderSlideList();
       updateNotesContext();
+      saveWorkspace();
     }
 
     function renderSlides(scene = activeScene) {
@@ -1882,21 +1935,36 @@
     }
 
     function addScene() {
-      const type = window.prompt("Scene type: Flow, URL Live, Window Capture, Mobile Device Capture, or Slides", "Flow");
-      if (!type) return;
-      const normalized = type.toLowerCase();
-      const sceneType = normalized.includes("url") ? "url"
-        : normalized.includes("window") ? "window"
-          : normalized.includes("mobile") || normalized.includes("capture") ? "capture"
-            : normalized.includes("slide") ? "slides"
-              : "flow";
+      editorTitle.textContent = "Add Scene";
+      editorFields.innerHTML = `
+        <div class="field"><label>Scene Type</label>
+          <select id="newSceneType">
+            <option value="flow">Flow</option>
+            <option value="url">URL Live</option>
+            <option value="window">Window Capture</option>
+            <option value="capture">Mobile Device Capture</option>
+            <option value="slides">Slides</option>
+          </select>
+        </div>
+        <div class="field"><label>Scene Name</label><input id="newSceneName" value="New Scene"></div>
+        <button class="button primary" id="createSceneBtn" type="button">Create Scene</button>
+      `;
+      editorCaptureBtn.hidden = true;
+      editorPanel.classList.add("open");
+      settingsPanel.classList.remove("open");
+      notesPanel.classList.remove("open");
+      document.getElementById("createSceneBtn").addEventListener("click", createSceneFromChooser);
+    }
+
+    function createSceneFromChooser() {
+      const sceneType = document.getElementById("newSceneType").value;
       sceneCounter += 1;
       const id = `scene-${Date.now().toString(36)}-${sceneCounter}`;
       const base = sceneType === "flow"
         ? { ...sceneState.flow, rows: sceneState.flow.rows.map((row) => ({ ...row, revealed: false })) }
         : { ...sceneState[sceneType] };
       base.type = sceneType;
-      base.title = window.prompt("Scene name", editorConfig[sceneType].title) || editorConfig[sceneType].title;
+      base.title = document.getElementById("newSceneName").value.trim() || editorConfig[sceneType].title;
       if (sceneType === "slides") {
         base.slides = [];
         base.slideIndex = 0;
@@ -1906,6 +1974,7 @@
       sceneNotes[id] = base.notes || "";
       sceneOrder.push(id);
       renderSceneNav();
+      saveWorkspace();
       openEditor(id);
     }
 
@@ -1931,6 +2000,7 @@
     notesText.addEventListener("input", () => {
       sceneNotes[currentNotesKey()] = notesText.value;
       updateNotesContext();
+      saveWorkspace();
     });
     popoutNotesBtn.addEventListener("click", () => {
       openNotesWindow();
@@ -1967,7 +2037,10 @@
       fancyCursorDot.style.top = `${event.clientY}px`;
     });
     renderSceneNav();
+    loadWorkspace();
+    renderSceneNav();
     Object.keys(sceneState).forEach(renderScene);
+    activateScene(activeScene);
     applyCursorMode();
     updateNotesContext();
   </script>

@@ -254,26 +254,35 @@
     .capture-video {
       position: absolute;
       inset: 0;
+      display: none;
       width: 100%;
       height: 100%;
       object-fit: contain;
       background: #050909;
     }
 
+    .stage.capture-live .capture-video {
+      display: block;
+    }
+
     .scene-panel {
       position: absolute;
       inset: 0;
-      display: grid;
+      display: none;
       place-items: center;
       padding: 34px;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 180ms ease;
     }
 
     .scene-panel.active {
+      display: grid;
       opacity: 1;
       pointer-events: auto;
+    }
+
+    .scene-panel[hidden] {
+      display: none !important;
     }
 
     .scene-panel[data-panel="flow"] {
@@ -999,6 +1008,41 @@
       background: #fff;
     }
 
+    .url-limitation {
+      position: absolute;
+      left: 50%;
+      bottom: 28px;
+      z-index: 4;
+      display: grid;
+      gap: 6px;
+      width: min(620px, calc(100% - 56px));
+      transform: translateX(-50%);
+      padding: 16px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: rgba(9, 14, 15, 0.88);
+      color: var(--cream);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .url-limitation.hidden {
+      display: none;
+    }
+
+    .url-limitation strong {
+      color: var(--salmon);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .url-limitation span {
+      color: rgba(248, 245, 237, 0.84);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
     .slide-frame {
       display: grid;
       place-items: center;
@@ -1192,6 +1236,10 @@
           </section>
           <section class="scene-panel" data-panel="url">
             <iframe class="url-frame" id="urlFrame" title="URL Live scene" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            <div class="url-limitation hidden" id="urlLimitation" aria-live="polite">
+              <strong>Browser test limitation</strong>
+              <span id="urlLimitationText"></span>
+            </div>
             <div class="scene-surface" id="urlEmpty">
               <div class="scene-glyph url" aria-hidden="true"></div>
               <h1 data-scene-title="url">URL Live</h1>
@@ -1301,6 +1349,8 @@
     const stage = document.getElementById("stage");
     const windowSurface = document.getElementById("windowSurface");
     const urlFrame = document.getElementById("urlFrame");
+    const urlLimitation = document.getElementById("urlLimitation");
+    const urlLimitationText = document.getElementById("urlLimitationText");
     const urlEmpty = document.getElementById("urlEmpty");
     const slideFrame = document.getElementById("slideFrame");
     const slideEmpty = document.getElementById("slideEmpty");
@@ -1314,6 +1364,7 @@
     const WORKSPACE_KEY = "cuevue_browser_workspace_v3";
     let activeStream = null;
     let blackFrameTimer = null;
+    let urlLoadTimer = null;
     let activeScene = "capture";
     let editingScene = "capture";
     let notesWindow = null;
@@ -1502,6 +1553,27 @@
       return /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
     }
 
+    function setUrlLimitation(message = "") {
+      urlLimitation.classList.toggle("hidden", !message);
+      urlLimitationText.textContent = message;
+    }
+
+    function urlNeedsBrowserLimitation(url) {
+      try {
+        return new URL(url).hostname.endsWith("macmms.com");
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function browserUrlLimitationMessage(url) {
+      let host = url;
+      try {
+        host = new URL(url).hostname;
+      } catch (_) {}
+      return `${host} may be refusing browser-test iframe embedding through X-Frame-Options or Content-Security-Policy. Use Open URL In Separate Browser Window for this browser build; Electron uses WebView/BrowserView for authenticated sites.`;
+    }
+
     function readLocalImage(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1660,11 +1732,39 @@
     function renderUrlScene(force = false, scene = activeScene) {
       const state = sceneState[scene] || sceneState.url;
       const url = normalizeUrl(state.url);
+      const isActiveUrlScene = scene === activeScene && sceneTypeFor(scene) === "url";
       urlEmpty.style.display = url ? "none" : "grid";
+      setUrlLimitation("");
+      clearTimeout(urlLoadTimer);
+      urlLoadTimer = null;
+      if (!url) {
+        urlFrame.removeAttribute("src");
+        return;
+      }
       if (url && (force || urlFrame.src !== url)) {
         state.url = url;
-        urlFrame.src = url;
-        setStatus("URL loading", `Loading ${url}. Browser test uses iframe and may be blocked by X-Frame-Options; Electron uses WebView/BrowserView for authenticated sites.`);
+        urlFrame.dataset.targetUrl = url;
+        const assignUrl = () => {
+          urlFrame.src = url;
+        };
+        if (force) {
+          urlFrame.src = "about:blank";
+          window.setTimeout(assignUrl, 60);
+        } else {
+          assignUrl();
+        }
+        if (isActiveUrlScene) setStatus("URL loading", `Loading ${url}. Browser test uses iframe and may be blocked by X-Frame-Options; Electron uses WebView/BrowserView for authenticated sites.`);
+        urlLoadTimer = window.setTimeout(() => {
+          const message = browserUrlLimitationMessage(url);
+          if (isActiveUrlScene) {
+            setUrlLimitation(message);
+            setStatus("Browser security limitation", message);
+          }
+        }, 3200);
+      } else if (isActiveUrlScene && urlNeedsBrowserLimitation(url)) {
+        const message = browserUrlLimitationMessage(url);
+        setUrlLimitation(message);
+        setStatus("Browser security limitation", message);
       }
     }
 
@@ -1691,7 +1791,12 @@
       activeScene = scene;
       document.querySelectorAll(".scene-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.scene === scene));
       const type = sceneTypeFor(scene);
-      document.querySelectorAll(".scene-panel").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === type));
+      document.querySelectorAll(".scene-panel").forEach((panel) => {
+        const isActive = panel.dataset.panel === type;
+        panel.classList.toggle("active", isActive);
+        panel.hidden = !isActive;
+      });
+      stage.classList.toggle("capture-live", Boolean(activeStream) && (type === "capture" || type === "window"));
       renderScene(scene);
       updateNotesContext();
       saveWorkspace();
@@ -1710,10 +1815,10 @@
       editorTitle.textContent = `Edit ${config.title}`;
       const extraControls = type === "url"
         ? `<div class="field-grid"><p class="scene-meta">Browser-test URL scenes use iframe, so sites with X-Frame-Options/CSP may refuse to connect here. The Electron build must use WebView/BrowserView for those authenticated sites.</p><button class="button primary" id="urlRefreshBtn" type="button">Refresh/Reconnect URL</button><button class="button" id="urlPopoutBtn" type="button">Open URL In Separate Browser Window</button></div>`
-        : type === "slides"
-          ? `<div class="field-grid"><button class="button primary" id="slidesUploadBtn" type="button">Upload Slides</button><input id="slidesUploadInput" type="file" accept="image/*" multiple hidden><div id="slideList" class="source-list"></div></div>`
+          : type === "slides"
+            ? `<div class="field-grid"><button class="button primary" id="slidesUploadBtn" type="button">Upload Slides</button><input id="slidesUploadInput" type="file" accept="image/*" multiple hidden><div id="slideList" class="source-list"></div></div>`
           : type === "capture"
-            ? `<div class="field-grid"><button class="button primary" id="quicktimeGuideBtn" type="button">Open QuickTime and Select Movie Recording</button><p class="scene-meta">Open QuickTime Player, choose File > New Movie Recording, select the mobile device in QuickTime, then choose that window as the capture source.</p></div>`
+            ? `<div class="field-grid"><button class="button primary" id="quicktimeGuideBtn" type="button">Open QuickTime Player</button><p class="scene-meta">Open QuickTime Player, choose File > New Movie Recording, select the mobile device in QuickTime, then choose that window as the capture source.</p></div>`
             : "";
       editorFields.innerHTML = `<div class="field"><label>Scene Name</label><input data-editor-key="title" value="${escapeHtml(state.title || config.title)}"></div>` + config.fields.filter(({ key }) => key !== "title").map(({ key, label, type }) => {
         const id = `editor-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
@@ -1753,8 +1858,7 @@
       });
       const quicktimeGuide = document.getElementById("quicktimeGuideBtn");
       if (quicktimeGuide) quicktimeGuide.addEventListener("click", () => {
-        window.open("quicktimeplayer://", "_blank");
-        setStatus("QuickTime workflow", "Open QuickTime Player, select File > New Movie Recording, choose the mobile device, then select that Movie Recording window as CueVue's capture source.");
+        setStatus("Browser test limitation", "QuickTime launch is only available in the Electron app. Open QuickTime Player manually, then select the movie recording window.");
       });
       const slidesUpload = document.getElementById("slidesUploadBtn");
       const slidesInput = document.getElementById("slidesUploadInput");
@@ -1870,6 +1974,7 @@
       captureVideo.srcObject = null;
       captureEmpty.style.display = "grid";
       stage.classList.remove("has-capture");
+      stage.classList.remove("capture-live");
       setStatus("Ready", "Open the browser picker again to choose screen, QuickTime, or another window.");
     }
 
@@ -1897,6 +2002,7 @@
         captureVideo.srcObject = stream;
         captureEmpty.style.display = "none";
         stage.classList.add("has-capture");
+        stage.classList.toggle("capture-live", sceneTypeFor(activeScene) === "capture" || sceneTypeFor(activeScene) === "window");
         window.focus();
         document.body.focus();
         setStatus("Capture active", "If the selected source is blank, click Choose Capture Source and pick Entire Screen.");
@@ -1913,6 +2019,7 @@
           if (!captureVideo.videoWidth || !captureVideo.videoHeight) {
             setStatus("No visible frames", "The selected window did not provide frames. Click Choose Capture Source and select Entire Screen.");
             stage.classList.remove("has-capture");
+            stage.classList.remove("capture-live");
             if (activeScene === "capture") captureEmpty.style.display = "grid";
           }
         }, 2200);
@@ -2029,7 +2136,13 @@
     nextSlideBtn.addEventListener("click", () => changeSlide(1));
     urlFrame.addEventListener("load", () => {
       const state = sceneState[activeScene] || sceneState.url;
-      if (state.url) setStatus("URL loaded", state.url);
+      const url = normalizeUrl(state.url);
+      if (url && !urlNeedsBrowserLimitation(url)) {
+        clearTimeout(urlLoadTimer);
+        urlLoadTimer = null;
+        setUrlLimitation("");
+        setStatus("URL loaded", url);
+      }
     });
     document.addEventListener("mousemove", (event) => {
       if (globalSettings.cursorMode !== "fancy") return;

@@ -245,6 +245,12 @@
       box-shadow: var(--shadow);
     }
 
+    .stage.has-capture .scene-panel.active[data-panel="capture"],
+    .stage.has-capture .scene-panel.active[data-panel="window"] {
+      opacity: 0;
+      pointer-events: none;
+    }
+
     .capture-video {
       position: absolute;
       inset: 0;
@@ -308,7 +314,7 @@
     .flow-runtime {
       display: grid;
       align-content: start;
-      gap: clamp(14px, 2.1vh, 24px);
+      gap: clamp(9px, 1.3vh, 15px);
       width: 100%;
       height: 100%;
       min-height: 0;
@@ -327,10 +333,10 @@
 
     .flow-heading {
       display: grid;
-      gap: 8px;
+      gap: 6px;
       justify-self: center;
       max-width: 820px;
-      margin: clamp(10px, 4vh, 42px) auto clamp(4px, 1.2vh, 16px);
+      margin: clamp(6px, 2.4vh, 26px) auto clamp(2px, .8vh, 10px);
       text-align: center;
     }
 
@@ -350,26 +356,25 @@
 
     .flow-rows {
       display: grid;
-      gap: clamp(7px, 1.1vh, 11px);
+      gap: clamp(4px, .65vh, 7px);
     }
 
     .flow-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
-      gap: clamp(8px, 1.2vw, 14px);
+      grid-template-columns: minmax(0, 1fr) minmax(0, .82fr) auto;
+      gap: clamp(6px, .8vw, 10px);
       align-items: center;
-      min-height: 66px;
-      padding: 8px;
+      min-height: 44px;
+      padding: 5px 7px;
       border: 1px solid rgba(248, 245, 237, 0.1);
       border-radius: 8px;
       background: rgba(9, 14, 15, 0.46);
-      transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
       backdrop-filter: blur(8px);
     }
 
     .flow-row.row-hidden {
-      opacity: 0.28;
-      transform: scale(0.992);
+      display: none;
     }
 
     .flow-row.row-visible {
@@ -380,9 +385,9 @@
     .flow-cell {
       display: grid;
       align-content: center;
-      gap: 3px;
+      gap: 2px;
       min-width: 0;
-      padding: 6px 8px;
+      padding: 4px 6px;
       border: 0;
       background: transparent;
     }
@@ -427,9 +432,7 @@
     }
 
     .flow-connector {
-      color: rgba(248, 245, 237, 0.34);
-      font-size: clamp(18px, 2vw, 28px);
-      font-weight: 900;
+      display: none;
     }
 
     .row-check {
@@ -444,13 +447,6 @@
       box-shadow: 0 0 18px rgba(121, 216, 207, 0.14);
       font-size: 16px;
       font-weight: 900;
-    }
-
-    .row-hidden .row-check {
-      color: rgba(248, 245, 237, 0.22);
-      background: rgba(248, 245, 237, 0.05);
-      border-color: rgba(248, 245, 237, 0.12);
-      box-shadow: none;
     }
 
     .flow-editor-row {
@@ -801,6 +797,37 @@
       backdrop-filter: blur(18px);
     }
 
+    .notes-panel {
+      position: absolute;
+      left: 20px;
+      bottom: 104px;
+      z-index: 10;
+      display: none;
+      width: min(360px, calc(100% - 40px));
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(12, 18, 19, 0.96);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .notes-panel.open {
+      display: grid;
+      gap: 10px;
+    }
+
+    .notes-panel textarea {
+      min-height: 140px;
+      border: 1px solid rgba(248, 245, 237, 0.14);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.075);
+      color: var(--ink);
+      font: inherit;
+      padding: 10px 11px;
+      resize: vertical;
+    }
+
     .editor-panel {
       position: absolute;
       top: 20px;
@@ -924,6 +951,50 @@
       backdrop-filter: blur(14px);
     }
 
+    .url-frame,
+    .slide-frame {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #fff;
+    }
+
+    .slide-frame {
+      display: grid;
+      place-items: center;
+      padding: 34px;
+      background-position: center;
+      background-size: cover;
+    }
+
+    .slide-frame img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background: #050909;
+      box-shadow: var(--shadow);
+    }
+
+    .slide-controls {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(9, 14, 15, 0.76);
+      backdrop-filter: blur(14px);
+    }
+
     .source-card p {
       margin: 3px 0 0;
     }
@@ -1022,7 +1093,7 @@
             <div class="capture-empty" id="captureEmpty">
               <div class="scene-surface" id="captureSurface">
                 <div class="scene-glyph capture" aria-hidden="true"></div>
-                <h1 data-scene-title="capture">iPhone Capture</h1>
+                <h1 data-scene-title="capture">Mobile Device Capture</h1>
                 <p data-scene-notes="capture">Select Entire Screen, the QuickTime Movie Recording window, or any visible window from the browser picker.</p>
                 <div class="source-list">
                   <button class="source-card" type="button" data-start-capture>
@@ -1042,7 +1113,7 @@
             </div>
           </section>
           <section class="scene-panel" data-panel="window">
-            <div class="scene-surface">
+            <div class="scene-surface" id="windowSurface">
               <div class="scene-glyph window" aria-hidden="true"></div>
               <h1 data-scene-title="window">Window Capture</h1>
               <p data-scene-notes="window">Use the browser picker to select a single app window, presentation window, or shared display area.</p>
@@ -1068,22 +1139,63 @@
             </div>
           </section>
           <section class="scene-panel" data-panel="slides">
-            <div class="scene-surface">
-              <div class="scene-glyph slides" aria-hidden="true"></div>
-              <h1 data-scene-title="slides">Slides</h1>
-              <p data-scene-notes="slides">Stage slide content with a clean operator preview and quick switching from the bottom scene bar.</p>
+            <div class="slide-frame" id="slideFrame">
+              <div class="scene-surface" id="slideEmpty">
+                <div class="scene-glyph slides" aria-hidden="true"></div>
+                <h1 data-scene-title="slides">Slides</h1>
+                <p data-scene-notes="slides">Import slide images from Edit, then present them here with notes and quick navigation.</p>
+              </div>
+              <img id="slideImage" alt="Current slide" hidden>
+              <div class="slide-controls" id="slideControls" hidden>
+                <button class="button" id="prevSlideBtn" type="button">Prev</button>
+                <span id="slideCounter">0 / 0</span>
+                <button class="button" id="nextSlideBtn" type="button">Next</button>
+              </div>
             </div>
           </section>
           <section class="scene-panel" data-panel="url">
-            <div class="scene-surface">
+            <iframe class="url-frame" id="urlFrame" title="URL Live scene" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            <div class="scene-surface" id="urlEmpty">
               <div class="scene-glyph url" aria-hidden="true"></div>
               <h1 data-scene-title="url">URL Live</h1>
-              <p data-scene-notes="url">Prepare a live web source for demos, references, or browser-first CueVue scenes.</p>
+              <p data-scene-notes="url">Enter a URL in Edit to load a clean audience-facing web scene.</p>
             </div>
           </section>
           <div class="settings-panel" id="settingsPanel" aria-live="polite">
             <strong>CueVue Browser Runtime</strong>
-            <p>Browser runtime first. Use the native picker for screen, QuickTime, or any visible window, then keep scene control in the operator bar.</p>
+            <label class="field">Fancy cursor
+              <select id="cursorSetting">
+                <option value="auto">Auto</option>
+                <option value="show">Show cursor</option>
+                <option value="hide">Hide cursor</option>
+                <option value="fancy">Fancy presentation cursor</option>
+              </select>
+            </label>
+            <label class="field">Fullscreen behavior
+              <select id="fullscreenSetting">
+                <option>Stage only</option>
+                <option>Entire app</option>
+              </select>
+            </label>
+            <label class="field">Reconnect behavior
+              <select id="reconnectSetting">
+                <option>Prompt and retry</option>
+                <option>Auto reopen picker</option>
+              </select>
+            </label>
+            <label class="field">Notes behavior
+              <select id="notesSetting">
+                <option>Use detachable notes window</option>
+                <option>Use inline notes panel</option>
+              </select>
+            </label>
+            <p>Browser runtime keeps capture in the native picker while preserving CueVue operator controls.</p>
+          </div>
+          <div class="notes-panel" id="notesPanel" aria-live="polite">
+            <strong id="notesTitle">CueVue Notes</strong>
+            <span class="scene-meta" id="notesMeta">Current scene</span>
+            <textarea id="notesText" placeholder="Scene or slide notes"></textarea>
+            <button class="button" id="popoutNotesBtn" type="button">Open Detachable Notes</button>
           </div>
           <div class="editor-panel" id="editorPanel" aria-live="polite">
             <div class="editor-head">
@@ -1092,7 +1204,7 @@
                   <option value="flow">Flow</option>
                   <option value="url">URL Live</option>
                   <option value="window">Window Capture</option>
-                  <option value="capture">iPhone Capture</option>
+                  <option value="capture">Mobile Device Capture</option>
                   <option value="slides">Slides</option>
                 </select>
               </label>
@@ -1130,7 +1242,7 @@
             <div class="scene-item">
               <button class="scene-tab active" type="button" data-scene="capture">
                 <span class="scene-mark capture" aria-hidden="true"></span>
-                <span class="tab-label"><strong>iPhone</strong><span>QuickTime</span></span>
+                <span class="tab-label"><strong>Mobile Device Capture</strong><span>Window source</span></span>
               </button>
               <button class="edit-tab" type="button" data-edit-scene="capture">Edit</button>
             </div>
@@ -1143,8 +1255,9 @@
             </div>
           </nav>
           <div class="utility-nav" aria-label="Utilities">
-            <button class="utility-tab" id="settingsBtn" type="button">Settings</button>
             <button class="utility-tab" id="refreshBtn" type="button">Refresh</button>
+            <button class="utility-tab" id="notesBtn" type="button">Notes</button>
+            <button class="utility-tab" id="settingsBtn" type="button">Settings</button>
           </div>
         </div>
       </section>
@@ -1162,7 +1275,13 @@
     const fullscreenBtn = document.getElementById("fullscreenBtn");
     const settingsBtn = document.getElementById("settingsBtn");
     const refreshBtn = document.getElementById("refreshBtn");
+    const notesBtn = document.getElementById("notesBtn");
     const settingsPanel = document.getElementById("settingsPanel");
+    const notesPanel = document.getElementById("notesPanel");
+    const notesTitle = document.getElementById("notesTitle");
+    const notesMeta = document.getElementById("notesMeta");
+    const notesText = document.getElementById("notesText");
+    const popoutNotesBtn = document.getElementById("popoutNotesBtn");
     const editorPanel = document.getElementById("editorPanel");
     const editorTitle = document.getElementById("editorTitle");
     const editorSceneSelect = document.getElementById("editorSceneSelect");
@@ -1174,9 +1293,22 @@
     const flowSubheader = document.getElementById("flowSubheader");
     const flowRows = document.getElementById("flowRows");
     const captureSurface = document.getElementById("captureSurface");
+    const stage = document.getElementById("stage");
+    const windowSurface = document.getElementById("windowSurface");
+    const urlFrame = document.getElementById("urlFrame");
+    const urlEmpty = document.getElementById("urlEmpty");
+    const slideFrame = document.getElementById("slideFrame");
+    const slideEmpty = document.getElementById("slideEmpty");
+    const slideImage = document.getElementById("slideImage");
+    const slideControls = document.getElementById("slideControls");
+    const slideCounter = document.getElementById("slideCounter");
+    const prevSlideBtn = document.getElementById("prevSlideBtn");
+    const nextSlideBtn = document.getElementById("nextSlideBtn");
     let activeStream = null;
     let blackFrameTimer = null;
     let activeScene = "capture";
+    let editingScene = "capture";
+    let notesWindow = null;
 
     const editorConfig = {
       flow: {
@@ -1190,6 +1322,7 @@
           { key: "url", label: "URL" },
           { key: "username", label: "Username Placeholder" },
           { key: "password", label: "Password Placeholder" },
+          { key: "backgroundImage", label: "Custom Background Image", type: "file" },
           { key: "layout", label: "Layout" },
           { key: "notes", label: "Notes", type: "textarea" }
         ]
@@ -1199,16 +1332,17 @@
         fields: [
           { key: "source", label: "Source" },
           { key: "title", label: "Title" },
+          { key: "backgroundImage", label: "Custom Background Image", type: "file" },
           { key: "captureSource", label: "Capture Source" },
           { key: "layout", label: "Layout" }
         ]
       },
       capture: {
-        title: "iPhone Capture",
+        title: "Mobile Device Capture",
         fields: [
           { key: "source", label: "Source" },
           { key: "title", label: "Title" },
-          { key: "backgroundImage", label: "Custom Background Image" },
+          { key: "backgroundImage", label: "Custom Background Image", type: "file" },
           { key: "captureSource", label: "Capture Source" },
           { key: "notes", label: "Notes", type: "textarea" }
         ]
@@ -1218,6 +1352,7 @@
         fields: [
           { key: "source", label: "Source" },
           { key: "title", label: "Title" },
+          { key: "backgroundImage", label: "Custom Background Image", type: "file" },
           { key: "layout", label: "Layout" },
           { key: "notes", label: "Notes", type: "textarea" }
         ]
@@ -1241,22 +1376,24 @@
       },
       url: {
         title: "URL Live",
-        url: "https://",
+        url: "https://jenn.macmms.com",
         username: "",
         password: "",
+        backgroundImage: "",
         layout: "Browser preview",
         notes: "Prepare a live web source for demos, references, or browser-first CueVue scenes."
       },
       window: {
         source: "Visible app window",
         title: "Window Capture",
+        backgroundImage: "",
         captureSource: "Browser picker",
         layout: "Contain",
         notes: "Use the browser picker to select a single app window, presentation window, or shared display area."
       },
       capture: {
         source: "QuickTime Movie Recording",
-        title: "iPhone Capture",
+        title: "Mobile Device Capture",
         backgroundImage: "",
         captureSource: "QuickTime window or entire screen",
         notes: "Select Entire Screen, the QuickTime Movie Recording window, or any visible window from the browser picker."
@@ -1264,9 +1401,21 @@
       slides: {
         source: "Slide deck",
         title: "Slides",
+        backgroundImage: "",
+        slides: [],
+        slideIndex: 0,
+        slideNotes: [],
         layout: "Deck preview",
         notes: "Stage slide content with a clean operator preview and quick switching from the bottom scene bar."
       }
+    };
+
+    const sceneNotes = {
+      flow: "",
+      url: sceneState.url.notes,
+      window: sceneState.window.notes,
+      capture: sceneState.capture.notes,
+      slides: sceneState.slides.notes
     };
 
     function setStatus(label, detail) {
@@ -1282,6 +1431,30 @@
         .replaceAll('"', "&quot;");
     }
 
+    function normalizeUrl(value) {
+      const trimmed = String(value || "").trim();
+      if (!trimmed) return "";
+      return /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    }
+
+    function readLocalImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(reader.error || new Error("Could not read image."));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function applyBackground(element, image) {
+      if (!element) return;
+      element.style.backgroundImage = image
+        ? `linear-gradient(180deg, rgba(24, 35, 36, 0.42), rgba(11, 17, 18, 0.72)), url("${image}")`
+        : "";
+      element.style.backgroundSize = image ? "cover" : "";
+      element.style.backgroundPosition = image ? "center" : "";
+    }
+
     function renderScene(scene) {
       const state = sceneState[scene];
       if (!state) return;
@@ -1289,11 +1462,18 @@
         renderFlowScene();
       }
       if (scene === "capture") {
-        captureSurface.style.backgroundImage = state.backgroundImage
-          ? `linear-gradient(180deg, rgba(24, 35, 36, 0.42), rgba(11, 17, 18, 0.72)), url("${state.backgroundImage}")`
-          : "";
-        captureSurface.style.backgroundSize = state.backgroundImage ? "cover" : "";
-        captureSurface.style.backgroundPosition = state.backgroundImage ? "center" : "";
+        applyBackground(captureSurface, state.backgroundImage);
+      }
+      if (scene === "window") {
+        applyBackground(windowSurface, state.backgroundImage);
+      }
+      if (scene === "url") {
+        applyBackground(urlEmpty, state.backgroundImage);
+        renderUrlScene();
+      }
+      if (scene === "slides") {
+        applyBackground(slideFrame, state.backgroundImage);
+        renderSlides();
       }
       document.querySelectorAll(`[data-scene-title="${scene}"]`).forEach((node) => {
         node.textContent = state.title || editorConfig[scene].title;
@@ -1303,6 +1483,7 @@
       });
       const navLabel = document.querySelector(`[data-scene="${scene}"] .tab-label strong`);
       if (navLabel) navLabel.textContent = state.title || editorConfig[scene].title;
+      updateNotesContext();
     }
 
     function renderFlowScene() {
@@ -1310,20 +1491,19 @@
       flowHeader.textContent = state.header || state.title || "Flow";
       flowSubheader.textContent = state.subheader || "";
       flowRuntime.style.setProperty("--flow-bg", state.backgroundImage ? `url("${state.backgroundImage}")` : "linear-gradient(135deg, rgba(255, 106, 79, 0.16), rgba(121, 216, 207, 0.12))");
-      flowRows.innerHTML = state.rows.map((row, index) => `
+      flowRows.innerHTML = state.rows.map((row, index) => row.visible ? `
         <article class="flow-row ${row.visible ? "row-visible" : "row-hidden"}" data-flow-row="${index}" onclick="toggleFlowRow(${index})">
           <div class="flow-cell">
             <strong class="flow-topic">${escapeHtml(row.topic)}</strong>
             <span class="flow-subtopic">${escapeHtml(row.subtopic)}</span>
           </div>
-          <span class="flow-connector" aria-hidden="true">→</span>
           <div class="flow-cell">
             <strong class="flow-impact">${escapeHtml(row.impact)}</strong>
             <span class="flow-subimpact">${escapeHtml(row.subimpact)}</span>
           </div>
           <span class="row-check" aria-hidden="true">${row.visible ? "✓" : ""}</span>
         </article>
-      `).join("");
+      ` : "").join("");
     }
 
     function toggleFlowRow(index) {
@@ -1336,7 +1516,7 @@
       const state = sceneState.flow;
       editorTitle.textContent = "Edit Flow";
       editorFields.innerHTML = `
-        <div class="field"><label for="flow-background">Custom Background Image</label><input id="flow-background" data-flow-key="backgroundImage" value="${escapeHtml(state.backgroundImage)}" placeholder="https://..."></div>
+        <div class="field"><label for="flow-background">Custom Background Image</label><input id="flow-background" data-flow-key="backgroundImage" type="file" accept="image/*"></div>
         <div class="field"><label for="flow-header">Header</label><input id="flow-header" data-flow-key="header" value="${escapeHtml(state.header)}"></div>
         <div class="field"><label for="flow-subheader">Subheader</label><input id="flow-subheader" data-flow-key="subheader" value="${escapeHtml(state.subheader)}"></div>
         ${state.rows.map((row, index) => `
@@ -1353,7 +1533,14 @@
         `).join("")}
       `;
       editorFields.querySelectorAll("[data-flow-key]").forEach((field) => {
-        field.addEventListener("input", () => {
+        field.addEventListener("input", async () => {
+          if (field.type === "file") {
+            const file = field.files && field.files[0];
+            if (!file) return;
+            state[field.dataset.flowKey] = await readLocalImage(file);
+            renderScene("flow");
+            return;
+          }
           state[field.dataset.flowKey] = field.value;
           renderScene("flow");
         });
@@ -1374,21 +1561,44 @@
       settingsPanel.classList.remove("open");
     }
 
-    function refreshUrlScene() {
-      if (activeScene !== "url") {
+    function renderUrlScene(force = false) {
+      const url = normalizeUrl(sceneState.url.url);
+      urlEmpty.style.display = url ? "none" : "grid";
+      if (url && (force || urlFrame.src !== url)) {
+        sceneState.url.url = url;
+        urlFrame.src = url;
+        setStatus("URL loading", `Loading ${url}`);
+      }
+    }
+
+    function refreshActiveScene() {
+      if (activeScene === "url") {
+        renderUrlScene(true);
+        return;
+      }
+      if (activeScene === "window" || activeScene === "capture") {
         startCapture();
         return;
       }
-      setStatus("URL refreshed", sceneState.url.url ? `Prepared ${sceneState.url.url}` : "URL scene refreshed.");
+      if (activeScene === "slides") {
+        renderSlides();
+        setStatus("Slides refreshed", `${sceneState.slides.slides.length} slides ready.`);
+        return;
+      }
+      renderScene(activeScene);
+      setStatus("Scene refreshed", `${sceneState[activeScene].title || activeScene} refreshed.`);
     }
 
     function activateScene(scene) {
       activeScene = scene;
       document.querySelectorAll(".scene-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.scene === scene));
       document.querySelectorAll(".scene-panel").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === scene));
+      renderScene(scene);
+      updateNotesContext();
     }
 
     function openEditor(scene) {
+      editingScene = scene;
       editorSceneSelect.value = scene;
       if (scene === "flow") {
         renderFlowEditor();
@@ -1397,22 +1607,116 @@
       const config = editorConfig[scene] || editorConfig.capture;
       const state = sceneState[scene] || sceneState.capture;
       editorTitle.textContent = `Edit ${config.title}`;
+      const extraControls = scene === "url"
+        ? `<div class="field-grid"><button class="button primary" id="urlRefreshBtn" type="button">Refresh/Reconnect URL</button></div>`
+        : scene === "slides"
+          ? `<div class="field-grid"><button class="button primary" id="slidesUploadBtn" type="button">Upload Slides</button><input id="slidesUploadInput" type="file" accept="image/*" multiple hidden><div id="slideList" class="source-list"></div></div>`
+          : "";
       editorFields.innerHTML = config.fields.map(({ key, label, type }) => {
         const id = `editor-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
         const value = escapeHtml(state[key] || "");
+        if (type === "file") {
+          return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="file" accept="image/*" data-editor-key="${key}"></div>`;
+        }
         if (type === "textarea") {
           return `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" data-editor-key="${key}">${value}</textarea></div>`;
         }
         return `<div class="field"><label for="${id}">${label}</label><input id="${id}" data-editor-key="${key}" value="${value}"></div>`;
-      }).join("");
+      }).join("") + extraControls;
       editorFields.querySelectorAll("[data-editor-key]").forEach((field) => {
-        field.addEventListener("input", () => {
+        field.addEventListener("input", async () => {
+          if (field.type === "file") {
+            const file = field.files && field.files[0];
+            if (!file) return;
+            state[field.dataset.editorKey] = await readLocalImage(file);
+            renderScene(scene);
+            return;
+          }
           state[field.dataset.editorKey] = field.value;
           renderScene(scene);
         });
       });
+      const urlRefresh = document.getElementById("urlRefreshBtn");
+      if (urlRefresh) urlRefresh.addEventListener("click", () => {
+        sceneState.url.url = normalizeUrl(sceneState.url.url);
+        renderUrlScene(true);
+      });
+      const slidesUpload = document.getElementById("slidesUploadBtn");
+      const slidesInput = document.getElementById("slidesUploadInput");
+      if (slidesUpload && slidesInput) {
+        slidesUpload.addEventListener("click", () => slidesInput.click());
+        slidesInput.addEventListener("change", async () => {
+          const files = Array.from(slidesInput.files || []).filter((file) => file.type.startsWith("image/"));
+          sceneState.slides.slides = await Promise.all(files.map(readLocalImage));
+          sceneState.slides.slideNotes = sceneState.slides.slides.map((_, index) => sceneState.slides.slideNotes[index] || "");
+          sceneState.slides.slideIndex = 0;
+          renderSlides();
+          renderSlideList();
+          updateNotesContext();
+        });
+        renderSlideList();
+      }
       editorPanel.classList.add("open");
       settingsPanel.classList.remove("open");
+      notesPanel.classList.remove("open");
+    }
+
+    function renderSlideList() {
+      const list = document.getElementById("slideList");
+      if (!list) return;
+      const slides = sceneState.slides.slides;
+      list.innerHTML = slides.length
+        ? slides.map((src, index) => `<button class="source-card" type="button" data-slide-index="${index}"><img class="source-thumb" src="${src}" alt=""><span><strong>Slide ${index + 1}</strong><p>${index === sceneState.slides.slideIndex ? "Current slide" : "Click to present"}</p></span></button>`).join("")
+        : `<p class="scene-meta">No slides uploaded yet.</p>`;
+      list.querySelectorAll("[data-slide-index]").forEach((button) => {
+        button.addEventListener("click", () => {
+          sceneState.slides.slideIndex = Number(button.dataset.slideIndex);
+          renderSlides();
+          renderSlideList();
+          updateNotesContext();
+        });
+      });
+    }
+
+    function renderSlides() {
+      const state = sceneState.slides;
+      const slides = state.slides || [];
+      const hasSlides = slides.length > 0;
+      slideEmpty.style.display = hasSlides ? "none" : "grid";
+      slideImage.hidden = !hasSlides;
+      slideControls.hidden = !hasSlides;
+      if (!hasSlides) return;
+      state.slideIndex = Math.max(0, Math.min(Number(state.slideIndex) || 0, slides.length - 1));
+      slideImage.src = slides[state.slideIndex];
+      slideCounter.textContent = `${state.slideIndex + 1} / ${slides.length}`;
+    }
+
+    function changeSlide(delta) {
+      const state = sceneState.slides;
+      if (!state.slides.length) return;
+      state.slideIndex = Math.max(0, Math.min(state.slideIndex + delta, state.slides.length - 1));
+      renderSlides();
+      renderSlideList();
+      updateNotesContext();
+    }
+
+    function currentNotesKey() {
+      if (activeScene === "slides" && sceneState.slides.slides.length) {
+        return `slides:${sceneState.slides.slideIndex}`;
+      }
+      return activeScene;
+    }
+
+    function updateNotesContext() {
+      const sceneTitle = sceneState[activeScene] && sceneState[activeScene].title ? sceneState[activeScene].title : activeScene;
+      const slideLabel = activeScene === "slides" && sceneState.slides.slides.length ? `Slide ${sceneState.slides.slideIndex + 1}` : "";
+      const key = currentNotesKey();
+      notesTitle.textContent = sceneTitle;
+      notesMeta.textContent = slideLabel || "Scene notes";
+      notesText.value = sceneNotes[key] || "";
+      if (notesWindow && !notesWindow.closed) {
+        notesWindow.document.body.innerHTML = `<main style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:18px;background:#fbf2cf;color:#1c1710;min-height:100vh;"><h2 style="margin:0 0 6px;">${escapeHtml(sceneTitle)}</h2><p style="margin:0 0 16px;color:#675f52;">${escapeHtml(slideLabel || "Scene notes")}</p><pre style="white-space:pre-wrap;font:inherit;line-height:1.45;">${escapeHtml(sceneNotes[key] || "")}</pre></main>`;
+      }
     }
 
     function stopCapture() {
@@ -1424,6 +1728,7 @@
       activeStream = null;
       captureVideo.srcObject = null;
       captureEmpty.style.display = "grid";
+      stage.classList.remove("has-capture");
       setStatus("Ready", "Open the browser picker again to choose screen, QuickTime, or another window.");
     }
 
@@ -1450,6 +1755,7 @@
         activeStream = stream;
         captureVideo.srcObject = stream;
         captureEmpty.style.display = "none";
+        stage.classList.add("has-capture");
         setStatus("Capture active", "If the selected source is blank, click Choose Capture Source and pick Entire Screen.");
 
         const [videoTrack] = stream.getVideoTracks();
@@ -1463,7 +1769,8 @@
         blackFrameTimer = setTimeout(() => {
           if (!captureVideo.videoWidth || !captureVideo.videoHeight) {
             setStatus("No visible frames", "The selected window did not provide frames. Click Choose Capture Source and select Entire Screen.");
-            captureEmpty.style.display = "grid";
+            stage.classList.remove("has-capture");
+            if (activeScene === "capture") captureEmpty.style.display = "grid";
           }
         }, 2200);
       } catch (error) {
@@ -1476,17 +1783,31 @@
     });
     captureBtn.addEventListener("click", startCapture);
     stopBtn.addEventListener("click", stopCapture);
-    refreshBtn.addEventListener("click", refreshUrlScene);
+    refreshBtn.addEventListener("click", refreshActiveScene);
     settingsBtn.addEventListener("click", () => {
       settingsPanel.classList.toggle("open");
       editorPanel.classList.remove("open");
+      notesPanel.classList.remove("open");
+    });
+    notesBtn.addEventListener("click", () => {
+      updateNotesContext();
+      notesPanel.classList.toggle("open");
+      settingsPanel.classList.remove("open");
+      editorPanel.classList.remove("open");
+    });
+    notesText.addEventListener("input", () => {
+      sceneNotes[currentNotesKey()] = notesText.value;
+      updateNotesContext();
+    });
+    popoutNotesBtn.addEventListener("click", () => {
+      notesWindow = window.open("", "cuevue-notes", "width=380,height=560,alwaysOnTop=yes");
+      updateNotesContext();
     });
     closeEditorBtn.addEventListener("click", () => {
       editorPanel.classList.remove("open");
     });
     editorCaptureBtn.addEventListener("click", startCapture);
     editorSceneSelect.addEventListener("change", () => {
-      activateScene(editorSceneSelect.value);
       openEditor(editorSceneSelect.value);
     });
     fullscreenBtn.addEventListener("click", () => {
@@ -1504,11 +1825,16 @@
     });
     document.querySelectorAll("[data-edit-scene]").forEach((button) => {
       button.addEventListener("click", () => {
-        activateScene(button.dataset.editScene);
         openEditor(button.dataset.editScene);
       });
     });
+    prevSlideBtn.addEventListener("click", () => changeSlide(-1));
+    nextSlideBtn.addEventListener("click", () => changeSlide(1));
+    urlFrame.addEventListener("load", () => {
+      if (sceneState.url.url) setStatus("URL loaded", sceneState.url.url);
+    });
     Object.keys(sceneState).forEach(renderScene);
+    updateNotesContext();
   </script>
 </body>
 </html>

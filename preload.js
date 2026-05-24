@@ -12,6 +12,7 @@ const sendChannels = new Set([
   'toggle-fullscreen',
   'exit-fullscreen',
   'toggle-notes',
+  'focus-main-window',
   'notes-context',
   'notes-ready',
   'notes-save',

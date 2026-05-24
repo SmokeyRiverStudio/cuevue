@@ -505,6 +505,7 @@ function createNotesWindow() {
     show: false,
     alwaysOnTop: true,
     visibleOnAllWorkspaces: true,
+    focusable: true,
     backgroundColor: '#fbf2cf',
     webPreferences: {
       preload: appFile('preload.js'),
@@ -520,6 +521,7 @@ function createNotesWindow() {
     notesWindow.setAlwaysOnTop(true, 'screen-saver');
     notesWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     notesWindow.show();
+    notesWindow.moveTop();
     if (lastNotesContext) notesWindow.webContents.send('notes-context', lastNotesContext);
   });
   notesWindow.on('move', scheduleNotesWindowStateSave);
@@ -794,9 +796,19 @@ ipcMain.on('toggle-notes', () => {
   createNotesWindow();
 });
 
+ipcMain.on('focus-main-window', () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+});
+
 ipcMain.on('notes-context', (_, context) => {
   lastNotesContext = context || null;
   if (notesWindow && !notesWindow.isDestroyed() && lastNotesContext) {
+    notesWindow.setAlwaysOnTop(true, 'screen-saver');
+    notesWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    notesWindow.moveTop();
     notesWindow.webContents.send('notes-context', lastNotesContext);
   }
 });

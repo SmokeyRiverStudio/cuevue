@@ -21,9 +21,11 @@
     .viewport { position: relative; min-height: 0; background: #181818; }
     .scene { position: absolute; inset: 0; display: none; min-width: 0; min-height: 0; background-position: center; background-size: cover; }
     .scene.active { display: block; }
+    .scene[hidden], .scene:not(.active) { display: none !important; visibility: hidden; }
     .scene::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: rgba(5, 8, 12, 0.08); }
     webview, .capture-video { position: relative; z-index: 1; width: 100%; height: 100%; border: 0; background: #070a0e; }
     webview { background: #fff; }
+    .url-webview.hidden { display: none !important; visibility: hidden; }
     .placeholder { position: relative; z-index: 1; display: grid; place-items: center; height: 100%; padding: 48px; text-align: center; background: rgba(24, 24, 24, 0.78); }
     .placeholder-inner { width: min(780px, 90vw); }
     .flow-scene { --flow-scale: 1; --flow-gap: 8px; position: relative; z-index: 1; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: clamp(12px, calc(18px * var(--flow-scale)), 22px); height: 100%; padding: clamp(22px, calc(48px * var(--flow-scale)), 52px) clamp(28px, calc(70px * var(--flow-scale)), 76px); overflow: hidden; background-color: #151719; background-position: center; background-size: cover; }
@@ -1103,8 +1105,14 @@
     }
 
     function showOnly(type) {
-      document.querySelectorAll('.scene').forEach((scene) => scene.classList.remove('active'));
+      document.querySelectorAll('.scene').forEach((scene) => {
+        const isTarget = scene.id === `scene-${type}`;
+        scene.classList.toggle('active', isTarget);
+        scene.hidden = !isTarget;
+      });
+      if (type !== 'url') hideAllUrlWebviews();
       const target = document.getElementById(`scene-${type}`) || document.getElementById('scene-flow');
+      target.hidden = false;
       target.classList.add('active');
     }
 
@@ -1212,6 +1220,7 @@
       const webview = document.createElement('webview');
       webview.setAttribute('partition', `persist:cuevue-${scene.id}`);
       webview.setAttribute('allowpopups', '');
+      webview.setAttribute('webpreferences', 'contextIsolation=yes,nodeIntegration=no,sandbox=yes');
       webview.className = 'url-webview';
       urlScene.appendChild(webview);
       urlWebviews.set(scene.id, webview);
@@ -1220,6 +1229,8 @@
     }
 
     function attachWebviewRecovery(scene, webview) {
+      if (webview.dataset.cuevueRecoveryAttached === 'true') return;
+      webview.dataset.cuevueRecoveryAttached = 'true';
       const armTimeout = () => {
         clearWebviewRecoveryTimer(scene.id);
         const timer = setTimeout(() => {
@@ -1286,6 +1297,12 @@
     function showUrlWebview(activeWebview) {
       urlWebviews.forEach((webview) => {
         webview.classList.toggle('hidden', webview !== activeWebview);
+      });
+    }
+
+    function hideAllUrlWebviews() {
+      urlWebviews.forEach((webview) => {
+        webview.classList.add('hidden');
       });
     }
 
@@ -1428,6 +1445,7 @@
       saveScenes();
       if (forceSessionReset) clearUrlWebview(scene.id);
       const webview = rebuildUrlWebview(scene, forceSessionReset ? 'editor-session-reload' : 'editor-refresh');
+      if (scene.id === activeId) showScene(scene.id);
       const status = document.getElementById('credential-status');
       status.textContent = forceSessionReset ? 'Web session reloaded.' : 'URL scene refreshed.';
       if (scene.id !== activeId) webview.classList.add('hidden');
@@ -1867,6 +1885,8 @@
         const connected = await startCapture(source, video, status);
         if (kind === 'device' && !connected) return;
       }
+      ipcRenderer.send('focus-main-window');
+      window.focus();
       refreshGlobalStatus();
       if (kind === 'device') {
         setQuickTimeStep('selected', 'done');

@@ -1035,7 +1035,6 @@
       display: none;
     }
 
-    .url-frame,
     .slide-frame {
       position: absolute;
       inset: 0;
@@ -1044,41 +1043,6 @@
       height: 100%;
       border: 0;
       background: #fff;
-    }
-
-    .url-limitation {
-      position: absolute;
-      left: 50%;
-      bottom: 28px;
-      z-index: 4;
-      display: grid;
-      gap: 6px;
-      width: min(620px, calc(100% - 56px));
-      transform: translateX(-50%);
-      padding: 16px 18px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 8px;
-      background: rgba(9, 14, 15, 0.88);
-      color: var(--cream);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(16px);
-    }
-
-    .url-limitation.hidden {
-      display: none;
-    }
-
-    .url-limitation strong {
-      color: var(--salmon);
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .url-limitation span {
-      color: rgba(248, 245, 237, 0.84);
-      font-size: 13px;
-      line-height: 1.4;
     }
 
     .slide-frame {
@@ -1273,15 +1237,9 @@
             </div>
           </section>
           <section class="scene-panel" data-panel="url">
-            <iframe class="url-frame" id="urlFrame" title="URL Live scene" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-            <div class="url-limitation hidden" id="urlLimitation" aria-live="polite">
-              <strong>Browser test limitation</strong>
-              <span id="urlLimitationText"></span>
-            </div>
-            <div class="scene-surface" id="urlEmpty">
-              <div class="scene-glyph url" aria-hidden="true"></div>
-              <h1 data-scene-title="url">URL Live</h1>
-              <p data-scene-notes="url">Enter a URL in Edit to load a clean audience-facing web scene.</p>
+            <div class="scene-surface" id="urlOperatorCard">
+              <h1>URL Live opened in separate browser window</h1>
+              <p id="urlOperatorText">Enter a URL in Edit, then activate or refresh URL Live.</p>
             </div>
           </section>
           <div class="settings-panel" id="settingsPanel" aria-live="polite">
@@ -1387,10 +1345,8 @@
     const captureSurface = document.getElementById("captureSurface");
     const stage = document.getElementById("stage");
     const windowSurface = document.getElementById("windowSurface");
-    const urlFrame = document.getElementById("urlFrame");
-    const urlLimitation = document.getElementById("urlLimitation");
-    const urlLimitationText = document.getElementById("urlLimitationText");
-    const urlEmpty = document.getElementById("urlEmpty");
+    const urlOperatorCard = document.getElementById("urlOperatorCard");
+    const urlOperatorText = document.getElementById("urlOperatorText");
     const slideFrame = document.getElementById("slideFrame");
     const slideEmpty = document.getElementById("slideEmpty");
     const slideImage = document.getElementById("slideImage");
@@ -1403,8 +1359,7 @@
     const WORKSPACE_KEY = "cuevue_browser_workspace_v3";
     let activeStream = null;
     let blackFrameTimer = null;
-    let urlLoadTimer = null;
-    let urlLoadToken = 0;
+    let urlLiveWindow = null;
     let activeScene = "capture";
     let editingScene = "capture";
     let notesWindow = null;
@@ -1596,29 +1551,6 @@
       return /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
     }
 
-    function setUrlLimitation(message = "") {
-      urlLimitation.classList.toggle("hidden", !message);
-      urlLimitationText.textContent = message;
-    }
-
-    function urlHostname(url) {
-      try {
-        return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
-      } catch (_) {
-        return "";
-      }
-    }
-
-    function urlNeedsBrowserLimitation(url) {
-      const host = urlHostname(url);
-      return host.endsWith("macmms.com") || host === "google.ca" || host === "google.com" || host.endsWith(".google.com") || host.endsWith(".google.ca");
-    }
-
-    function browserUrlLimitationMessage(url) {
-      const host = urlHostname(url) || url;
-      return `${host} may be refusing browser-test iframe embedding through X-Frame-Options or Content-Security-Policy. Use Open URL In Separate Browser Window for this browser build; Electron uses WebView/BrowserView for authenticated sites.`;
-    }
-
     function readLocalImage(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1682,7 +1614,7 @@
         applyBackground(windowSurface, state.backgroundImage);
       }
       if (type === "url") {
-        applyBackground(urlEmpty, state.backgroundImage);
+        applyBackground(urlOperatorCard, state.backgroundImage);
         renderUrlScene(false, scene);
       }
       if (type === "slides") {
@@ -1789,45 +1721,26 @@
       const state = sceneState[scene] || sceneState.url;
       const url = normalizeUrl(state.url);
       const isActiveUrlScene = scene === activeScene && sceneTypeFor(scene) === "url";
-      urlEmpty.style.display = url ? "none" : "grid";
-      setUrlLimitation("");
-      clearTimeout(urlLoadTimer);
-      urlLoadTimer = null;
       if (!url) {
-        urlFrame.removeAttribute("src");
-        delete urlFrame.dataset.targetUrl;
+        urlOperatorText.textContent = "No URL configured. Enter a URL in Edit, then activate or refresh URL Live.";
+        if (isActiveUrlScene && force) setStatus("URL missing", "Enter a URL in Edit, then activate or refresh URL Live.");
         return;
       }
       if (state.url !== url) {
         state.url = url;
         saveWorkspace();
       }
-      if (force || urlFrame.dataset.targetUrl !== url || urlFrame.src !== url) {
-        const token = ++urlLoadToken;
-        const blockedInBrowserTest = urlNeedsBrowserLimitation(url);
-        const showLimitation = () => {
-          if (token !== urlLoadToken || !isActiveUrlScene) return;
-          const message = browserUrlLimitationMessage(url);
-          setUrlLimitation(message);
-          setStatus("Browser security limitation", message);
-        };
-        urlFrame.dataset.targetUrl = url;
-        urlFrame.src = "about:blank";
-        window.setTimeout(() => {
-          if (token === urlLoadToken) urlFrame.src = url;
-        }, 40);
-        if (isActiveUrlScene && !blockedInBrowserTest) setStatus("URL loading", `Loading ${url}. Browser test uses iframe and may be blocked by X-Frame-Options; Electron uses WebView/BrowserView for authenticated sites.`);
-        if (blockedInBrowserTest) {
-          showLimitation();
-          return;
-        }
-        urlLoadTimer = window.setTimeout(() => {
-          showLimitation();
-        }, 3200);
-      } else if (isActiveUrlScene && urlNeedsBrowserLimitation(url)) {
-        const message = browserUrlLimitationMessage(url);
-        setUrlLimitation(message);
-        setStatus("Browser security limitation", message);
+      urlOperatorText.textContent = url;
+      if (!force) return;
+      const opened = window.open(url, "cuevue-url-live");
+      if (opened) {
+        urlLiveWindow = opened;
+        try {
+          urlLiveWindow.focus();
+        } catch (_) {}
+        setStatus("URL opened", `${url} opened in the CueVue URL Live browser window.`);
+      } else {
+        setStatus("Browser popup blocked", `Allow popups for CueVue, then refresh URL Live to open ${url}.`);
       }
     }
 
@@ -1862,15 +1775,8 @@
       });
       stage.classList.toggle("capture-live", Boolean(activeStream) && (type === "capture" || type === "window"));
       stage.classList.toggle("url-active", type === "url");
-      if (type !== "url") {
-        clearTimeout(urlLoadTimer);
-        urlLoadTimer = null;
-        urlLoadToken += 1;
-        setUrlLimitation("");
-        urlFrame.removeAttribute("src");
-        delete urlFrame.dataset.targetUrl;
-      }
       renderScene(scene);
+      if (type === "url") renderUrlScene(true, scene);
       updateNotesContext();
       saveWorkspace();
     }
@@ -1887,7 +1793,7 @@
       const state = sceneState[scene] || sceneState.capture;
       editorTitle.textContent = `Edit ${config.title}`;
       const extraControls = type === "url"
-        ? `<div class="field-grid"><p class="scene-meta">Browser-test URL scenes use iframe, so sites with X-Frame-Options/CSP may refuse to connect here. The Electron build must use WebView/BrowserView for those authenticated sites.</p><button class="button primary" id="urlRefreshBtn" type="button">Refresh/Reconnect URL</button><button class="button" id="urlPopoutBtn" type="button">Open URL In Separate Browser Window</button></div>`
+        ? `<div class="field-grid"><p class="scene-meta">Browser-test URL Live opens in a separate named browser window. Electron renders URL scenes inside a native webview for authenticated sites.</p><button class="button primary" id="urlRefreshBtn" type="button">Refresh/Reconnect URL Window</button></div>`
           : type === "slides"
             ? `<div class="field-grid"><button class="button primary" id="slidesUploadBtn" type="button">Upload Slides</button><input id="slidesUploadInput" type="file" accept="image/*" multiple hidden><div id="slideList" class="source-list"></div></div>`
           : type === "capture"
@@ -1923,11 +1829,6 @@
       if (urlRefresh) urlRefresh.addEventListener("click", () => {
         state.url = normalizeUrl(state.url);
         renderUrlScene(true, scene);
-      });
-      const urlPopout = document.getElementById("urlPopoutBtn");
-      if (urlPopout) urlPopout.addEventListener("click", () => {
-        const url = normalizeUrl(state.url);
-        if (url) window.open(url, "cuevue-url-live");
       });
       const quicktimeGuide = document.getElementById("quicktimeGuideBtn");
       if (quicktimeGuide) quicktimeGuide.addEventListener("click", () => {
@@ -2213,16 +2114,6 @@
     });
     prevSlideBtn.addEventListener("click", () => changeSlide(-1));
     nextSlideBtn.addEventListener("click", () => changeSlide(1));
-    urlFrame.addEventListener("load", () => {
-      const state = sceneState[activeScene] || sceneState.url;
-      const url = normalizeUrl(state.url);
-      if (url && !urlNeedsBrowserLimitation(url)) {
-        clearTimeout(urlLoadTimer);
-        urlLoadTimer = null;
-        setUrlLimitation("");
-        setStatus("URL loaded", url);
-      }
-    });
     document.addEventListener("mousemove", (event) => {
       if (globalSettings.cursorMode !== "fancy") return;
       fancyCursorDot.style.left = `${event.clientX}px`;

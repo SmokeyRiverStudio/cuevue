@@ -482,6 +482,20 @@
       text-transform: uppercase;
     }
 
+    .flow-row-visible {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: max-content;
+      color: var(--cream);
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .flow-row-visible input {
+      accent-color: var(--coral);
+    }
+
     .flow-editor-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -636,13 +650,13 @@
     .utility-nav {
       display: flex;
       align-items: stretch;
-      gap: 8px;
+      gap: 6px;
       min-width: 0;
     }
 
     .scene-nav {
-      overflow-x: auto;
-      scrollbar-width: thin;
+      flex: 1 1 auto;
+      overflow: hidden;
     }
 
     .scene-tab,
@@ -659,18 +673,19 @@
     }
 
     .scene-tab {
-      grid-template-columns: minmax(70px, 1fr);
-      gap: 10px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
       min-width: 0;
       padding-right: 8px;
     }
 
     .scene-item {
       display: grid;
-      grid-template-columns: minmax(138px, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr) 26px;
       align-items: stretch;
-      gap: 4px;
-      min-width: 214px;
+      gap: 2px;
+      flex: 1 1 0;
+      min-width: 0;
       border: 1px solid rgba(248, 245, 237, 0.12);
       border-radius: 8px;
       background: rgba(248, 245, 237, 0.055);
@@ -679,7 +694,8 @@
 
     .edit-tab {
       margin: 8px 8px 8px 0;
-      width: 32px;
+      width: 26px;
+      min-width: 26px;
       min-height: 0;
       padding: 0 10px;
       border: 1px solid rgba(248, 245, 237, 0.14);
@@ -695,10 +711,23 @@
     }
 
     .utility-tab {
-      min-width: 92px;
+      width: 44px;
+      min-width: 44px;
       justify-items: center;
       color: var(--muted);
+      font-size: 18px;
       font-weight: 750;
+    }
+
+    .tab-label {
+      min-width: 0;
+    }
+
+    .tab-label strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .scene-item:has(.scene-tab.active) {
@@ -1098,7 +1127,7 @@
       }
 
       .utility-tab {
-        flex: 1;
+        flex: 0 0 44px;
       }
     }
 
@@ -1279,6 +1308,7 @@
           <div class="notes-panel" id="notesPanel" aria-live="polite" hidden>
             <strong id="notesTitle">CueVue Notes</strong>
             <span class="scene-meta" id="notesMeta">Current scene</span>
+            <span class="scene-meta">Browser limitation: if the popout is blocked, this floating panel is the fallback. Electron uses an always-on-top notes window.</span>
             <textarea id="notesText" placeholder="Scene or slide notes"></textarea>
             <button class="button" id="popoutNotesBtn" type="button">Open Detachable Notes</button>
           </div>
@@ -1297,7 +1327,7 @@
             </div>
             <strong id="editorTitle">Edit Scene</strong>
             <div class="field-grid" id="editorFields"></div>
-            <button class="button primary" id="editorCaptureBtn" type="button">Choose Capture Source</button>
+            <button class="button primary" id="editorCaptureBtn" type="button" hidden></button>
           </div>
         </div>
 
@@ -1305,9 +1335,9 @@
           <nav class="scene-nav" id="sceneNav" aria-label="Scenes"></nav>
           <div class="utility-nav" aria-label="Utilities">
             <button class="utility-tab" id="addSceneBtn" type="button">+</button>
-            <button class="utility-tab" id="refreshBtn" type="button">Refresh</button>
-            <button class="utility-tab" id="notesBtn" type="button">Notes</button>
-            <button class="utility-tab" id="settingsBtn" type="button">Settings</button>
+            <button class="utility-tab" id="refreshBtn" type="button" aria-label="Refresh" title="Refresh">↻</button>
+            <button class="utility-tab" id="notesBtn" type="button" aria-label="Notes" title="Notes">▤</button>
+            <button class="utility-tab" id="settingsBtn" type="button" aria-label="Settings" title="Settings">⚙</button>
           </div>
         </div>
       </section>
@@ -1428,12 +1458,12 @@
         header: "Flow",
         subheader: "Map the idea, impact, and next move for the room.",
         rows: [
-          { topic: "Topic 1", subtopic: "Subtopic 1", impact: "Impact 1", subimpact: "Subimpact 1", revealed: false },
-          { topic: "Topic 2", subtopic: "Subtopic 2", impact: "Impact 2", subimpact: "Subimpact 2", revealed: false },
-          { topic: "Topic 3", subtopic: "Subtopic 3", impact: "Impact 3", subimpact: "Subimpact 3", revealed: false },
-          { topic: "Topic 4", subtopic: "Subtopic 4", impact: "Impact 4", subimpact: "Subimpact 4", revealed: false },
-          { topic: "Topic 5", subtopic: "Subtopic 5", impact: "Impact 5", subimpact: "Subimpact 5", revealed: false },
-          { topic: "Topic 6", subtopic: "Subtopic 6", impact: "Impact 6", subimpact: "Subimpact 6", revealed: false }
+          { topic: "Topic 1", subtopic: "Subtopic 1", impact: "Impact 1", subimpact: "Subimpact 1", revealed: false, rowVisible: true },
+          { topic: "Topic 2", subtopic: "Subtopic 2", impact: "Impact 2", subimpact: "Subimpact 2", revealed: false, rowVisible: true },
+          { topic: "Topic 3", subtopic: "Subtopic 3", impact: "Impact 3", subimpact: "Subimpact 3", revealed: false, rowVisible: true },
+          { topic: "Topic 4", subtopic: "Subtopic 4", impact: "Impact 4", subimpact: "Subimpact 4", revealed: false, rowVisible: true },
+          { topic: "Topic 5", subtopic: "Subtopic 5", impact: "Impact 5", subimpact: "Subimpact 5", revealed: false, rowVisible: true },
+          { topic: "Topic 6", subtopic: "Subtopic 6", impact: "Impact 6", subimpact: "Subimpact 6", revealed: false, rowVisible: true }
         ]
       },
       url: {
@@ -1511,7 +1541,10 @@
           Object.keys(sceneState).forEach((key) => delete sceneState[key]);
           Object.assign(sceneState, saved.sceneState);
           Object.values(sceneState).forEach((scene) => {
-            if (Array.isArray(scene.rows)) scene.rows.forEach((row) => { row.revealed = false; });
+            if (Array.isArray(scene.rows)) scene.rows.forEach((row) => {
+              row.revealed = false;
+              if (!Object.prototype.hasOwnProperty.call(row, "rowVisible")) row.rowVisible = true;
+            });
           });
         }
         if (saved.sceneNotes && typeof saved.sceneNotes === "object") {
@@ -1609,7 +1642,6 @@
         return `
           <div class="scene-item">
             <button class="scene-tab ${id === activeScene ? "active" : ""}" type="button" data-scene="${id}">
-              <span class="scene-mark ${sceneIconClass(id)}" aria-hidden="true"></span>
               <span class="tab-label"><strong>${escapeHtml(name)}</strong><span></span></span>
             </button>
             <button class="edit-tab" type="button" data-edit-scene="${id}" aria-label="Edit ${escapeHtml(name)}">✎</button>
@@ -1660,7 +1692,7 @@
       flowHeader.textContent = state.header || state.title || "Flow";
       flowSubheader.textContent = state.subheader || "";
       flowRuntime.style.setProperty("--flow-bg", state.backgroundImage ? `url("${state.backgroundImage}")` : "linear-gradient(135deg, rgba(255, 106, 79, 0.16), rgba(121, 216, 207, 0.12))");
-      flowRows.innerHTML = state.rows.map((row, index) => `
+      flowRows.innerHTML = state.rows.map((row, index) => row.rowVisible === false ? "" : `
         <article class="flow-row ${row.revealed ? "revealed" : ""}" data-flow-row="${index}" onclick="toggleFlowRow(${index})">
           <div class="flow-cell">
             <strong class="flow-topic">${escapeHtml(row.topic)}</strong>
@@ -1678,6 +1710,7 @@
     function toggleFlowRow(index) {
       const flowScene = sceneTypeFor(activeScene) === "flow" ? sceneState[activeScene] : sceneState.flow;
       const row = flowScene.rows[index];
+      if (!row || row.rowVisible === false) return;
       row.revealed = !row.revealed;
       renderFlowScene(activeScene);
     }
@@ -1693,6 +1726,7 @@
         ${state.rows.map((row, index) => `
           <section class="flow-editor-row">
             <strong class="flow-editor-row-title">Row ${index + 1}</strong>
+            <label class="flow-row-visible"><input type="checkbox" data-flow-row="${index}" data-flow-row-visible ${row.rowVisible === false ? "" : "checked"}> Row ${index + 1} Visible</label>
             <div class="flow-editor-grid">
               <div class="field"><label>Topic ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="topic" value="${escapeHtml(row.topic)}"></div>
               <div class="field"><label>Impact ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="impact" value="${escapeHtml(row.impact)}"></div>
@@ -1724,9 +1758,19 @@
           saveWorkspace();
         });
       });
+      editorFields.querySelectorAll("[data-flow-row-visible]").forEach((field) => {
+        field.addEventListener("change", () => {
+          const row = state.rows[Number(field.dataset.flowRow)];
+          row.rowVisible = field.checked;
+          if (!field.checked) row.revealed = false;
+          renderScene(editingScene);
+          saveWorkspace();
+        });
+      });
       editorPanel.classList.add("open");
       settingsPanel.classList.remove("open");
       editorCaptureBtn.hidden = true;
+      editorCaptureBtn.textContent = "";
     }
 
     function renderUrlScene(force = false, scene = activeScene) {
@@ -1791,6 +1835,7 @@
       activeScene = scene;
       document.querySelectorAll(".scene-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.scene === scene));
       const type = sceneTypeFor(scene);
+      captureBtn.hidden = !(type === "window" || type === "capture");
       document.querySelectorAll(".scene-panel").forEach((panel) => {
         const isActive = panel.dataset.panel === type;
         panel.classList.toggle("active", isActive);
@@ -1880,7 +1925,9 @@
       editorPanel.classList.add("open");
       settingsPanel.classList.remove("open");
       notesPanel.classList.remove("open");
-      editorCaptureBtn.hidden = !(type === "window" || type === "capture");
+      const editorUsesCapture = type === "window" || type === "capture";
+      editorCaptureBtn.hidden = !editorUsesCapture;
+      editorCaptureBtn.textContent = editorUsesCapture ? "Choose Capture Source" : "";
     }
 
     function renderSlideList() {
@@ -1960,7 +2007,7 @@
       notesMeta.textContent = slideLabel || "Scene notes";
       notesText.value = sceneNotes[key] || "";
       if (notesWindow && !notesWindow.closed) {
-        notesWindow.document.body.innerHTML = `<main style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:18px;background:#fbf2cf;color:#1c1710;min-height:100vh;"><h2 style="margin:0 0 6px;">${escapeHtml(sceneTitle)}</h2><p style="margin:0 0 16px;color:#675f52;">${escapeHtml(slideLabel || "Scene notes")}</p><pre style="white-space:pre-wrap;font:inherit;line-height:1.45;">${escapeHtml(sceneNotes[key] || "")}</pre></main>`;
+        notesWindow.document.body.innerHTML = `<main style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:18px;background:#fbf2cf;color:#1c1710;min-height:100vh;"><h2 style="margin:0 0 6px;">${escapeHtml(sceneTitle)}</h2><p style="margin:0 0 10px;color:#675f52;">${escapeHtml(slideLabel || "Scene notes")}</p><p style="margin:0 0 16px;color:#8a3f38;font-size:12px;">Browser test limitation: this popout cannot force always-on-top. Electron uses an always-on-top notes window.</p><pre style="white-space:pre-wrap;font:inherit;line-height:1.45;">${escapeHtml(sceneNotes[key] || "")}</pre></main>`;
       }
     }
 
@@ -2031,7 +2078,12 @@
 
     function openNotesWindow() {
       const features = "popup=yes,width=380,height=560,left=80,top=80";
-      notesWindow = window.open("", "cuevue-notes", features);
+      notesWindow = window.open("about:blank", "cuevue-notes", features);
+      if (!notesWindow) {
+        notesPanel.hidden = false;
+        notesPanel.classList.add("open");
+        setStatus("Browser notes limitation", "The browser blocked the detachable notes popout. Electron uses an always-on-top notes window.");
+      }
       updateNotesContext();
     }
 
@@ -2057,6 +2109,7 @@
         <button class="button primary" id="createSceneBtn" type="button">Create Scene</button>
       `;
       editorCaptureBtn.hidden = true;
+      editorCaptureBtn.textContent = "";
       editorPanel.classList.add("open");
       settingsPanel.classList.remove("open");
       notesPanel.classList.remove("open");

@@ -7,10 +7,10 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --mac",
+    "build": "electron-builder --mac dir",
     "build:mac-dir": "electron-builder --mac dir",
     "build:dmg": "electron-builder --mac dmg --publish never",
-    "build:unsigned": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac -c.mac.identity=null"
+    "build:unsigned": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dir -c.mac.identity=null -c.mac.hardenedRuntime=false && codesign --force --deep --sign - dist/mac-arm64/CueVue.app"
   },
   "devDependencies": {
     "@electron/notarize": "^3.1.1",
@@ -23,19 +23,17 @@
     "artifactName": "CueVue-${version}-${arch}.${ext}",
     "mac": {
       "category": "public.app-category.business",
-      "target": ["dir", "dmg"],
+      "target": "dir",
+      "identity": null,
       "icon": "buildResources/icon.icns",
       "gatekeeperAssess": false,
-      "hardenedRuntime": true,
-      "entitlements": "buildResources/entitlements.mac.plist",
-      "entitlementsInherit": "buildResources/entitlements.mac.inherit.plist",
+      "hardenedRuntime": false,
       "extendInfo": {
         "NSScreenCaptureUsageDescription": "CueVue needs Screen Recording access to capture windows for the iPhone scene.",
         "NSMicrophoneUsageDescription": "CueVue does not use the microphone.",
         "NSCameraUsageDescription": "CueVue does not use the camera."
       }
     },
-    "afterSign": "scripts/notarize.js",
     "publish": null,
     "dmg": {
       "title": "CueVue ${version}",

@@ -285,6 +285,11 @@
       display: none !important;
     }
 
+    .scene-panel:not(.active) {
+      display: none !important;
+      visibility: hidden;
+    }
+
     .scene-panel[data-panel="flow"] {
       place-items: stretch;
       padding: 24px;
@@ -1026,6 +1031,10 @@
       backdrop-filter: blur(14px);
     }
 
+    .stage.url-active .stage-status {
+      display: none;
+    }
+
     .url-frame,
     .slide-frame {
       position: absolute;
@@ -1395,6 +1404,7 @@
     let activeStream = null;
     let blackFrameTimer = null;
     let urlLoadTimer = null;
+    let urlLoadToken = 0;
     let activeScene = "capture";
     let editingScene = "capture";
     let notesWindow = null;
@@ -1591,19 +1601,21 @@
       urlLimitationText.textContent = message;
     }
 
-    function urlNeedsBrowserLimitation(url) {
+    function urlHostname(url) {
       try {
-        return new URL(url).hostname.endsWith("macmms.com");
+        return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
       } catch (_) {
-        return false;
+        return "";
       }
     }
 
+    function urlNeedsBrowserLimitation(url) {
+      const host = urlHostname(url);
+      return host.endsWith("macmms.com") || host === "google.ca" || host === "google.com" || host.endsWith(".google.com") || host.endsWith(".google.ca");
+    }
+
     function browserUrlLimitationMessage(url) {
-      let host = url;
-      try {
-        host = new URL(url).hostname;
-      } catch (_) {}
+      const host = urlHostname(url) || url;
       return `${host} may be refusing browser-test iframe embedding through X-Frame-Options or Content-Security-Policy. Use Open URL In Separate Browser Window for this browser build; Electron uses WebView/BrowserView for authenticated sites.`;
     }
 
@@ -1783,27 +1795,34 @@
       urlLoadTimer = null;
       if (!url) {
         urlFrame.removeAttribute("src");
+        delete urlFrame.dataset.targetUrl;
         return;
       }
-      if (url && (force || urlFrame.src !== url)) {
+      if (state.url !== url) {
         state.url = url;
-        urlFrame.dataset.targetUrl = url;
-        const assignUrl = () => {
-          urlFrame.src = url;
-        };
-        if (force) {
-          urlFrame.src = "about:blank";
-          window.setTimeout(assignUrl, 60);
-        } else {
-          assignUrl();
-        }
-        if (isActiveUrlScene) setStatus("URL loading", `Loading ${url}. Browser test uses iframe and may be blocked by X-Frame-Options; Electron uses WebView/BrowserView for authenticated sites.`);
-        urlLoadTimer = window.setTimeout(() => {
+        saveWorkspace();
+      }
+      if (force || urlFrame.dataset.targetUrl !== url || urlFrame.src !== url) {
+        const token = ++urlLoadToken;
+        const blockedInBrowserTest = urlNeedsBrowserLimitation(url);
+        const showLimitation = () => {
+          if (token !== urlLoadToken || !isActiveUrlScene) return;
           const message = browserUrlLimitationMessage(url);
-          if (isActiveUrlScene) {
-            setUrlLimitation(message);
-            setStatus("Browser security limitation", message);
-          }
+          setUrlLimitation(message);
+          setStatus("Browser security limitation", message);
+        };
+        urlFrame.dataset.targetUrl = url;
+        urlFrame.src = "about:blank";
+        window.setTimeout(() => {
+          if (token === urlLoadToken) urlFrame.src = url;
+        }, 40);
+        if (isActiveUrlScene && !blockedInBrowserTest) setStatus("URL loading", `Loading ${url}. Browser test uses iframe and may be blocked by X-Frame-Options; Electron uses WebView/BrowserView for authenticated sites.`);
+        if (blockedInBrowserTest) {
+          showLimitation();
+          return;
+        }
+        urlLoadTimer = window.setTimeout(() => {
+          showLimitation();
         }, 3200);
       } else if (isActiveUrlScene && urlNeedsBrowserLimitation(url)) {
         const message = browserUrlLimitationMessage(url);
@@ -1842,6 +1861,15 @@
         panel.hidden = !isActive;
       });
       stage.classList.toggle("capture-live", Boolean(activeStream) && (type === "capture" || type === "window"));
+      stage.classList.toggle("url-active", type === "url");
+      if (type !== "url") {
+        clearTimeout(urlLoadTimer);
+        urlLoadTimer = null;
+        urlLoadToken += 1;
+        setUrlLimitation("");
+        urlFrame.removeAttribute("src");
+        delete urlFrame.dataset.targetUrl;
+      }
       renderScene(scene);
       updateNotesContext();
       saveWorkspace();
@@ -2080,8 +2108,6 @@
       const features = "popup=yes,width=380,height=560,left=80,top=80";
       notesWindow = window.open("about:blank", "cuevue-notes", features);
       if (!notesWindow) {
-        notesPanel.hidden = false;
-        notesPanel.classList.add("open");
         setStatus("Browser notes limitation", "The browser blocked the detachable notes popout. Electron uses an always-on-top notes window.");
       }
       updateNotesContext();

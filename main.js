@@ -504,6 +504,7 @@ function createNotesWindow() {
     title: 'CueVue Notes',
     show: false,
     alwaysOnTop: true,
+    visibleOnAllWorkspaces: true,
     backgroundColor: '#fbf2cf',
     webPreferences: {
       preload: appFile('preload.js'),
@@ -516,6 +517,8 @@ function createNotesWindow() {
   notesWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(notesWindowHtml())}`).catch(() => {});
   notesWindow.once('ready-to-show', () => {
     if (!notesWindow || notesWindow.isDestroyed()) return;
+    notesWindow.setAlwaysOnTop(true, 'screen-saver');
+    notesWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     notesWindow.show();
     if (lastNotesContext) notesWindow.webContents.send('notes-context', lastNotesContext);
   });

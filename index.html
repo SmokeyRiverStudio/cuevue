@@ -17,37 +17,40 @@
     button.danger:hover { background: #612828; }
     input, select { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid #555; border-radius: 10px; color: #fff; background: #111; }
     label { display: grid; gap: 6px; color: #ccc; font-size: 13px; }
-    .app { display: grid; grid-template-rows: 1fr 48px; height: 100%; min-width: 900px; }
+    .app { display: grid; grid-template-rows: 1fr 82px; height: 100%; min-width: 900px; }
     .viewport { position: relative; min-height: 0; background: #181818; }
     .scene { position: absolute; inset: 0; display: none; min-width: 0; min-height: 0; background-position: center; background-size: cover; }
     .scene.active { display: block; }
+    .scene[hidden], .scene:not(.active) { display: none !important; visibility: hidden; }
     .scene::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: rgba(5, 8, 12, 0.08); }
     webview, .capture-video { position: relative; z-index: 1; width: 100%; height: 100%; border: 0; background: #070a0e; }
     webview { background: #fff; }
+    .url-webview.hidden { display: none !important; visibility: hidden; }
     .placeholder { position: relative; z-index: 1; display: grid; place-items: center; height: 100%; padding: 48px; text-align: center; background: rgba(24, 24, 24, 0.78); }
     .placeholder-inner { width: min(780px, 90vw); }
-    .flow-scene { position: relative; z-index: 1; display: grid; grid-template-rows: auto 1fr; gap: 34px; height: 100%; padding: 56px 72px; background-color: #151719; background-position: center; background-size: cover; }
+    .flow-scene { --flow-scale: 1; --flow-gap: 8px; position: relative; z-index: 1; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: clamp(12px, calc(18px * var(--flow-scale)), 22px); height: 100%; padding: clamp(22px, calc(48px * var(--flow-scale)), 52px) clamp(28px, calc(70px * var(--flow-scale)), 76px); overflow: hidden; background-color: #151719; background-position: center; background-size: cover; }
     .flow-scene::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle at 18% 14%, rgba(83,104,122,.28), transparent 28%), rgba(10,12,14,.36); pointer-events: none; }
-    .flow-header { display: grid; grid-template-columns: 160px 1fr 160px; align-items: center; gap: 24px; }
-    .flow-logo { display: grid; place-items: center; min-height: 86px; padding: 16px; border: 1px dashed rgba(255,255,255,.22); border-radius: 8px; color: rgba(255,255,255,.68); background: rgba(0,0,0,.18); font-weight: 800; text-align: center; overflow-wrap: anywhere; }
-    .flow-logo img { max-width: 100%; max-height: 72px; object-fit: contain; }
+    .flow-header { min-height: 0; display: grid; grid-template-columns: minmax(112px, 160px) minmax(0, 1fr) minmax(112px, 160px); align-items: center; gap: clamp(14px, calc(22px * var(--flow-scale)), 26px); }
+    .flow-logo { display: grid; place-items: center; min-height: clamp(58px, calc(82px * var(--flow-scale)), 86px); padding: clamp(9px, calc(15px * var(--flow-scale)), 16px); border: 1px dashed rgba(255,255,255,.22); border-radius: 8px; color: rgba(255,255,255,.72); background: rgba(0,0,0,.18); font-size: clamp(12px, calc(15px * var(--flow-scale)), 17px); font-weight: 800; text-align: center; overflow-wrap: anywhere; }
+    .flow-logo img { max-width: 100%; max-height: clamp(44px, calc(68px * var(--flow-scale)), 72px); object-fit: contain; }
     .flow-title-block { text-align: center; }
-    .flow-title { font-size: clamp(34px, 5vw, 76px); line-height: 1; font-weight: 900; letter-spacing: 0; }
-    .flow-subtitle { margin-top: 12px; color: #aeb8c5; font-size: clamp(16px, 2vw, 26px); line-height: 1.35; }
-    .flow-topics { align-self: center; display: grid; gap: 12px; max-width: 1120px; width: 100%; margin: 0 auto; }
-    .flow-topic { min-height: 78px; display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px minmax(180px, .9fr); align-items: center; gap: 14px; padding: 14px 18px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: rgba(0,0,0,.28); box-shadow: 0 16px 40px rgba(0,0,0,.22); }
+    .flow-title { font-size: clamp(28px, calc(68px * var(--flow-scale)), 76px); line-height: .98; font-weight: 900; letter-spacing: 0; overflow-wrap: anywhere; }
+    .flow-subtitle { margin-top: clamp(7px, calc(11px * var(--flow-scale)), 12px); color: #aeb8c5; font-size: clamp(14px, calc(24px * var(--flow-scale)), 26px); line-height: 1.32; overflow-wrap: anywhere; }
+    .flow-topics { align-self: center; display: grid; gap: var(--flow-gap); max-width: min(1180px, 100%); width: 100%; margin: 0 auto; overflow: hidden; }
+    .flow-topic { min-height: var(--flow-topic-height, 56px); display: grid; grid-template-columns: clamp(24px, calc(29px * var(--flow-scale)), 32px) minmax(0, 1fr) clamp(24px, calc(29px * var(--flow-scale)), 32px) minmax(150px, .78fr); align-items: center; gap: clamp(5px, calc(8px * var(--flow-scale)), 9px); padding: clamp(6px, calc(8px * var(--flow-scale)), 9px) clamp(9px, calc(12px * var(--flow-scale)), 13px); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: rgba(0,0,0,.28); box-shadow: 0 12px 30px rgba(0,0,0,.20); overflow: hidden; transition: border-color .16s ease, background .16s ease, transform .16s ease; }
     .flow-topic.clickable { cursor: pointer; }
-    .flow-topic.clickable:hover { border-color: rgba(145,209,139,.34); background: rgba(8,16,12,.34); }
-    .flow-topic-number { flex: 0 0 34px; height: 34px; display: grid; place-items: center; border-radius: 999px; color: #d9e7f5; background: #303f4c; font-weight: 900; }
-    .flow-topic-copy { display: grid; gap: 6px; min-width: 0; }
-    .flow-topic-heading { color: #eef3f8; font-size: clamp(16px, 2vw, 23px); font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
-    .flow-topic-subheading { color: #aeb8c5; font-size: clamp(13px, 1.45vw, 17px); line-height: 1.35; overflow-wrap: anywhere; }
-    .flow-topic-check { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 999px; color: #91d18b; font-size: 24px; font-weight: 900; opacity: 0; transform: scale(.72); transition: opacity .16s ease, transform .16s ease; }
-    .flow-topic.revealed .flow-topic-check { opacity: 1; transform: scale(1); }
-    .flow-topic-impact { display: grid; gap: 6px; min-width: 0; opacity: 0; transform: translateX(-8px); transition: opacity .16s ease, transform .16s ease; pointer-events: none; }
+    .flow-topic.clickable:hover { border-color: rgba(145,209,139,.34); background: rgba(8,16,12,.34); transform: translateY(-1px); }
+    .flow-topic-number { height: clamp(26px, calc(32px * var(--flow-scale)), 34px); display: grid; place-items: center; border-radius: 999px; color: #d9e7f5; background: #303f4c; font-size: clamp(12px, calc(15px * var(--flow-scale)), 16px); font-weight: 900; }
+    .flow-topic-copy { display: grid; gap: 3px; min-width: 0; }
+    .flow-topic-heading { color: #eef3f8; font-size: clamp(14px, calc(21px * var(--flow-scale)), 23px); font-weight: 800; line-height: 1.16; overflow-wrap: anywhere; }
+    .flow-topic-subheading { color: #aeb8c5; font-size: clamp(12px, calc(16px * var(--flow-scale)), 17px); line-height: 1.28; overflow-wrap: anywhere; }
+    .flow-topic-check { display: grid; place-items: center; width: clamp(24px, calc(29px * var(--flow-scale)), 30px); height: clamp(24px, calc(29px * var(--flow-scale)), 30px); border-radius: 999px; color: #91d18b; font-size: clamp(18px, calc(23px * var(--flow-scale)), 24px); font-weight: 900; opacity: .22; transform: scale(.72); transition: opacity .16s ease, transform .16s ease, box-shadow .16s ease, background .16s ease; }
+    .flow-topic.revealed .flow-topic-check { opacity: 1; transform: scale(1); background: rgba(145,209,139,.13); box-shadow: 0 0 0 1px rgba(145,209,139,.34), 0 0 18px rgba(145,209,139,.18); }
+    .flow-topic-impact { display: grid; gap: 3px; min-width: 0; max-height: 0; opacity: 0; transform: translateX(-8px); transition: opacity .18s ease, transform .18s ease, max-height .18s ease; pointer-events: none; }
     .flow-topic.revealed .flow-topic-impact { opacity: 1; transform: translateX(0); }
-    .flow-topic-impact-heading { color: #e8f4ea; font-size: clamp(15px, 1.7vw, 21px); font-weight: 850; line-height: 1.22; overflow-wrap: anywhere; }
-    .flow-topic-impact-subheading { color: #a7c9a7; font-size: clamp(12px, 1.3vw, 16px); line-height: 1.35; overflow-wrap: anywhere; }
+    .flow-topic.revealed .flow-topic-impact { max-height: 120px; }
+    .flow-topic-impact-heading { color: #e8f4ea; font-size: clamp(13px, calc(19px * var(--flow-scale)), 21px); font-weight: 850; line-height: 1.18; overflow-wrap: anywhere; }
+    .flow-topic-impact-subheading { color: #a7c9a7; font-size: clamp(11px, calc(15px * var(--flow-scale)), 16px); line-height: 1.26; overflow-wrap: anywhere; }
     .slides-stage { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; height: 100%; padding: 34px; background: #080a0d; }
     .slide-image { max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid rgba(255,255,255,.08); background: #111; box-shadow: 0 20px 70px rgba(0,0,0,.42); }
     .slide-empty { display: grid; place-items: center; width: min(760px, 82vw); min-height: 300px; border: 1px dashed rgba(255,255,255,.18); border-radius: 8px; color: #aeb8c5; text-align: center; background: rgba(255,255,255,.03); }
@@ -62,10 +65,30 @@
     .bezel::before { content: ""; position: absolute; top: 10px; left: 50%; z-index: 4; width: 94px; height: 26px; border-radius: 999px; background: #000; transform: translateX(-50%); }
     #iphone-video { width: 100%; height: 100%; object-fit: cover; background: #000; }
     .quiet-status { position: absolute; left: 24px; bottom: 24px; z-index: 4; max-width: 520px; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; background: rgba(8, 12, 17, 0.72); color: #c6d0dd; line-height: 1.4; }
-    .toolbar { height: 48px; display: flex; gap: 6px; align-items: stretch; padding: 6px 8px; border-top: 1px solid #333; background: #181818; }
+    .toolbar { height: 82px; display: flex; gap: 6px; align-items: stretch; padding: 7px 8px; border-top: 1px solid #333; background: #181818; }
     .scene-slot { flex: 1; position: relative; min-width: 0; }
-    .scene-button { width: 100%; height: 100%; min-height: 0; border-radius: 6px; font-weight: 700; background: #242424; font-size: 13px; }
+    .scene-button { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; border-radius: 6px; padding: 0; font-weight: 700; background: #242424; font-size: 12px; text-align: left; }
     .scene-button.active { border-color: #53687a; background: #303f4c; }
+    .scene-preview { position: absolute; inset: 0; display: grid; background-image: linear-gradient(135deg, rgba(23,49,58,.95), rgba(13,21,25,.94) 58%, rgba(24,35,29,.95)), url("buildResources/icon-source.png"); background-position: center, center; background-size: cover, 42px 42px; background-repeat: no-repeat; opacity: .9; }
+    .scene-preview::before { content: "CueVue"; position: absolute; left: 8px; top: 7px; z-index: 1; color: rgba(236,247,244,.92); font-size: 11px; font-weight: 900; letter-spacing: 0; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+    .scene-preview::after { content: ""; position: absolute; right: 8px; top: 8px; width: 18px; height: 18px; border-radius: 6px; background: url("buildResources/icon-source.png") center / contain no-repeat; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+    .scene-preview.flow-preview { grid-template-rows: auto 1fr; gap: 4px; padding: 26px 6px 6px; background-image: linear-gradient(135deg, rgba(23,49,58,.96), rgba(17,23,25,.95) 58%, rgba(32,50,38,.96)), url("buildResources/icon-source.png"); background-position: center, right 8px top 8px; background-size: cover, 22px 22px; background-repeat: no-repeat; }
+    .scene-preview.flow-preview::before { content: "CueVue Flow"; }
+    .flow-preview-title { position: relative; width: 70%; height: 7px; border-radius: 999px; background: #eef3f8; }
+    .flow-preview-lines { position: relative; display: grid; gap: 3px; align-content: center; }
+    .flow-preview-lines span { height: 5px; border-radius: 999px; background: rgba(174,184,197,.7); }
+    .flow-preview-lines span:nth-child(2n) { width: 82%; background: rgba(145,209,139,.6); }
+    .scene-preview.url-preview { grid-template-rows: 10px 1fr; background: #f5f7fb; }
+    .scene-preview.url-preview::before { content: ""; background: linear-gradient(90deg, #ff766e 0 10px, #ffd166 10px 20px, #7bd88f 20px 30px, #d9e2ef 30px); }
+    .scene-preview.url-preview::after { content: ""; margin: 8px; border-radius: 4px; background: url("buildResources/icon-source.png") right 6px bottom 6px / 22px 22px no-repeat, linear-gradient(#31465c 0 8px, transparent 8px 14px, #b5c1ce 14px 19px, transparent 19px 25px, #dfe6ee 25px 100%); }
+    .scene-preview.device-preview { place-items: center; background: linear-gradient(135deg, #071013, #121b20); }
+    .scene-preview.device-preview::before { content: "Mobile Capture"; }
+    .scene-preview.device-preview::after { content: ""; position: static; width: 28%; aspect-ratio: 9 / 19.5; border: 3px solid #c8c3ba; border-radius: 10px; background: url("buildResources/icon-source.png") center / 70% auto no-repeat, linear-gradient(180deg, #050505, #12231e); box-shadow: 0 6px 20px rgba(0,0,0,.45); }
+    .scene-preview.slides-preview { place-items: center; background: linear-gradient(135deg, #10151c, #0b1116); }
+    .scene-preview.slides-preview::before { content: "CueVue Slides"; }
+    .scene-preview.slides-preview::after { content: ""; position: static; width: 70%; aspect-ratio: 16 / 9; border: 1px solid rgba(255,255,255,.18); background: url("buildResources/icon-source.png") center / 36% auto no-repeat, linear-gradient(135deg, #182833, #21372f); box-shadow: 0 5px 18px rgba(0,0,0,.45); }
+    .scene-preview.has-image::after, .scene-preview.has-image::before { display: none; }
+    .scene-button-label { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 16px 7px 5px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.76)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
     .edit-scene-button { position: absolute; right: 5px; top: 4px; width: 22px; height: 20px; min-height: 0; border: 0; border-radius: 5px; padding: 0; background: rgba(255,255,255,0.13); color: #fff; font-size: 13px; line-height: 1; }
     .scene-slot.permission-target .edit-scene-button { outline: 2px solid #d5a842; outline-offset: 1px; }
     .scene-slot.permission-target::before { content: "Screen access needed →"; position: absolute; right: 30px; top: -30px; z-index: 4; padding: 5px 8px; border: 1px solid rgba(213,168,66,0.55); border-radius: 6px; color: #f0d88a; background: rgba(8, 12, 17, 0.9); font-size: 12px; font-weight: 700; white-space: nowrap; pointer-events: none; }
@@ -102,7 +125,7 @@
     .flow-topic-edit-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 10px; }
     .flow-impact-toggle { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: #cfd7e2; font-size: 13px; }
     .flow-impact-toggle input { width: auto; min-height: 0; }
-    .flow-visibility-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .flow-visibility-grid { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr; gap: 8px; }
     .flow-visibility-toggle { display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 7px 9px; border: 1px solid #333; border-radius: 8px; background: #161616; color: #c8d0da; font-size: 12px; font-weight: 800; white-space: nowrap; }
     .flow-visibility-toggle input { width: auto; min-height: 0; }
     .logo-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -120,11 +143,19 @@
     .device-check.fail { color: #ff8f8f; }
     .device-fallback { display: none; gap: 10px; }
     .device-fallback.open { display: grid; }
+    .device-diagnostics { position: absolute; right: 18px; bottom: 18px; z-index: 8; width: min(520px, calc(100% - 36px)); max-height: 42vh; overflow: auto; padding: 12px; border: 1px solid rgba(99, 161, 255, .45); border-radius: 8px; background: rgba(8, 12, 17, .86); color: #dce5ef; font-size: 12px; line-height: 1.35; }
+    .device-diagnostics.hidden { display: none; }
+    .device-diagnostics h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; color: #8fc1ff; }
+    .device-diagnostics dl { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(0, 1fr); gap: 5px 10px; margin: 0; }
+    .device-diagnostics dt { color: #93a0af; }
+    .device-diagnostics dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .device-diagnostics .diag-fail { color: #ffadad; }
+    .device-diagnostics .diag-ok { color: #9de59b; }
     .type-panel.active { display: grid; }
     .source-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; max-height: 360px; overflow: auto; }
     .source-card { overflow: hidden; border: 1px solid #303b4d; border-radius: 8px; background: #0c1219; text-align: left; min-height: 150px; }
     .source-card.selected { border-color: #63a1ff; background: #12243a; }
-    .source-card img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #06090d; border-bottom: 1px solid #26313f; }
+    .source-card img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: radial-gradient(circle at 24% 18%, rgba(143,216,199,.32), transparent 38%), linear-gradient(135deg, #10262d, #101719 64%, #1c2d22); border-bottom: 1px solid #26313f; }
     .source-card > span { display: block; padding: 10px; color: #dce5ef; line-height: 1.3; overflow-wrap: anywhere; }
     .source-kind { display: inline-block; margin: 0 6px 3px 0; padding: 2px 6px; border-radius: 999px; color: #d9e7f5; background: #303f4c; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
     .slide-thumb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(106px, 1fr)); gap: 10px; max-height: 350px; overflow: auto; padding: 2px; }
@@ -135,6 +166,15 @@
     .slide-thumb img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 5px; background: #06090d; }
     .slide-thumb-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #cfd7e2; font-size: 12px; font-weight: 800; }
     .slide-thumb-label span:last-child { color: #8793a2; font-weight: 700; }
+    @media (max-width: 1040px), (max-height: 700px) {
+      .app { grid-template-rows: 1fr 72px; min-width: 760px; }
+      .toolbar { height: 72px; }
+      .toolbar-icon-button { flex-basis: 38px; font-size: 16px; }
+      .flow-header { grid-template-columns: minmax(86px, 120px) minmax(0, 1fr) minmax(86px, 120px); }
+      .flow-topic { grid-template-columns: clamp(24px, calc(30px * var(--flow-scale)), 32px) minmax(0, 1fr); align-items: start; }
+      .flow-topic-check { grid-column: 1; grid-row: 2; }
+      .flow-topic-impact { grid-column: 2; grid-row: 2; }
+    }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -168,6 +208,7 @@
             <video id="iphone-video" autoplay muted playsinline></video>
           </div>
         </div>
+        <aside id="device-diagnostics" class="device-diagnostics hidden" aria-live="polite"></aside>
         <div id="device-status" class="quiet-status hidden"></div>
       </section>
 
@@ -184,7 +225,7 @@
       <div class="scene-slot"><button class="scene-button active">Flow</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
       <div class="scene-slot"><button class="scene-button">Jenn Demo</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
       <div class="scene-slot"><button class="scene-button">Standard Demo</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
-      <div class="scene-slot"><button class="scene-button">iPhone</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
+      <div class="scene-slot"><button class="scene-button">Mobile Device</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
       <div class="scene-slot"><button class="scene-button">Slides</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
       <button class="toolbar-icon-button" aria-label="Refresh current scene">↻</button>
       <button class="toolbar-icon-button" aria-label="Global settings">⚙</button>
@@ -239,6 +280,10 @@
                 <label>Saved username <input id="edit-username" spellcheck="false" autocomplete="username"></label>
                 <label>Saved password <input id="edit-password" type="password" autocomplete="current-password"></label>
               </div>
+              <div class="grid-2">
+                <button id="refresh-url-button" type="button">Refresh URL Scene</button>
+                <button id="reload-url-session-button" type="button">Reload Web Session</button>
+              </div>
             </div>
 
             <div id="panel-window" class="type-panel">
@@ -248,8 +293,8 @@
 
             <div id="panel-device" class="type-panel">
               <div class="device-actions">
-                <button id="open-quicktime-button">Set Up iPhone</button>
-                <button id="retry-device-button">Retry Detect iPhone</button>
+                <button id="open-quicktime-button">Open QuickTime Player</button>
+                <button id="retry-device-button">Retry Detect</button>
                 <button id="manual-device-button">Choose Window Manually</button>
               </div>
               <button id="quicktime-help-button">QuickTime Help</button>
@@ -258,12 +303,12 @@
                 <div class="device-checklist">
                   <div class="device-check" id="qt-check-opened">QuickTime opened</div>
                   <div class="device-check" id="qt-check-recording">Movie Recording window detected</div>
-                  <div class="device-check" id="qt-check-selected">iPhone selected in QuickTime</div>
+                  <div class="device-check" id="qt-check-selected">Mobile device selected in capture window</div>
                   <div class="device-check" id="qt-check-connected">CueVue connected</div>
                 </div>
-                <p class="muted">QuickTime must stay open while CueVue captures it. After CueVue connects, it will try to minimize QuickTime.</p>
+                <p class="muted">QuickTime must stay open while CueVue captures it. If the movie window is unstable, choose any visible window or the full screen below.</p>
                 <div id="device-fallback" class="device-fallback">
-                  <p class="muted">Manual fallback: choose the QuickTime Movie Recording window below.</p>
+                  <p class="muted">Manual fallback: choose QuickTime Movie Recording, a mobile mirror window, another visible window, or the full screen.</p>
                   <div id="device-source-grid" class="source-grid"></div>
                 </div>
               </div>
@@ -296,10 +341,7 @@
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
                         <div class="flow-visibility-grid">
-                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-row-visible-input" type="checkbox"> Row 1 Visible</label>
                         </div>
                       </div>
                     </div>
@@ -311,10 +353,7 @@
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
                         <div class="flow-visibility-grid">
-                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-row-visible-input" type="checkbox"> Row 2 Visible</label>
                         </div>
                       </div>
                     </div>
@@ -326,10 +365,7 @@
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
                         <div class="flow-visibility-grid">
-                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-row-visible-input" type="checkbox"> Row 3 Visible</label>
                         </div>
                       </div>
                     </div>
@@ -341,10 +377,7 @@
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
                         <div class="flow-visibility-grid">
-                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-row-visible-input" type="checkbox"> Row 4 Visible</label>
                         </div>
                       </div>
                     </div>
@@ -356,10 +389,7 @@
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
                         <div class="flow-visibility-grid">
-                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-row-visible-input" type="checkbox"> Row 5 Visible</label>
                         </div>
                       </div>
                     </div>
@@ -371,10 +401,7 @@
                         <input class="flow-topic-subheading-input" spellcheck="false" placeholder="Sub-topic">
                         <input class="flow-topic-subimpact-input" spellcheck="false" placeholder="Sub-impact">
                         <div class="flow-visibility-grid">
-                          <label class="flow-visibility-toggle"><input class="flow-topic-visible-input" type="checkbox"> Topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subtopic-visible-input" type="checkbox"> Sub-topic</label>
-                          <label class="flow-visibility-toggle"><input class="flow-impact-visible-input" type="checkbox"> Impact</label>
-                          <label class="flow-visibility-toggle"><input class="flow-subimpact-visible-input" type="checkbox"> Sub-impact</label>
+                          <label class="flow-visibility-toggle"><input class="flow-row-visible-input" type="checkbox"> Row 6 Visible</label>
                         </div>
                       </div>
                     </div>
@@ -434,7 +461,7 @@
             <p class="card-subtitle">Saved source and connection state for the current scene.</p>
           </div>
           <div class="status-line" id="selected-window-label">No capture window selected.</div>
-          <div class="status-line" id="selected-device-label">No iPhone source selected.</div>
+          <div class="status-line" id="selected-device-label">No mobile device source selected.</div>
           <div class="status-line" id="selected-slides-label">No slides window selected.</div>
           <div class="status-line" id="credential-status">URL credentials are saved when you save the scene.</div>
         </section>
@@ -448,6 +475,12 @@
             <button id="save-workspace-as-button" type="button">Save As</button>
             <button id="open-workspace-button" type="button">Open</button>
           </div>
+          <label>Save mode
+            <select id="workspace-save-mode">
+              <option value="embedded">Embedded</option>
+              <option value="linked">Linked</option>
+            </select>
+          </label>
           <label class="workspace-recent">Recent
             <select id="recent-workspaces-select">
               <option value="">No recent workspaces</option>
@@ -461,7 +494,7 @@
             <p class="card-subtitle">Screen & System Audio Recording access.</p>
           </div>
           <div class="permission-box">
-            <span>CueVue needs macOS Screen & System Audio Recording permission before it can list or capture windows. If you turn CueVue on, quit and reopen CueVue.</span>
+            <span>CueVue verifies capture access by asking Electron for fresh window and screen sources. macOS permission status is shown as a hint only.</span>
             <button id="global-open-screen-settings-button" type="button">Apple Settings</button>
             <span id="global-permission-detail" class="muted">Permission status not checked yet.</span>
           </div>
@@ -485,17 +518,17 @@
       logoLeftPath: '',
       logoRightPath: '',
       topics: [
-        { heading: 'Introductions', subheading: 'Who is in the room and what we are covering', impact: '', subImpact: '', showImpact: false, revealed: false, topicVisible: true, subTopicVisible: true, impactVisible: true, subImpactVisible: true },
-        { heading: 'Current workflow', subheading: 'What happens today and where the friction is', impact: '', subImpact: '', showImpact: false, revealed: false, topicVisible: true, subTopicVisible: true, impactVisible: true, subImpactVisible: true },
-        { heading: 'Live demo', subheading: 'Walkthrough of the key scenes and outcomes', impact: '', subImpact: '', showImpact: false, revealed: false, topicVisible: true, subTopicVisible: true, impactVisible: true, subImpactVisible: true },
-        { heading: 'Questions', subheading: 'Open discussion and next steps', impact: '', subImpact: '', showImpact: false, revealed: false, topicVisible: true, subTopicVisible: true, impactVisible: true, subImpactVisible: true }
+        { heading: 'Introductions', subheading: 'Who is in the room and what we are covering', impact: '', subImpact: '', showImpact: false, revealed: false, rowVisible: true },
+        { heading: 'Current workflow', subheading: 'What happens today and where the friction is', impact: '', subImpact: '', showImpact: false, revealed: false, rowVisible: true },
+        { heading: 'Live demo', subheading: 'Walkthrough of the key scenes and outcomes', impact: '', subImpact: '', showImpact: false, revealed: false, rowVisible: true },
+        { heading: 'Questions', subheading: 'Open discussion and next steps', impact: '', subImpact: '', showImpact: false, revealed: false, rowVisible: true }
       ]
     };
     const defaultScenes = [
       { id: 'flow', name: 'Flow', type: 'flow', order: 1, url: '', bg: '', bgVersion: '', sourceId: '', sourceName: '', flow: defaultFlow },
       { id: 'jenn', name: 'Jenn Demo', type: 'url', order: 2, url: 'https://jenn.macmms.com/', bg: '', bgVersion: '', sourceId: '', sourceName: '' },
       { id: 'standard', name: 'Standard Demo', type: 'url', order: 3, url: 'https://standard.macmms.com/', bg: '', bgVersion: '', sourceId: '', sourceName: '' },
-      { id: 'iphone', name: 'iPhone', type: 'device', order: 4, url: '', bg: '', bgVersion: '', sourceId: '', sourceName: '' },
+      { id: 'iphone', name: 'Mobile Device', type: 'device', order: 4, url: '', bg: '', bgVersion: '', sourceId: '', sourceName: '' },
       { id: 'slides', name: 'Slides', type: 'slides', order: 5, url: '', bg: '', bgVersion: '', sourceId: '', sourceName: '' }
     ];
 
@@ -505,12 +538,35 @@
     let currentStream = null;
     let permissionPromptSceneId = '';
     let quickTimeDetectTimer = null;
+    let permissionRecoveryTimer = null;
+    let thumbnailRefreshTimer = null;
     let webviewRecoveryTimer = null;
     let currentWorkspacePath = '';
     let globalSettings = loadGlobalSettings();
+    let deviceDiagnostics = {
+      permission: 'unknown',
+      sources: [],
+      allSources: [],
+      sourceScan: 'not started',
+      sourceScanError: '',
+      sourceFilter: '',
+      quickTimeLaunched: false,
+      quickTimeRunning: false,
+      quickTimeWindows: [],
+      movieRecordingWindow: false,
+      selectedSource: '',
+      staleSource: false,
+      getUserMedia: 'not started',
+      videoSrcObject: false,
+      videoTrack: false,
+      videoDimensions: '0 x 0',
+      playback: 'not started',
+      failure: ''
+    };
     const urlWebviews = new Map();
     const webviewLoadTimers = new Map();
     const webviewHealthTimers = new Map();
+    const scenePreviewCache = new Map();
 
     const toolbar = document.getElementById('toolbar');
     const urlScene = document.getElementById('scene-url');
@@ -522,6 +578,7 @@
     const slideThumbGrid = document.getElementById('slide-thumb-grid');
     const windowStatus = document.getElementById('window-status');
     const deviceStatus = document.getElementById('device-status');
+    const deviceDiagnosticsEl = document.getElementById('device-diagnostics');
     const slidesStatus = document.getElementById('slides-status');
     const editor = document.getElementById('editor');
     const globalSettingsOverlay = document.getElementById('global-settings');
@@ -609,6 +666,9 @@
           if (!saved.name || saved.name === 'TOC') scene.name = 'Flow';
           scene.flow = normalizeFlow(saved.flow);
         }
+        if (base.id === 'iphone' && (!saved.name || /iphone/i.test(saved.name))) {
+          scene.name = 'Mobile Device';
+        }
         return normalizeScene(scene);
       });
       const extras = input
@@ -636,6 +696,13 @@
       };
     }
 
+    function normalizeSceneUrl(value) {
+      const trimmed = String(value || '').trim();
+      if (!trimmed) return '';
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return trimmed;
+      return `https://${trimmed}`;
+    }
+
     function makeSceneId() {
       return `scene-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
     }
@@ -658,9 +725,11 @@
 
     function normalizeFlowTopic(item) {
       if (typeof item === 'string') {
-        return { heading: item.trim(), subheading: '', impact: '', subImpact: '', showImpact: false, revealed: false, topicVisible: true, subTopicVisible: true, impactVisible: true, subImpactVisible: true };
+        return { heading: item.trim(), subheading: '', impact: '', subImpact: '', showImpact: false, revealed: false, rowVisible: true };
       }
       const hasOwn = (key) => item && Object.prototype.hasOwnProperty.call(item, key);
+      const legacyRowHidden = hasOwn('topicVisible') && hasOwn('subTopicVisible') && hasOwn('impactVisible') && hasOwn('subImpactVisible')
+        && !item.topicVisible && !item.subTopicVisible && !item.impactVisible && !item.subImpactVisible;
       return {
         heading: item && item.heading ? String(item.heading).trim() : '',
         subheading: item && item.subheading ? String(item.subheading).trim() : '',
@@ -668,10 +737,7 @@
         subImpact: item && item.subImpact ? String(item.subImpact).trim() : '',
         showImpact: Boolean(item && (item.showImpact || item.impact || item.subImpact)),
         revealed: Boolean(item && (item.revealed || (item.showImpact && !hasOwn('revealed')))),
-        topicVisible: hasOwn('topicVisible') ? Boolean(item.topicVisible) : true,
-        subTopicVisible: hasOwn('subTopicVisible') ? Boolean(item.subTopicVisible) : true,
-        impactVisible: hasOwn('impactVisible') ? Boolean(item.impactVisible) : true,
-        subImpactVisible: hasOwn('subImpactVisible') ? Boolean(item.subImpactVisible) : true
+        rowVisible: hasOwn('rowVisible') ? Boolean(item.rowVisible) : !legacyRowHidden
       };
     }
 
@@ -689,21 +755,37 @@
 
     function renderFlow(scene) {
       const flow = normalizeFlow(scene.flow);
+      const flowShell = document.querySelector('.flow-scene');
       document.getElementById('flow-title').textContent = flow.title;
       document.getElementById('flow-subtitle').textContent = flow.subtitle;
       renderLogo(document.getElementById('flow-logo-left'), flow.logoLeft, flow.logoLeftPath);
       renderLogo(document.getElementById('flow-logo-right'), flow.logoRight, flow.logoRightPath);
       const topics = flow.topics.slice(0, 6);
+      const visibleTopics = topics.filter((topic) => topic.rowVisible !== false);
+      const longest = topics.reduce((max, topic) => Math.max(max, [topic.heading, topic.subheading, topic.impact, topic.subImpact].join(' ').length), 0);
+      const visibleImpactCount = visibleTopics.filter((topic) => topic.revealed && (topic.impact || topic.subImpact)).length;
+      const scale = Math.max(.68, Math.min(1, 1 - Math.max(0, visibleTopics.length - 4) * .05 - Math.max(0, longest - 90) * .0022 - visibleImpactCount * .025));
+      if (flowShell) {
+        flowShell.style.setProperty('--flow-scale', scale.toFixed(3));
+        flowShell.style.setProperty('--flow-gap', `${Math.max(4, Math.round(8 * scale))}px`);
+        flowShell.style.setProperty('--flow-topic-height', `${Math.max(44, Math.round(56 * scale))}px`);
+      }
       const list = document.getElementById('flow-topics');
       list.innerHTML = '';
       topics.forEach((topic, index) => {
+        if (topic.rowVisible === false) return;
         const item = document.createElement('div');
-        const topicHeading = topic.topicVisible ? topic.heading : '';
-        const topicSubheading = topic.subTopicVisible ? topic.subheading : '';
-        const topicImpact = topic.impactVisible ? topic.impact : '';
-        const topicSubImpact = topic.subImpactVisible ? topic.subImpact : '';
+        const topicHeading = topic.heading;
+        const topicSubheading = topic.subheading;
+        const topicImpact = topic.impact;
+        const topicSubImpact = topic.subImpact;
         const hasVisibleImpact = Boolean(topicImpact || topicSubImpact);
-        item.className = 'flow-topic' + (hasVisibleImpact ? ' revealed' : '');
+        item.className = [
+          'flow-topic',
+          hasVisibleImpact ? 'clickable' : '',
+          hasVisibleImpact && topic.revealed ? 'revealed' : ''
+        ].filter(Boolean).join(' ');
+        item.dataset.flowTopicIndex = String(index);
         item.innerHTML = `
           <div class="flow-topic-number">${index + 1}</div>
           <div class="flow-topic-copy">
@@ -718,12 +800,15 @@
         `;
         list.appendChild(item);
       });
+      updateScenePreview(scene);
     }
 
-    function toggleFlowImpact(scene, index) {
+    function toggleFlowImpact(index) {
+      const scene = sceneById(activeId);
+      if (!scene || scene.type !== 'flow') return;
       scene.flow = normalizeFlow(scene.flow);
       const topic = scene.flow.topics[index];
-      if (!topic || (!(topic.impactVisible && topic.impact) && !(topic.subImpactVisible && topic.subImpact))) return;
+      if (!topic || topic.rowVisible === false || (!(topic.impact) && !(topic.subImpact))) return;
       topic.revealed = !topic.revealed;
       saveScenes();
       renderFlow(scene);
@@ -749,6 +834,7 @@
         slideCounter.classList.add('hidden');
         slideEmpty.classList.remove('hidden');
         showStatus(slidesStatus, 'No slides imported. Open Scene Settings and import .pptx, .ppt, .jpg, or .png files.');
+        updateScenePreview(scene);
         return;
       }
       scene.slideIndex = index;
@@ -758,6 +844,7 @@
       slideCounter.classList.remove('hidden');
       slideEmpty.classList.add('hidden');
       hideStatus(slidesStatus);
+      updateScenePreview(scene);
     }
 
     function slideName(scene, index) {
@@ -907,6 +994,79 @@
       }
     }
 
+    function scenePreviewImage(scene) {
+      if (!scene) return '';
+      if (scenePreviewCache.has(scene.id)) return scenePreviewCache.get(scene.id);
+      if (scene.type === 'slides' && Array.isArray(scene.slidePaths) && scene.slidePaths.length) {
+        const index = Math.max(0, Math.min(Number(scene.slideIndex) || 0, scene.slidePaths.length - 1));
+        return cuevueFileUrl(scene.slidePaths[index]);
+      }
+      if (scene.bg) return cuevueFileUrl(scene.bg);
+      return '';
+    }
+
+    function previewClass(scene) {
+      if (!scene) return '';
+      if (scene.type === 'flow') return 'flow-preview';
+      if (scene.type === 'url') return 'url-preview';
+      if (scene.type === 'device') return 'device-preview';
+      if (scene.type === 'slides') return 'slides-preview';
+      return 'window-preview';
+    }
+
+    function flowPreviewMarkup(scene) {
+      if (!scene || scene.type !== 'flow') return '';
+      const flow = normalizeFlow(scene.flow);
+      const lines = flow.topics.slice(0, 4).map(() => '<span></span>').join('');
+      return `<span class="flow-preview-title"></span><span class="flow-preview-lines">${lines}</span>`;
+    }
+
+    function updateScenePreview(scene, imageUrl) {
+      if (!scene) return;
+      if (imageUrl) scenePreviewCache.set(scene.id, imageUrl);
+      const preview = toolbar.querySelector(`[data-preview-id="${CSS.escape(scene.id)}"]`);
+      if (!preview) return;
+      const resolved = scenePreviewImage(scene);
+      preview.className = ['scene-preview', previewClass(scene), resolved ? 'has-image' : ''].filter(Boolean).join(' ');
+      preview.style.backgroundImage = resolved ? `url("${resolved}")` : '';
+      if (!resolved && scene.type === 'flow') preview.innerHTML = flowPreviewMarkup(scene);
+      else preview.innerHTML = '';
+    }
+
+    async function refreshScenePreviews() {
+      const sourceScenes = scenes.filter((scene) => (scene.type === 'window' || scene.type === 'device') && (scene.sourceId || scene.sourceName));
+      if (sourceScenes.length) {
+        try {
+          const scan = await queryCaptureSources('preview');
+          const sources = scan.allSources;
+          sourceScenes.forEach((scene) => {
+            const source = sources.find((item) => item.id === scene.sourceId)
+              || sources.find((item) => item.name === scene.sourceName)
+              || sources.find((item) => scene.sourceName && item.name.toLowerCase() === scene.sourceName.toLowerCase());
+            if (source && source.thumbnail) updateScenePreview(scene, source.thumbnail);
+          });
+        } catch (_) {}
+      }
+
+      const activeScene = sceneById(activeId);
+      if (activeScene && activeScene.type === 'url') {
+        const webview = urlWebviews.get(activeScene.id);
+        if (webview && typeof webview.capturePage === 'function') {
+          try {
+            const image = await webview.capturePage();
+            if (image && image.toDataURL) updateScenePreview(activeScene, image.toDataURL());
+          } catch (_) {}
+        }
+      }
+
+      scenes.forEach((scene) => updateScenePreview(scene));
+    }
+
+    function scheduleScenePreviewRefresh() {
+      if (thumbnailRefreshTimer) return;
+      thumbnailRefreshTimer = setInterval(refreshScenePreviews, 5000);
+    }
+
     function renderToolbar() {
       const ordered = orderedScenes();
       toolbar.innerHTML = '';
@@ -917,7 +1077,16 @@
 
         const button = document.createElement('button');
         button.className = 'scene-button' + (scene.id === activeId ? ' active' : '');
-        button.textContent = scene.name;
+        button.title = scene.name;
+        button.setAttribute('aria-label', scene.name);
+        const preview = document.createElement('span');
+        preview.className = `scene-preview ${previewClass(scene)}`;
+        preview.dataset.previewId = scene.id;
+        const label = document.createElement('span');
+        label.className = 'scene-button-label';
+        label.textContent = scene.name;
+        button.appendChild(preview);
+        button.appendChild(label);
         button.addEventListener('click', () => showScene(scene.id));
 
         const edit = document.createElement('button');
@@ -925,12 +1094,12 @@
         edit.textContent = '✎';
         edit.addEventListener('click', (event) => {
           event.stopPropagation();
-          showScene(scene.id);
-          setTimeout(openEditor, 0);
+          openEditor(scene.id);
         });
         slot.appendChild(button);
         slot.appendChild(edit);
         toolbar.appendChild(slot);
+        updateScenePreview(scene);
       });
 
       const add = document.createElement('button');
@@ -967,6 +1136,7 @@
       settings.setAttribute('aria-label', 'Global settings');
       settings.addEventListener('click', openGlobalSettings);
       toolbar.appendChild(settings);
+      scheduleScenePreviewRefresh();
     }
 
     function addScene() {
@@ -995,8 +1165,14 @@
     }
 
     function showOnly(type) {
-      document.querySelectorAll('.scene').forEach((scene) => scene.classList.remove('active'));
+      document.querySelectorAll('.scene').forEach((scene) => {
+        const isTarget = scene.id === `scene-${type}`;
+        scene.classList.toggle('active', isTarget);
+        scene.hidden = !isTarget;
+      });
+      if (type !== 'url') hideAllUrlWebviews();
       const target = document.getElementById(`scene-${type}`) || document.getElementById('scene-flow');
+      target.hidden = false;
       target.classList.add('active');
     }
 
@@ -1015,7 +1191,12 @@
         sendNotesContext(scene);
         const webview = getUrlWebview(scene);
         showUrlWebview(webview);
-        if (webview.getAttribute('src') !== scene.url) webview.setAttribute('src', scene.url);
+        const nextUrl = normalizeSceneUrl(scene.url);
+        if (nextUrl && nextUrl !== scene.url) {
+          scene.url = nextUrl;
+          saveScenes();
+        }
+        if (nextUrl && webview.getAttribute('src') !== nextUrl) webview.setAttribute('src', nextUrl);
         attachCredentialFill(scene, webview);
         return;
       }
@@ -1099,6 +1280,7 @@
       const webview = document.createElement('webview');
       webview.setAttribute('partition', `persist:cuevue-${scene.id}`);
       webview.setAttribute('allowpopups', '');
+      webview.setAttribute('webpreferences', 'contextIsolation=yes,nodeIntegration=no,sandbox=yes');
       webview.className = 'url-webview';
       urlScene.appendChild(webview);
       urlWebviews.set(scene.id, webview);
@@ -1107,6 +1289,8 @@
     }
 
     function attachWebviewRecovery(scene, webview) {
+      if (webview.dataset.cuevueRecoveryAttached === 'true') return;
+      webview.dataset.cuevueRecoveryAttached = 'true';
       const armTimeout = () => {
         clearWebviewRecoveryTimer(scene.id);
         const timer = setTimeout(() => {
@@ -1120,7 +1304,10 @@
 
       webview.addEventListener('did-start-loading', armTimeout);
       webview.addEventListener('did-stop-loading', clearSceneTimer);
-      webview.addEventListener('did-finish-load', clearSceneTimer);
+      webview.addEventListener('did-finish-load', () => {
+        clearSceneTimer();
+        setTimeout(refreshScenePreviews, 450);
+      });
       webview.addEventListener('dom-ready', () => startWebviewHealthCheck(scene, webview));
       webview.addEventListener('did-fail-load', (event) => {
         clearWebviewRecoveryTimer(scene.id);
@@ -1156,7 +1343,12 @@
       clearWebviewHealthTimer(scene.id);
       const webview = getUrlWebview(scene, { rebuild: true });
       showUrlWebview(webview);
-      if (scene.url) webview.setAttribute('src', scene.url);
+      const nextUrl = normalizeSceneUrl(scene.url);
+      if (nextUrl && nextUrl !== scene.url) {
+        scene.url = nextUrl;
+        saveScenes();
+      }
+      if (nextUrl) webview.setAttribute('src', nextUrl);
       attachCredentialFill(scene, webview);
       console.info(`CueVue rebuilt webview for ${scene.name || scene.id}: ${reason}`);
       return webview;
@@ -1168,15 +1360,21 @@
       });
     }
 
-    function openEditor() {
-      editingId = activeId;
+    function hideAllUrlWebviews() {
+      urlWebviews.forEach((webview) => {
+        webview.classList.add('hidden');
+      });
+    }
+
+    function openEditor(sceneId = activeId) {
+      editingId = sceneId;
       const scene = sceneById(editingId);
       document.getElementById('edit-name').value = scene.name;
       document.getElementById('edit-order').value = scene.order;
       document.getElementById('edit-url').value = scene.url || '';
       editType.value = scene.type;
       document.getElementById('selected-window-label').textContent = scene.type === 'window' && scene.sourceName ? `Selected: ${scene.sourceName}` : 'No capture window selected.';
-      document.getElementById('selected-device-label').textContent = scene.type === 'device' && scene.sourceName ? `Connected: ${scene.sourceName}` : 'No iPhone source selected.';
+      document.getElementById('selected-device-label').textContent = scene.type === 'device' && scene.sourceName ? `Connected: ${scene.sourceName}` : 'No mobile device source selected.';
       document.getElementById('selected-slides-label').textContent = scene.type === 'slides' && scene.slidePaths && scene.slidePaths.length ? `${scene.slidePaths.length} slides imported.` : 'No slides imported.';
       document.getElementById('selected-bg-label').textContent = scene.bg ? scene.bg : 'No background selected.';
       const flow = normalizeFlow(scene.flow);
@@ -1190,10 +1388,7 @@
       const subheadingInputs = document.querySelectorAll('.flow-topic-subheading-input');
       const impactInputs = document.querySelectorAll('.flow-topic-impact-input');
       const subImpactInputs = document.querySelectorAll('.flow-topic-subimpact-input');
-      const topicVisibleInputs = document.querySelectorAll('.flow-topic-visible-input');
-      const subTopicVisibleInputs = document.querySelectorAll('.flow-subtopic-visible-input');
-      const impactVisibleInputs = document.querySelectorAll('.flow-impact-visible-input');
-      const subImpactVisibleInputs = document.querySelectorAll('.flow-subimpact-visible-input');
+      const rowVisibleInputs = document.querySelectorAll('.flow-row-visible-input');
       headingInputs.forEach((input, index) => {
         input.value = flow.topics[index] ? flow.topics[index].heading : '';
       });
@@ -1206,17 +1401,8 @@
       subImpactInputs.forEach((input, index) => {
         input.value = flow.topics[index] ? flow.topics[index].subImpact : '';
       });
-      topicVisibleInputs.forEach((input, index) => {
-        input.checked = flow.topics[index] ? Boolean(flow.topics[index].topicVisible) : true;
-      });
-      subTopicVisibleInputs.forEach((input, index) => {
-        input.checked = flow.topics[index] ? Boolean(flow.topics[index].subTopicVisible) : true;
-      });
-      impactVisibleInputs.forEach((input, index) => {
-        input.checked = flow.topics[index] ? Boolean(flow.topics[index].impactVisible) : true;
-      });
-      subImpactVisibleInputs.forEach((input, index) => {
-        input.checked = flow.topics[index] ? Boolean(flow.topics[index].subImpactVisible) : true;
+      rowVisibleInputs.forEach((input, index) => {
+        input.checked = flow.topics[index] ? flow.topics[index].rowVisible !== false : true;
       });
       loadCredentials(scene);
       syncTypePanels();
@@ -1264,16 +1450,13 @@
       scene.name = document.getElementById('edit-name').value.trim() || scene.name;
       scene.order = Number(document.getElementById('edit-order').value) || scene.order;
       scene.type = editType.value;
-      scene.url = document.getElementById('edit-url').value.trim();
+      scene.url = normalizeSceneUrl(document.getElementById('edit-url').value);
       if (scene.type === 'flow') {
         const headingInputs = Array.from(document.querySelectorAll('.flow-topic-heading-input'));
         const subheadingInputs = Array.from(document.querySelectorAll('.flow-topic-subheading-input'));
         const impactInputs = Array.from(document.querySelectorAll('.flow-topic-impact-input'));
         const subImpactInputs = Array.from(document.querySelectorAll('.flow-topic-subimpact-input'));
-        const topicVisibleInputs = Array.from(document.querySelectorAll('.flow-topic-visible-input'));
-        const subTopicVisibleInputs = Array.from(document.querySelectorAll('.flow-subtopic-visible-input'));
-        const impactVisibleInputs = Array.from(document.querySelectorAll('.flow-impact-visible-input'));
-        const subImpactVisibleInputs = Array.from(document.querySelectorAll('.flow-subimpact-visible-input'));
+        const rowVisibleInputs = Array.from(document.querySelectorAll('.flow-row-visible-input'));
         const previousTopics = normalizeFlow(scene.flow).topics;
         const topics = headingInputs
           .map((input, index) => ({
@@ -1283,10 +1466,7 @@
             subImpact: subImpactInputs[index] ? subImpactInputs[index].value.trim() : '',
             showImpact: Boolean((impactInputs[index] && impactInputs[index].value.trim()) || (subImpactInputs[index] && subImpactInputs[index].value.trim())),
             revealed: Boolean(previousTopics[index] && previousTopics[index].revealed),
-            topicVisible: topicVisibleInputs[index] ? topicVisibleInputs[index].checked : true,
-            subTopicVisible: subTopicVisibleInputs[index] ? subTopicVisibleInputs[index].checked : true,
-            impactVisible: impactVisibleInputs[index] ? impactVisibleInputs[index].checked : true,
-            subImpactVisible: subImpactVisibleInputs[index] ? subImpactVisibleInputs[index].checked : true
+            rowVisible: rowVisibleInputs[index] ? rowVisibleInputs[index].checked : true
           }))
           .filter((topic) => topic.heading || topic.subheading || topic.impact || topic.subImpact)
           .slice(0, 6);
@@ -1312,6 +1492,23 @@
       saveScenes();
       closeEditor();
       showScene(scene.id);
+    }
+
+    async function refreshEditingUrlScene(forceSessionReset = false) {
+      const scene = sceneById(editingId);
+      if (!scene || scene.type !== 'url') return;
+      scene.url = normalizeSceneUrl(document.getElementById('edit-url').value || scene.url);
+      await ipcRenderer.invoke('save-credentials', scene.id, {
+        username: document.getElementById('edit-username').value.trim(),
+        password: document.getElementById('edit-password').value
+      });
+      saveScenes();
+      if (forceSessionReset) clearUrlWebview(scene.id);
+      const webview = rebuildUrlWebview(scene, forceSessionReset ? 'editor-session-reload' : 'editor-refresh');
+      if (scene.id === activeId) showScene(scene.id);
+      const status = document.getElementById('credential-status');
+      status.textContent = forceSessionReset ? 'Web session reloaded.' : 'URL scene refreshed.';
+      if (scene.id !== activeId) webview.classList.add('hidden');
     }
 
     async function chooseBackground() {
@@ -1450,44 +1647,259 @@
       quickTimeDetectTimer = null;
     }
 
+    function stopPermissionRecovery() {
+      if (permissionRecoveryTimer) clearInterval(permissionRecoveryTimer);
+      permissionRecoveryTimer = null;
+    }
+
+    function clearCaptureSource(scene) {
+      if (!scene) return;
+      scene.sourceId = '';
+      scene.sourceName = '';
+      saveScenes();
+      scenePreviewCache.delete(scene.id);
+      updateScenePreview(scene);
+    }
+
+    function isScreenPermissionBlocked(permission) {
+      return permission === 'denied' || permission === 'restricted';
+    }
+
+    function isScreenPermissionPending(permission) {
+      return permission === 'not-determined' || permission === 'unknown';
+    }
+
+    function startPermissionRecovery(scene, options = {}) {
+      stopPermissionRecovery();
+      if (!scene || (scene.type !== 'device' && scene.type !== 'window')) return;
+      permissionPromptSceneId = scene.id;
+      renderToolbar();
+      if (scene.type === 'device') {
+        setQuickTimeStep('recording', 'fail');
+        updateDeviceDiagnostics({
+          permission: options.permission || deviceDiagnostics.permission,
+          selectedSource: scene.sourceName || scene.sourceId || 'none',
+          staleSource: false,
+          failure: options.message || 'Electron could not enumerate capture sources.'
+        });
+      }
+      showStatus(scene.type === 'device' ? deviceStatus : windowStatus, options.message || 'CueVue cannot enumerate capture sources yet. Retry Detect will force a fresh scan.');
+      permissionRecoveryTimer = setInterval(async () => {
+        const scan = await queryCaptureSources(scene.type);
+        if (scene.type === 'device') await refreshDeviceDiagnostics({ ...scan.diagnostics, failure: scan.sources.length ? '' : scan.diagnostics.failure });
+        if (!scan.sources.length) return;
+        stopPermissionRecovery();
+        permissionPromptSceneId = '';
+        renderToolbar();
+        hideStatus(scene.type === 'device' ? deviceStatus : windowStatus);
+        if (scene.type === 'device') {
+          document.getElementById('selected-device-label').textContent = 'Permission is on. Reconnecting QuickTime capture...';
+          await recoverQuickTimeCapture();
+        } else {
+          await showScene(scene.id);
+        }
+      }, 1500);
+    }
+
+    async function queryCaptureSources(kind) {
+      let result = null;
+      try {
+        result = await ipcRenderer.invoke('get-capture-sources', { reason: kind || 'manual' });
+      } catch (error) {
+        result = {
+          ok: false,
+          permission: 'unknown',
+          error: error.message || 'Unable to list capture sources.',
+          sources: []
+        };
+      }
+      const allSources = Array.isArray(result.sources) ? result.sources : [];
+      const sources = allSources.slice().sort((a, b) => rankSource(a, kind) - rankSource(b, kind) || a.name.localeCompare(b.name));
+      const rejected = kind === 'device'
+        ? []
+        : allSources.filter((source) => !sources.some((item) => item.id === source.id));
+      const diagnostics = {
+        permission: `${result.permission || 'unknown'} (macOS API hint; ${result.ok ? 'desktopCapturer succeeded' : 'desktopCapturer failed'})`,
+        allSources,
+        sources,
+        sourceScan: result.ok ? `ok (${allSources.length})` : 'failed',
+        sourceScanError: result.error || '',
+        sourceFilter: rejected.length ? rejected.map((source) => `${source.kind}: ${source.name} [${source.id}]`).join('\n') : 'none',
+        failure: result.ok
+          ? (allSources.length ? '' : 'desktopCapturer returned no sources.')
+          : `desktopCapturer failed: ${result.error || 'unknown error'}`
+      };
+      return { ok: Boolean(result.ok), permission: result.permission || 'unknown', allSources, sources, diagnostics };
+    }
+
+    function updateDeviceDiagnostics(patch = {}) {
+      deviceDiagnostics = { ...deviceDiagnostics, ...patch };
+      if (!deviceDiagnosticsEl) return;
+      const statusClass = (value) => {
+        const text = String(value || '').toLowerCase();
+        if (text.includes('failed') || text.includes('blocked') || text.includes('missing') || text.includes('stale')) return 'diag-fail';
+        if (text.includes('succeeded') || text === 'granted' || text === 'true' || text.includes('playing')) return 'diag-ok';
+        return '';
+      };
+      const sources = deviceDiagnostics.sources.length
+        ? deviceDiagnostics.sources.map((source) => `${source.kind}: ${source.name} [${source.id}]`).join('\n')
+        : 'none';
+      const allSources = deviceDiagnostics.allSources.length
+        ? deviceDiagnostics.allSources.map((source) => `${source.kind}: ${source.name} [${source.id}]`).join('\n')
+        : 'none';
+      const rows = [
+        ['Screen Recording', deviceDiagnostics.permission],
+        ['Source Scan', deviceDiagnostics.sourceScan],
+        ['Source Scan Error', deviceDiagnostics.sourceScanError || 'none'],
+        ['All Sources', allSources],
+        ['Detected Sources', sources],
+        ['Filtered Out', deviceDiagnostics.sourceFilter || 'none'],
+        ['QuickTime Launched', deviceDiagnostics.quickTimeLaunched],
+        ['QuickTime Running', deviceDiagnostics.quickTimeRunning],
+        ['QuickTime Windows', deviceDiagnostics.quickTimeWindows.length ? deviceDiagnostics.quickTimeWindows.join('\n') : 'none'],
+        ['Movie Window', deviceDiagnostics.movieRecordingWindow],
+        ['Selected Source', deviceDiagnostics.selectedSource || 'none'],
+        ['Stale Source', deviceDiagnostics.staleSource],
+        ['getUserMedia', deviceDiagnostics.getUserMedia],
+        ['video.srcObject', deviceDiagnostics.videoSrcObject],
+        ['Video Track', deviceDiagnostics.videoTrack],
+        ['Video Dimensions', deviceDiagnostics.videoDimensions],
+        ['Playback', deviceDiagnostics.playback],
+        ['Failure', deviceDiagnostics.failure || 'none']
+      ];
+      deviceDiagnosticsEl.innerHTML = `<h3>Mobile Device Capture Diagnostics</h3><dl>${rows.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd class="${statusClass(value)}">${escapeHtml(value)}</dd>`).join('')}</dl>`;
+      if (deviceDiagnostics.failure) deviceDiagnosticsEl.classList.remove('hidden');
+    }
+
+    async function refreshDeviceDiagnostics(patch = {}) {
+      const next = { ...patch };
+      if (!next.permission) {
+        try {
+          next.permission = `${await ipcRenderer.invoke('check-screen-permission')} (macOS API hint)`;
+        } catch (error) {
+          next.permission = error.message || 'unknown';
+        }
+      }
+      try {
+        const quickTime = await ipcRenderer.invoke('quicktime-status');
+        next.quickTimeRunning = Boolean(quickTime && quickTime.running);
+        next.quickTimeWindows = quickTime && Array.isArray(quickTime.windows) ? quickTime.windows : [];
+        next.movieRecordingWindow = Boolean(quickTime && quickTime.movieRecording);
+        if (quickTime && !quickTime.ok && quickTime.message) next.failure = quickTime.message;
+      } catch (error) {
+        next.failure = error.message || 'Unable to inspect QuickTime.';
+      }
+      updateDeviceDiagnostics(next);
+    }
+
     function showDeviceFallback() {
       document.getElementById('device-fallback').classList.add('open');
+      updateDeviceDiagnostics({ failure: 'Manual Source Picker opened.' });
       scanSources('device', false, true);
     }
 
     async function detectQuickTimeSource(autoPick = true) {
-      const sources = await getOrderedSources('device');
-      const preferred = sources.find((source) => rankSource(source, 'device') <= 2);
-      if (!preferred) return false;
+      await refreshDeviceDiagnostics({ failure: '' });
+      const scan = await queryCaptureSources('device');
+      updateDeviceDiagnostics(scan.diagnostics);
+      if (!scan.ok) {
+        showDeviceFallback();
+        document.getElementById('selected-device-label').textContent = `Could not gather capture sources: ${scan.diagnostics.sourceScanError || 'unknown Electron error'}`;
+        return autoPick ? startFullscreenDeviceFallback(`Source enumeration failed; using full-screen fallback. ${scan.diagnostics.sourceScanError || ''}`) : false;
+      }
+      const preferred = scan.sources.find((source) => rankSource(source, 'device') <= 20);
+      if (!preferred) {
+        showDeviceFallback();
+        updateDeviceDiagnostics({
+          failure: scan.allSources.length
+            ? 'Sources were returned, but none could be selected.'
+            : 'No capturable windows or screens returned by Electron.'
+        });
+        return autoPick ? startFullscreenDeviceFallback('No mobile capture source was selectable; using full-screen fallback.') : false;
+      }
       setQuickTimeStep('recording', 'done');
       if (autoPick) await selectCaptureSource('device', preferred);
       return true;
+    }
+
+    async function recoverQuickTimeCapture() {
+      const scene = sceneById(activeId);
+      if (!scene || scene.type !== 'device') return false;
+      editingId = scene.id;
+      stopQuickTimeDetection();
+      document.getElementById('device-fallback').classList.remove('open');
+      setQuickTimeStep('opened', 'active');
+      setQuickTimeStep('recording', 'active');
+      const status = await ipcRenderer.invoke('quicktime-status');
+      if (!status || !status.running) {
+        const launched = await ipcRenderer.invoke('quicktime-new-movie-recording');
+        await refreshDeviceDiagnostics({ quickTimeLaunched: Boolean(launched && launched.ok), failure: launched && !launched.ok ? launched.message : '' });
+        if (!launched || !launched.ok) {
+          setQuickTimeStep('opened', 'fail');
+          document.getElementById('selected-device-label').textContent = launched && launched.message ? launched.message : 'QuickTime could not be launched.';
+          return false;
+        }
+      }
+      setQuickTimeStep('opened', 'done');
+      let attempts = 0;
+      return new Promise((resolve) => {
+        quickTimeDetectTimer = setInterval(async () => {
+          attempts += 1;
+          try {
+            if (await detectQuickTimeSource(true)) {
+              stopQuickTimeDetection();
+              hideStatus(deviceStatus);
+              resolve(true);
+              return;
+            }
+          } catch (error) {
+            updateDeviceDiagnostics({ failure: error.message || 'QuickTime reconnect failed.' });
+          }
+          document.getElementById('selected-device-label').textContent = 'Reconnecting mobile capture. Keep the Movie Recording window open and the device selected.';
+          if (attempts >= 24) {
+            stopQuickTimeDetection();
+            setQuickTimeStep('recording', 'fail');
+            showDeviceFallback();
+            await startFullscreenDeviceFallback('QuickTime reconnect timed out; using full-screen fallback.');
+            resolve(false);
+          }
+        }, 1000);
+      });
     }
 
     async function scanSources(kind, autoPick = false, showDeviceGrid = false) {
       const grid = kind === 'device'
         ? (showDeviceGrid ? document.getElementById('device-source-grid') : null)
         : document.getElementById('window-source-grid');
-      if (grid) grid.innerHTML = `<p class="muted">Scanning ${kind === 'window' ? 'windows and screens' : 'windows'}...</p>`;
+      if (grid) grid.innerHTML = `<p class="muted">Scanning windows and screens...</p>`;
       let sources = [];
       try {
-        sources = await getOrderedSources(kind);
+        const scan = await queryCaptureSources(kind);
+        sources = scan.sources;
+        if (kind === 'device') await refreshDeviceDiagnostics(scan.diagnostics);
+        if (!scan.ok) {
+          if (grid) grid.innerHTML = `<p class="muted">Could not gather sources: ${escapeHtml(scan.diagnostics.sourceScanError || 'Electron capture enumeration failed.')}</p>`;
+          if (kind === 'device') document.getElementById('selected-device-label').textContent = `Could not gather capture sources: ${scan.diagnostics.sourceScanError || 'Electron capture enumeration failed.'}`;
+          return;
+        }
       } catch (error) {
-        if (grid) grid.innerHTML = `<p class="muted">Could not gather sources: ${escapeHtml(error.message || 'Screen Recording permission may be blocked.')}</p>`;
-        if (kind === 'device') document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Screen Recording permission may be blocked.'}`;
+        if (grid) grid.innerHTML = `<p class="muted">Could not gather sources: ${escapeHtml(error.message || 'Electron capture enumeration failed.')}</p>`;
+        if (kind === 'device') document.getElementById('selected-device-label').textContent = `Could not gather capture sources: ${error.message || 'Electron capture enumeration failed.'}`;
+        if (kind === 'device') await refreshDeviceDiagnostics({ failure: error.message || 'Electron capture enumeration failed.' });
         return;
       }
       if (grid) grid.innerHTML = '';
       if (!sources.length) {
-        if (grid) grid.innerHTML = `<p class="muted">No ${kind === 'window' ? 'windows or screens' : 'windows'} found. Open the source you want to capture, then refresh.</p>`;
-        if (kind === 'device') document.getElementById('selected-device-label').textContent = 'No QuickTime movie recording window found yet.';
+        if (grid) grid.innerHTML = `<p class="muted">No windows or screens found. Open the source you want to capture, then refresh.</p>`;
+        if (kind === 'device') document.getElementById('selected-device-label').textContent = 'Electron returned no capturable windows or screens. QuickTime may be visible but not capturable to CueVue yet.';
+        if (kind === 'device') await refreshDeviceDiagnostics({ sources: [], failure: 'desktopCapturer returned no sources.' });
         return;
       }
       if (autoPick && kind === 'device') {
         if (await detectQuickTimeSource(true)) {
           stopQuickTimeDetection();
         } else {
-          document.getElementById('selected-device-label').textContent = 'No QuickTime/iPhone window found yet. Start the recording window, then refresh.';
+          document.getElementById('selected-device-label').textContent = 'No mobile capture window found yet. Start the recording window, then refresh.';
         }
         return;
       }
@@ -1496,7 +1908,7 @@
         const card = document.createElement('button');
         card.className = 'source-card';
         const label = source.kind === 'screen' ? 'Screen' : 'Window';
-        card.innerHTML = `<img src="${source.thumbnail}" alt=""><span><span class="source-kind">${label}</span>${escapeHtml(source.name)}</span>`;
+        card.innerHTML = `<img src="${source.thumbnail}" alt=""><span><span class="source-kind">${label}</span>${escapeHtml(source.name)}<br><small>${escapeHtml(source.id)}</small></span>`;
         card.addEventListener('click', async () => {
           await selectCaptureSource(kind, source);
           scanSources(kind, false, showDeviceGrid);
@@ -1511,6 +1923,11 @@
       scene.sourceId = source.id;
       scene.sourceName = source.name;
       saveScenes();
+      updateDeviceDiagnostics({
+        selectedSource: `${source.name} [${source.id}]`,
+        staleSource: false,
+        failure: ''
+      });
       if (scene.id === permissionPromptSceneId) {
         permissionPromptSceneId = '';
         renderToolbar();
@@ -1525,15 +1942,98 @@
       if (scene.id === activeId) {
         const video = kind === 'device' ? iphoneVideo : windowVideo;
         const status = kind === 'device' ? deviceStatus : windowStatus;
-        await startCapture(source, video, status);
+        const connected = await startCapture(source, video, status);
+        if (kind === 'device' && !connected) return;
       }
+      ipcRenderer.send('focus-main-window');
+      window.focus();
       refreshGlobalStatus();
       if (kind === 'device') {
         setQuickTimeStep('selected', 'done');
         setQuickTimeStep('connected', 'done');
-        document.getElementById('selected-device-label').textContent = `Connected: ${source.name}. QuickTime must stay open; CueVue will try to minimize it.`;
-        ipcRenderer.send('minimize-quicktime');
+        document.getElementById('selected-device-label').textContent = `Connected: ${source.name}. QuickTime must stay open.`;
+        if (deviceDiagnosticsEl) deviceDiagnosticsEl.classList.add('hidden');
       }
+    }
+
+    function isZeroDimensionCaptureError(error) {
+      return /0\s*x\s*0|dimensions stayed|black screen|black frame/i.test(error && error.message ? error.message : String(error || ''));
+    }
+
+    function fallbackScreenSource(scan) {
+      const sources = scan && Array.isArray(scan.sources) ? scan.sources : [];
+      return sources.find((source) => source.kind === 'screen')
+        || sources.find((source) => String(source.id || '').startsWith('screen:'))
+        || { id: 'screen:0:0', name: 'Entire Screen', kind: 'screen', thumbnail: '' };
+    }
+
+    async function startFullscreenDeviceFallback(reason, options = {}) {
+      if (options.fullscreenFallback) return false;
+      const scene = sceneById(activeId);
+      if (!scene || scene.type !== 'device') return false;
+      stopQuickTimeDetection();
+      stopPermissionRecovery();
+      document.getElementById('device-fallback').classList.add('open');
+      document.getElementById('selected-device-label').textContent = 'Mobile capture failed. Switching to full-screen capture for demo reliability.';
+      let scan = { ok: false, sources: [], diagnostics: { sourceScanError: '' } };
+      try {
+        scan = await queryCaptureSources('device');
+        updateDeviceDiagnostics(scan.diagnostics);
+      } catch (error) {
+        updateDeviceDiagnostics({ failure: error.message || 'Full-screen fallback source scan failed.' });
+      }
+      const fallback = fallbackScreenSource(scan);
+      scene.sourceId = fallback.id;
+      scene.sourceName = fallback.name;
+      saveScenes();
+      updateDeviceDiagnostics({
+        selectedSource: `${fallback.name} [${fallback.id}]`,
+        staleSource: false,
+        failure: reason || 'Using full-screen capture fallback.'
+      });
+      showStatus(deviceStatus, 'Using full-screen fallback. Keep the mobile mirror visible on screen.');
+      return startCapture(fallback, iphoneVideo, deviceStatus, { fullscreenFallback: true });
+    }
+
+    async function retryDeviceCaptureAfterBlackFrame(failedSource, video, statusEl, options = {}) {
+      if (options.blackFrameRecovery) return false;
+      const scene = sceneById(activeId);
+      if (!scene || scene.type !== 'device') return false;
+      updateDeviceDiagnostics({
+        staleSource: true,
+        failure: 'Selected source produced a 0 x 0 stream. CueVue is invalidating it and trying a fresh source.'
+      });
+      if (scene.sourceId === failedSource.id) {
+        scene.sourceId = '';
+        saveScenes();
+      }
+      scenePreviewCache.delete(scene.id);
+      updateScenePreview(scene);
+      const scan = await queryCaptureSources('device');
+      updateDeviceDiagnostics(scan.diagnostics);
+      if (!scan.ok || !scan.sources.length) {
+        return startFullscreenDeviceFallback(scan.ok
+          ? 'Capture returned 0 x 0 and Electron has no listed sources; using full-screen fallback.'
+          : `Capture returned 0 x 0 and source scan failed; using full-screen fallback. ${scan.diagnostics.sourceScanError || ''}`, options);
+      }
+      const fallback = scan.sources.find((source) => source.id !== failedSource.id && source.kind === 'screen')
+        || fallbackScreenSource(scan);
+      if (!fallback) {
+        showDeviceFallback();
+        document.getElementById('selected-device-label').textContent = 'Capture returned 0 x 0. Choose another visible source manually.';
+        return false;
+      }
+      scene.sourceId = fallback.id;
+      scene.sourceName = fallback.name;
+      saveScenes();
+      document.getElementById('device-fallback').classList.add('open');
+      document.getElementById('selected-device-label').textContent = `0 x 0 capture from ${failedSource.name}. Trying fallback: ${fallback.name}.`;
+      updateDeviceDiagnostics({
+        selectedSource: `${fallback.name} [${fallback.id}]`,
+        staleSource: true,
+        failure: `Auto-retrying fallback source after 0 x 0 stream from ${failedSource.name}.`
+      });
+      return startCapture(fallback, video, statusEl, { blackFrameRecovery: true });
     }
 
     async function openQuickTimeAndScan() {
@@ -1543,6 +2043,7 @@
       document.getElementById('selected-device-label').textContent = 'Opening QuickTime and looking for the Movie Recording window...';
       setQuickTimeStep('opened', 'active');
       const result = await ipcRenderer.invoke('quicktime-new-movie-recording');
+      await refreshDeviceDiagnostics({ quickTimeLaunched: Boolean(result && result.ok), failure: result && !result.ok ? result.message : '' });
       if (result && !result.ok) {
         setQuickTimeStep('opened', 'fail');
         document.getElementById('selected-device-label').textContent = result.message;
@@ -1561,14 +2062,16 @@
         } catch (error) {
           stopQuickTimeDetection();
           setQuickTimeStep('recording', 'fail');
-          document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Screen Recording permission may be blocked.'}`;
+          document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Electron capture scan failed.'}`;
+          await startFullscreenDeviceFallback(`QuickTime scan failed; using full-screen fallback. ${error.message || ''}`);
           return;
         }
-        document.getElementById('selected-device-label').textContent = 'Looking for QuickTime Movie Recording. Choose the iPhone in QuickTime if it is not already showing.';
+        document.getElementById('selected-device-label').textContent = 'Looking for QuickTime Movie Recording. Choose the mobile device in QuickTime if it is not already showing.';
         if (attempts >= 20) {
           stopQuickTimeDetection();
           setQuickTimeStep('recording', 'fail');
-          document.getElementById('selected-device-label').textContent = 'Could not auto-detect the iPhone. Click Retry Detect iPhone or Choose Window Manually.';
+          showDeviceFallback();
+          await startFullscreenDeviceFallback('QuickTime recording window was not capturable; using full-screen fallback.');
         }
       }, 1000);
     }
@@ -1586,20 +2089,19 @@
         detail.textContent = 'Permission is on. CueVue can list and capture windows.';
         detail.className = 'permission-ok';
       } else if (permission === 'denied' || permission === 'restricted') {
-        detail.textContent = 'Permission is blocked. Open Apple Settings, turn CueVue on, then quit and reopen CueVue.';
+        detail.textContent = 'macOS API reports denied, but CueVue will still try desktopCapturer because System Settings may already be enabled.';
         detail.className = 'muted';
       } else {
-        detail.textContent = 'Permission has not been granted yet. Open Apple Settings, turn CueVue on if it appears, then quit and reopen CueVue.';
+        detail.textContent = 'macOS API has no settled permission value yet. CueVue will verify by enumerating capture sources.';
         detail.className = 'muted';
       }
     }
 
     async function getOrderedSources(kind) {
-      const sources = await ipcRenderer.invoke('get-sources');
-      const filtered = kind === 'device'
-        ? sources.filter((source) => source.kind !== 'screen')
-        : sources;
-      return filtered.slice().sort((a, b) => rankSource(a, kind) - rankSource(b, kind) || a.name.localeCompare(b.name));
+      const scan = await queryCaptureSources(kind);
+      if (kind === 'device') updateDeviceDiagnostics(scan.diagnostics);
+      if (!scan.ok) throw new Error(scan.diagnostics.sourceScanError || 'Electron failed to enumerate capture sources.');
+      return scan.sources;
     }
 
     function rankSource(source, kind) {
@@ -1607,9 +2109,17 @@
       if (kind === 'window' && source.kind === 'screen') return 0;
       if (kind === 'device') {
         if (name.includes('movie recording')) return 0;
-        if (name.includes('quicktime') && name.includes('recording')) return 1;
-        if (name.includes('iphone') && name.includes('recording')) return 2;
-        if (name.includes('quicktime')) return 8;
+        if (name.includes('iphone') && name.includes('quicktime')) return 1;
+        if (name.includes('ipad') && name.includes('quicktime')) return 1;
+        if (name.includes('quicktime') && name.includes('recording')) return 2;
+        if (name.includes('iphone') && name.includes('recording')) return 3;
+        if (name.includes('ipad') && name.includes('recording')) return 3;
+        if (name.includes('iphone')) return 4;
+        if (name.includes('ipad')) return 4;
+        if (name.includes('quicktime')) return 5;
+        if (source.kind === 'window') return 30;
+        if (source.kind === 'screen') return 50;
+        return 80;
       }
       if (kind === 'slides') {
         if (name.includes('powerpoint') && name.includes('slide')) return 0;
@@ -1620,33 +2130,68 @@
     }
 
     async function restoreCapture(scene, video, statusEl) {
-      const permission = await ipcRenderer.invoke('check-screen-permission');
-      if (permission === 'denied' || permission === 'restricted') {
-        if (!scene.sourceId && !scene.sourceName) {
-          showPermissionStatus(scene);
-        }
-        return;
-      }
+      if (scene.type === 'device') await refreshDeviceDiagnostics({ failure: '' });
       if (scene.id === permissionPromptSceneId) {
         permissionPromptSceneId = '';
         renderToolbar();
       }
       if (!scene.sourceId && !scene.sourceName) {
         hideStatus(statusEl);
+        if (scene.type === 'device') await detectQuickTimeSource(true);
         return;
       }
-      const sources = await getOrderedSources(scene.type);
-      const source = sources.find((item) => item.id === scene.sourceId) || sources.find((item) => item.name === scene.sourceName);
+      let sources = [];
+      try {
+        sources = await getOrderedSources(scene.type);
+      } catch (error) {
+        if (scene.type === 'device') {
+          updateDeviceDiagnostics({ failure: error.message || 'Electron failed to enumerate capture sources.' });
+          showDeviceFallback();
+          await startFullscreenDeviceFallback(`Source scan failed; using full-screen fallback. ${error.message || ''}`);
+        }
+        return;
+      }
+      const source = sources.find((item) => item.id === scene.sourceId)
+        || sources.find((item) => item.name === scene.sourceName)
+        || sources.find((item) => scene.sourceName && item.name.toLowerCase() === scene.sourceName.toLowerCase());
       if (!source) {
+        if (scene.type === 'device') {
+          const staleSelection = scene.sourceName || scene.sourceId || '';
+          updateDeviceDiagnostics({
+            staleSource: Boolean(scene.sourceId || scene.sourceName),
+            selectedSource: staleSelection,
+            failure: 'Saved source is stale or no longer visible. CueVue cleared it and will look for QuickTime again.'
+          });
+          clearCaptureSource(scene);
+          showDeviceFallback();
+          await startFullscreenDeviceFallback('Saved mobile capture source disappeared; using full-screen fallback.');
+          return;
+        }
         hideStatus(statusEl);
         return;
+      }
+      if (scene.type === 'device' && source.id !== scene.sourceId) {
+        scene.sourceId = source.id;
+        saveScenes();
+        updateDeviceDiagnostics({ staleSource: true, selectedSource: `${source.name} [${source.id}]` });
       }
       await startCapture(source, video, statusEl);
     }
 
-    async function startCapture(source, video, statusEl) {
+    async function startCapture(source, video, statusEl, options = {}) {
       try {
         stopStream();
+        const isDeviceVideo = video === iphoneVideo;
+        if (isDeviceVideo) updateDeviceDiagnostics({
+          selectedSource: `${source.name} [${source.id}]`,
+          staleSource: false,
+          getUserMedia: 'starting',
+          videoSrcObject: false,
+          videoTrack: false,
+          videoDimensions: '0 x 0',
+          playback: 'not started',
+          failure: ''
+        });
         const videoConstraints = {
           mandatory: {
             chromeMediaSource: 'desktop',
@@ -1665,9 +2210,80 @@
         });
         currentStream = stream;
         video.srcObject = stream;
+        const track = stream.getVideoTracks()[0];
+        if (isDeviceVideo) updateDeviceDiagnostics({
+          getUserMedia: 'succeeded',
+          videoSrcObject: Boolean(video.srcObject),
+          videoTrack: Boolean(track),
+          failure: track ? '' : 'getUserMedia returned no video track.'
+        });
+        if (!track) throw new Error('Selected source returned no video track.');
+        if (isDeviceVideo) {
+          track.addEventListener('ended', () => {
+            updateDeviceDiagnostics({ videoTrack: false, playback: 'ended', failure: 'Capture track ended. Switching to full-screen fallback.' });
+            startFullscreenDeviceFallback('Capture track ended; using full-screen fallback.');
+          }, { once: true });
+        }
+        try {
+          await video.play();
+        } catch (error) {
+          if (isDeviceVideo) updateDeviceDiagnostics({ playback: `failed: ${error.message || 'video.play failed'}` });
+          throw error;
+        }
+        await new Promise((resolve, reject) => {
+          let checks = 0;
+          const timer = setInterval(() => {
+            checks += 1;
+            if (isDeviceVideo) updateDeviceDiagnostics({
+              videoDimensions: `${video.videoWidth || 0} x ${video.videoHeight || 0}`,
+              playback: video.paused ? 'waiting' : 'playing'
+            });
+            if (video.videoWidth > 0 && video.videoHeight > 0 && !video.paused) {
+              clearInterval(timer);
+              resolve();
+            } else if (checks >= 40) {
+              clearInterval(timer);
+              reject(new Error('Capture stream started, but live video dimensions stayed at 0 x 0.'));
+            }
+          }, 250);
+        });
         hideStatus(statusEl);
+        if (isDeviceVideo) updateDeviceDiagnostics({
+          videoDimensions: `${video.videoWidth} x ${video.videoHeight}`,
+          playback: 'playing',
+          failure: ''
+        });
+        if (isDeviceVideo && deviceDiagnosticsEl) deviceDiagnosticsEl.classList.add('hidden');
+        return true;
       } catch (error) {
         showStatus(statusEl, `Capture failed: ${error.message || 'Unable to start selected source.'}`);
+        if (video === iphoneVideo) {
+          const permission = await ipcRenderer.invoke('check-screen-permission').catch(() => 'unknown');
+          updateDeviceDiagnostics({
+            permission,
+            getUserMedia: 'failed',
+            videoSrcObject: Boolean(video.srcObject),
+            videoTrack: Boolean(video.srcObject && video.srcObject.getVideoTracks && video.srcObject.getVideoTracks()[0]),
+            videoDimensions: `${video.videoWidth || 0} x ${video.videoHeight || 0}`,
+            playback: video.paused ? 'failed' : 'unknown',
+            failure: error.message || 'Unable to start selected source.'
+          });
+          if (isZeroDimensionCaptureError(error)) {
+            const recovered = await retryDeviceCaptureAfterBlackFrame(source, video, statusEl, options);
+            if (recovered) return true;
+          }
+          showDeviceFallback();
+          if (/permission|denied|notallowed|not allowed/i.test(error.message || '')) {
+            document.getElementById('selected-device-label').textContent = `Source capture failed: ${error.message || 'permission-related capture error'}. Choose another visible source below.`;
+            updateDeviceDiagnostics({
+              permission: `${permission} (macOS API hint; capture failed after manual source selection)`,
+              failure: `getUserMedia failed after source selection: ${error.message || 'permission-related capture error'}`
+            });
+          }
+          const recovered = await startFullscreenDeviceFallback(`Selected source failed; using full-screen fallback. ${error.message || ''}`, options);
+          if (recovered) return true;
+        }
+        return false;
       }
     }
 
@@ -1694,7 +2310,8 @@
       return {
         scenes,
         activeId,
-        settings: globalSettings
+        settings: globalSettings,
+        workspaceMode: document.getElementById('workspace-save-mode').value
       };
     }
 
@@ -1748,8 +2365,11 @@
         return;
       }
       currentWorkspacePath = result.path || currentWorkspacePath;
-      setWorkspaceStatus(`Saved: ${currentWorkspacePath}`);
       await refreshRecentWorkspaces();
+      const missing = Array.isArray(result.missingAssets) && result.missingAssets.length
+        ? ` Missing assets: ${result.missingAssets.length}.`
+        : '';
+      setWorkspaceStatus(`Saved ${result.mode || 'linked'}: ${currentWorkspacePath}.${missing}`);
     }
 
     async function openWorkspace(filePath = '') {
@@ -1764,6 +2384,9 @@
         return;
       }
       const workspace = result.workspace;
+      if (result.mode && document.getElementById('workspace-save-mode')) {
+        document.getElementById('workspace-save-mode').value = result.mode;
+      }
       scenes = normalizeScenes(workspace.scenes || defaultScenes);
       activeId = workspace.activeId && sceneById(workspace.activeId) ? workspace.activeId : (orderedScenes()[0] && orderedScenes()[0].id) || 'flow';
       globalSettings = workspace.settings && typeof workspace.settings === 'object'
@@ -1776,8 +2399,11 @@
       applyCursorMode();
       closeGlobalSettings();
       showScene(activeId);
-      setWorkspaceStatus(`Loaded: ${currentWorkspacePath}`);
       await refreshRecentWorkspaces();
+      const missing = Array.isArray(result.missingAssets) && result.missingAssets.length
+        ? ` Missing linked assets: ${result.missingAssets.length}.`
+        : '';
+      setWorkspaceStatus(`Loaded ${result.mode || workspace.mode || 'linked'}: ${currentWorkspacePath}.${missing}`);
     }
 
     function applyCursorMode() {
@@ -1813,7 +2439,7 @@
       const scene = sceneById(activeId);
       if (!scene) return;
       document.getElementById('selected-window-label').textContent = scene.type === 'window' && scene.sourceName ? `Selected: ${scene.sourceName}` : 'No capture window selected.';
-      document.getElementById('selected-device-label').textContent = scene.type === 'device' && scene.sourceName ? `Connected: ${scene.sourceName}` : 'No iPhone source selected.';
+      document.getElementById('selected-device-label').textContent = scene.type === 'device' && scene.sourceName ? `Connected: ${scene.sourceName}` : 'No mobile device source selected.';
       document.getElementById('selected-slides-label').textContent = scene.type === 'slides' && scene.slidePaths && scene.slidePaths.length ? `${scene.slidePaths.length} slides imported.` : 'No slides imported.';
       const status = document.getElementById('credential-status');
       status.textContent = scene.type === 'url' ? 'Credentials are saved when you save the scene.' : 'No URL credentials for this scene.';
@@ -1844,11 +2470,18 @@
     document.getElementById('cancel-editor-button').addEventListener('click', closeEditor);
     document.getElementById('save-editor-button').addEventListener('click', saveEditor);
     document.getElementById('delete-scene-button').addEventListener('click', deleteScene);
+    document.getElementById('flow-topics').addEventListener('click', (event) => {
+      const row = event.target.closest('.flow-topic.clickable');
+      if (!row || !event.currentTarget.contains(row)) return;
+      toggleFlowImpact(Number(row.dataset.flowTopicIndex));
+    });
     editType.addEventListener('change', syncTypePanels);
     document.getElementById('choose-bg-button').addEventListener('click', chooseBackground);
     document.getElementById('choose-bg-all-button').addEventListener('click', chooseBackgroundAll);
     document.getElementById('flow-logo-left-button').addEventListener('click', () => chooseFlowLogo('left'));
     document.getElementById('flow-logo-right-button').addEventListener('click', () => chooseFlowLogo('right'));
+    document.getElementById('refresh-url-button').addEventListener('click', () => refreshEditingUrlScene(false));
+    document.getElementById('reload-url-session-button').addEventListener('click', () => refreshEditingUrlScene(true));
     document.getElementById('scan-window-button').addEventListener('click', () => scanSources('window'));
     document.getElementById('global-open-screen-settings-button').addEventListener('click', () => ipcRenderer.send('open-screen-settings'));
     document.getElementById('close-global-settings-button').addEventListener('click', closeGlobalSettings);
@@ -1870,15 +2503,13 @@
       stopQuickTimeDetection();
       setQuickTimeStep('recording', 'active');
       document.getElementById('selected-device-label').textContent = 'Retrying QuickTime Movie Recording detection...';
-      try {
-        if (!(await detectQuickTimeSource(true))) {
-          setQuickTimeStep('recording', 'fail');
-          document.getElementById('selected-device-label').textContent = 'No QuickTime Movie Recording window found. Open QuickTime, choose the iPhone, then retry.';
-        }
-      } catch (error) {
-        setQuickTimeStep('recording', 'fail');
-        document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Screen Recording permission may be blocked.'}`;
+      const scene = sceneById(activeId);
+      if (scene && scene.type === 'device') {
+        clearCaptureSource(scene);
+        await recoverQuickTimeCapture();
+        return;
       }
+      await detectQuickTimeSource(true);
     });
     document.getElementById('manual-device-button').addEventListener('click', showDeviceFallback);
     document.getElementById('quicktime-help-button').addEventListener('click', () => ipcRenderer.send('open-url', 'https://support.apple.com/guide/quicktime-player/welcome/mac'));
@@ -1897,6 +2528,20 @@
     });
 
     document.addEventListener('keydown', (event) => {
+      const key = String(event.key || '').toLowerCase();
+      if (event.metaKey && event.ctrlKey && !event.altKey && key === 'f') {
+        event.preventDefault();
+        ipcRenderer.send('toggle-fullscreen');
+        return;
+      }
+      if (!event.metaKey && !event.ctrlKey && !event.altKey && event.key === 'F11') {
+        event.preventDefault();
+        ipcRenderer.send('toggle-fullscreen');
+        return;
+      }
+      if (!event.metaKey && !event.ctrlKey && !event.altKey && event.key === 'Escape') {
+        ipcRenderer.send('exit-fullscreen');
+      }
       if (event.metaKey || event.ctrlKey || event.altKey || editor.classList.contains('open') || globalSettingsOverlay.classList.contains('open')) return;
       if (event.key === 'ArrowRight' || event.key === '>' || event.key === '.') {
         if (changeSlide(1)) {
@@ -1917,6 +2562,9 @@
 
     window.addEventListener('beforeunload', () => {
       stopStream();
+      stopQuickTimeDetection();
+      stopPermissionRecovery();
+      if (thumbnailRefreshTimer) clearInterval(thumbnailRefreshTimer);
       clearAllUrlWebviews();
     });
 

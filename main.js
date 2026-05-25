@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, desktopCapturer, shell, systemPreferences, safeStorage, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execFile } = require('child_process');
 
 app.setName('CueVue');
@@ -65,8 +66,17 @@ function createMainWindow() {
   mainWindow.loadFile(appFile('index.html')).catch(() => {});
 
   mainWindow.webContents.on('before-input-event', (event, input) => {
-    if (input.key !== 'Escape' || input.type !== 'keyDown') return;
-    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFullScreen()) {
+    if (input.type !== 'keyDown' || !mainWindow || mainWindow.isDestroyed()) return;
+
+    const key = String(input.key || '').toLowerCase();
+    const isFullscreenShortcut = (key === 'f' && input.meta && input.control) || input.key === 'F11';
+    if (isFullscreenShortcut) {
+      event.preventDefault();
+      mainWindow.setFullScreen(!mainWindow.isFullScreen());
+      return;
+    }
+
+    if (input.key === 'Escape' && mainWindow.isFullScreen()) {
       event.preventDefault();
       mainWindow.setFullScreen(false);
     }
@@ -206,24 +216,181 @@ async function chooseWorkspaceSavePath() {
   return normalizeWorkspacePath(result.filePath);
 }
 
-function workspacePayload(rendererPayload = {}) {
+function fileMimeType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.png') return 'image/png';
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+  if (ext === '.webp') return 'image/webp';
+  if (ext === '.gif') return 'image/gif';
+  if (ext === '.svg') return 'image/svg+xml';
+  return 'application/octet-stream';
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value || null));
+}
+
+function sceneAssetEntries(scenes = []) {
+  const entries = [];
+  scenes.forEach((scene, sceneIndex) => {
+    if (!scene || typeof scene !== 'object') return;
+    if (scene.bg) entries.push({ sceneIndex, key: 'bg', value: scene.bg });
+    if (scene.flow && scene.flow.logoLeftPath) entries.push({ sceneIndex, key: 'flow.logoLeftPath', value: scene.flow.logoLeftPath });
+    if (scene.flow && scene.flow.logoRightPath) entries.push({ sceneIndex, key: 'flow.logoRightPath', value: scene.flow.logoRightPath });
+    if (Array.isArray(scene.slidePaths)) {
+      scene.slidePaths.forEach((value, slideIndex) => {
+        if (value) entries.push({ sceneIndex, key: 'slidePaths', slideIndex, value });
+      });
+    }
+  });
+  return entries;
+}
+
+function setSceneAssetPath(scenes, entry, value) {
+  const scene = scenes[entry.sceneIndex];
+  if (!scene) return;
+  if (entry.key === 'bg') scene.bg = value;
+  if (entry.key === 'flow.logoLeftPath' && scene.flow) scene.flow.logoLeftPath = value;
+  if (entry.key === 'flow.logoRightPath' && scene.flow) scene.flow.logoRightPath = value;
+  if (entry.key === 'slidePaths' && Array.isArray(scene.slidePaths)) scene.slidePaths[entry.slideIndex] = value;
+}
+
+function assetIdForFile(filePath, usedIds) {
+  const hash = crypto.createHash('sha256').update(filePath).digest('hex').slice(0, 16);
+  const ext = path.extname(filePath).toLowerCase() || '.asset';
+  let id = `${hash}${ext}`;
+  let counter = 1;
+  while (usedIds.has(id)) {
+    id = `${hash}-${counter}${ext}`;
+    counter += 1;
+  }
+  usedIds.add(id);
+  return id;
+}
+
+function linkedAssetManifest(scenes, targetPath) {
+  const baseDir = path.dirname(targetPath);
+  const seen = new Set();
+  return sceneAssetEntries(scenes).reduce((assets, entry) => {
+    const filePath = String(entry.value || '');
+    if (!filePath || seen.has(filePath)) return assets;
+    seen.add(filePath);
+    assets.push({
+      path: filePath,
+      filename: path.basename(filePath),
+      relativePath: path.isAbsolute(filePath) ? path.relative(baseDir, filePath) : filePath,
+      exists: fs.existsSync(filePath)
+    });
+    return assets;
+  }, []);
+}
+
+function embedWorkspaceAssets(scenes, targetPath) {
+  const assets = [];
+  const pathToId = new Map();
+  const usedIds = new Set();
+  const missingAssets = [];
+  sceneAssetEntries(scenes).forEach((entry) => {
+    const filePath = String(entry.value || '');
+    if (!filePath || filePath.startsWith('cuevue-asset://')) return;
+    if (!fs.existsSync(filePath)) {
+      missingAssets.push(filePath);
+      return;
+    }
+    const stat = fs.statSync(filePath);
+    if (!stat.isFile()) return;
+    let id = pathToId.get(filePath);
+    if (!id) {
+      id = assetIdForFile(filePath, usedIds);
+      pathToId.set(filePath, id);
+      assets.push({
+        id,
+        filename: path.basename(filePath),
+        originalPath: filePath,
+        relativePath: path.isAbsolute(filePath) ? path.relative(path.dirname(targetPath), filePath) : filePath,
+        mimeType: fileMimeType(filePath),
+        encoding: 'base64',
+        data: fs.readFileSync(filePath).toString('base64')
+      });
+    }
+    setSceneAssetPath(scenes, entry, `cuevue-asset://${id}`);
+  });
+  return { assets, missingAssets };
+}
+
+function embeddedAssetDir(workspacePath) {
+  const baseName = path.basename(workspacePath, path.extname(workspacePath));
+  const hash = crypto.createHash('sha256').update(workspacePath).digest('hex').slice(0, 12);
+  const dir = path.join(app.getPath('userData'), 'workspace-assets', `${safeName(baseName)}-${hash}`);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function restoreEmbeddedWorkspace(workspace, workspacePath) {
+  const scenes = Array.isArray(workspace.scenes) ? cloneJson(workspace.scenes) : [];
+  const assets = Array.isArray(workspace.assets) ? workspace.assets : [];
+  const assetsById = new Map();
+  const dir = embeddedAssetDir(workspacePath);
+  const missingAssets = [];
+  assets.forEach((asset) => {
+    if (!asset || !asset.id || !asset.data) return;
+    const fileName = safeName(path.basename(asset.id, path.extname(asset.id))) + (path.extname(asset.id) || path.extname(asset.filename || '') || '.asset');
+    const filePath = path.join(dir, fileName);
+    try {
+      fs.writeFileSync(filePath, Buffer.from(asset.data, asset.encoding === 'base64' ? 'base64' : 'utf8'));
+      assetsById.set(asset.id, filePath);
+    } catch (_) {
+      missingAssets.push(asset.originalPath || asset.filename || asset.id);
+    }
+  });
+  sceneAssetEntries(scenes).forEach((entry) => {
+    const value = String(entry.value || '');
+    if (!value.startsWith('cuevue-asset://')) return;
+    const id = value.replace('cuevue-asset://', '');
+    const restoredPath = assetsById.get(id);
+    if (restoredPath) setSceneAssetPath(scenes, entry, restoredPath);
+    else missingAssets.push(id);
+  });
+  return { ...workspace, scenes, missingAssets };
+}
+
+function verifyLinkedWorkspace(workspace) {
+  const missingAssets = [];
+  sceneAssetEntries(workspace.scenes || []).forEach((entry) => {
+    const filePath = String(entry.value || '');
+    if (filePath && !fs.existsSync(filePath)) missingAssets.push(filePath);
+  });
+  return { ...workspace, missingAssets };
+}
+
+function workspacePayload(rendererPayload = {}, options = {}) {
+  const mode = options.mode === 'embedded' ? 'embedded' : 'linked';
+  const targetPath = options.targetPath || '';
+  const scenes = Array.isArray(rendererPayload.scenes) ? cloneJson(rendererPayload.scenes) : [];
+  const embedded = mode === 'embedded' ? embedWorkspaceAssets(scenes, targetPath) : { assets: [], missingAssets: [] };
   return {
     app: 'CueVue',
-    version: 1,
+    version: 2,
+    mode,
     savedAt: new Date().toISOString(),
-    scenes: Array.isArray(rendererPayload.scenes) ? rendererPayload.scenes : [],
+    scenes,
     activeId: rendererPayload.activeId || '',
     settings: rendererPayload.settings && typeof rendererPayload.settings === 'object' ? rendererPayload.settings : {},
     notes: readNotes(),
-    notebookState: captureNotesWindowState() || readNotesWindowState()
+    notebookState: captureNotesWindowState() || readNotesWindowState(),
+    assets: mode === 'embedded' ? embedded.assets : [],
+    linkedAssets: mode === 'linked' ? linkedAssetManifest(scenes, targetPath) : [],
+    missingAssets: embedded.missingAssets
   };
 }
 
 function writeWorkspaceFile(filePath, rendererPayload) {
   const targetPath = normalizeWorkspacePath(filePath);
-  fs.writeFileSync(targetPath, JSON.stringify(workspacePayload(rendererPayload), null, 2));
+  const mode = rendererPayload && rendererPayload.workspaceMode === 'embedded' ? 'embedded' : 'linked';
+  const payload = workspacePayload(rendererPayload, { mode, targetPath });
+  fs.writeFileSync(targetPath, JSON.stringify(payload, null, 2));
   const state = rememberWorkspace(targetPath);
-  return { ok: true, path: targetPath, recentWorkspaces: state.recentWorkspaces };
+  return { ok: true, path: targetPath, mode, missingAssets: payload.missingAssets || [], recentWorkspaces: state.recentWorkspaces };
 }
 
 function notesWindowHtml() {
@@ -337,6 +504,8 @@ function createNotesWindow() {
     title: 'CueVue Notes',
     show: false,
     alwaysOnTop: true,
+    visibleOnAllWorkspaces: true,
+    focusable: true,
     backgroundColor: '#fbf2cf',
     webPreferences: {
       preload: appFile('preload.js'),
@@ -349,7 +518,10 @@ function createNotesWindow() {
   notesWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(notesWindowHtml())}`).catch(() => {});
   notesWindow.once('ready-to-show', () => {
     if (!notesWindow || notesWindow.isDestroyed()) return;
+    notesWindow.setAlwaysOnTop(true, 'screen-saver');
+    notesWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     notesWindow.show();
+    notesWindow.moveTop();
     if (lastNotesContext) notesWindow.webContents.send('notes-context', lastNotesContext);
   });
   notesWindow.on('move', scheduleNotesWindowStateSave);
@@ -608,13 +780,35 @@ ipcMain.on('open-url', (_, url) => {
   if (url) shell.openExternal(url);
 });
 
+ipcMain.on('toggle-fullscreen', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setFullScreen(!mainWindow.isFullScreen());
+  }
+});
+
+ipcMain.on('exit-fullscreen', () => {
+  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFullScreen()) {
+    mainWindow.setFullScreen(false);
+  }
+});
+
 ipcMain.on('toggle-notes', () => {
   createNotesWindow();
+});
+
+ipcMain.on('focus-main-window', () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
 });
 
 ipcMain.on('notes-context', (_, context) => {
   lastNotesContext = context || null;
   if (notesWindow && !notesWindow.isDestroyed() && lastNotesContext) {
+    notesWindow.setAlwaysOnTop(true, 'screen-saver');
+    notesWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    notesWindow.moveTop();
     notesWindow.webContents.send('notes-context', lastNotesContext);
   }
 });
@@ -671,17 +865,23 @@ ipcMain.handle('workspace-open', async (_, requestedPath) => {
       targetPath = result.filePaths[0];
     }
     if (!fs.existsSync(targetPath)) return { ok: false, message: 'Workspace file was not found.' };
-    const workspace = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
+    let workspace = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
     if (!workspace || !Array.isArray(workspace.scenes)) {
       return { ok: false, message: 'This is not a valid CueVue workspace.' };
     }
+    const mode = workspace.mode === 'embedded' || (Array.isArray(workspace.assets) && workspace.assets.length) ? 'embedded' : 'linked';
+    workspace = mode === 'embedded'
+      ? restoreEmbeddedWorkspace(workspace, targetPath)
+      : verifyLinkedWorkspace(workspace);
     if (workspace.notes && typeof workspace.notes === 'object') writeNotes(workspace.notes);
     if (workspace.notebookState && typeof workspace.notebookState === 'object') writeNotesWindowState(workspace.notebookState);
     const state = rememberWorkspace(targetPath);
     return {
       ok: true,
       path: targetPath,
+      mode,
       workspace,
+      missingAssets: workspace.missingAssets || [],
       recentWorkspaces: state.recentWorkspaces
     };
   } catch (error) {
@@ -712,31 +912,98 @@ ipcMain.handle('quicktime-new-movie-recording', async () => {
   };
 });
 
+ipcMain.handle('quicktime-status', async () => {
+  if (process.platform !== 'darwin') {
+    return { ok: true, running: false, windows: [], movieRecording: false };
+  }
+  try {
+    const script = [
+      'tell application "System Events"',
+      'if not (exists process "QuickTime Player") then return "NOT_RUNNING"',
+      'set windowNames to {}',
+      'tell process "QuickTime Player"',
+      'repeat with appWindow in windows',
+      'set end of windowNames to name of appWindow',
+      'end repeat',
+      'end tell',
+      'set AppleScript\'s text item delimiters to linefeed',
+      'set joinedNames to windowNames as text',
+      'set AppleScript\'s text item delimiters to ""',
+      'return joinedNames',
+      'end tell'
+    ].join('\n');
+    const output = await runAppleScriptAsync(script);
+    const raw = String(output || '').trim();
+    if (raw === 'NOT_RUNNING') return { ok: true, running: false, windows: [], movieRecording: false };
+    const windows = raw ? raw.split(/\r?\n/).map((name) => name.trim()).filter(Boolean) : [];
+    return {
+      ok: true,
+      running: true,
+      windows,
+      movieRecording: windows.some((name) => /movie recording|quicktime|iphone|ipad/i.test(name))
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      running: false,
+      windows: [],
+      movieRecording: false,
+      message: error.message || 'Unable to inspect QuickTime windows.'
+    };
+  }
+});
+
 ipcMain.on('minimize-quicktime', () => {
   runAppleScript('tell application "System Events" to tell process "QuickTime Player" to set miniaturized of windows to true');
 });
 
-ipcMain.handle('get-sources', async () => {
-  const sources = await desktopCapturer.getSources({
-    types: ['window', 'screen'],
-    thumbnailSize: { width: 320, height: 180 }
-  });
-
-  return sources.map((source) => ({
-    id: source.id,
-    name: source.name,
-    kind: source.id.startsWith('screen:') ? 'screen' : 'window',
-    thumbnail: source.thumbnail.toDataURL()
-  }));
-});
-
-ipcMain.handle('check-screen-permission', () => {
+function screenPermissionStatus() {
   if (process.platform !== 'darwin') return 'granted';
   try {
     return systemPreferences.getMediaAccessStatus('screen');
   } catch (_) {
     return 'unknown';
   }
+}
+
+async function enumerateCaptureSources() {
+  const permission = screenPermissionStatus();
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['window', 'screen'],
+      thumbnailSize: { width: 320, height: 180 }
+    });
+    return {
+      ok: true,
+      permission,
+      error: '',
+      sources: sources.map((source) => ({
+        id: source.id,
+        name: source.name,
+        kind: source.id.startsWith('screen:') ? 'screen' : 'window',
+        thumbnail: source.thumbnail.toDataURL()
+      }))
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      permission,
+      error: error && error.message ? error.message : 'Unable to list capture sources.',
+      sources: []
+    };
+  }
+}
+
+ipcMain.handle('get-capture-sources', async () => enumerateCaptureSources());
+
+ipcMain.handle('get-sources', async () => {
+  const result = await enumerateCaptureSources();
+  if (!result.ok) throw new Error(result.error || 'Unable to list capture sources.');
+  return result.sources;
+});
+
+ipcMain.handle('check-screen-permission', () => {
+  return screenPermissionStatus();
 });
 
 ipcMain.on('open-screen-settings', () => {

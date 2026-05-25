@@ -1,0 +1,2131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CueVue</title>
+  <link rel="icon" href="buildResources/cuevue-logo.png">
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f8f5ed;
+      --muted: #a9b0ae;
+      --line: rgba(248, 245, 237, 0.14);
+      --panel: rgba(18, 25, 26, 0.94);
+      --panel-soft: rgba(31, 44, 45, 0.88);
+      --coral: #ff6a4f;
+      --teal: #79d8cf;
+      --gold: #f4c95d;
+      --green: #9bd67d;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(121, 216, 207, 0.12), transparent 28%),
+        radial-gradient(circle at 82% 14%, rgba(255, 106, 79, 0.1), transparent 30%),
+        linear-gradient(145deg, #060a0b, #11191a 45%, #0c1213);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    button {
+      border: 0;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: 74px minmax(0, 1fr);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px 22px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(20, 29, 30, 0.94), rgba(9, 14, 15, 0.88)),
+        rgba(9, 14, 15, 0.92);
+      box-shadow: 0 16px 46px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(20px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      min-width: 220px;
+      gap: 12px;
+    }
+
+    .brand img {
+      width: 46px;
+      height: 46px;
+      border-radius: 13px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
+      object-fit: cover;
+    }
+
+    .brand-title strong {
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    .status span,
+    .scene-meta,
+    .source-card p {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.09);
+      border: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    .button.primary {
+      color: #111717;
+      background: linear-gradient(135deg, var(--coral), #ff886e);
+      border-color: rgba(255, 255, 255, 0.18);
+      font-weight: 700;
+    }
+
+    .button:hover,
+    .scene-tab:hover,
+    .source-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .workspace {
+      display: block;
+      height: calc(100vh - 74px);
+      min-height: 0;
+      padding: 18px 18px 118px;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .source-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .source-card {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      min-height: 82px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.055);
+      text-align: left;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .thumb,
+    .source-thumb {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 76px;
+      height: 58px;
+      overflow: hidden;
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(255, 106, 79, 0.9), rgba(121, 216, 207, 0.74)),
+        #122021;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+    }
+
+    .thumb::before,
+    .source-thumb::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border: 3px solid rgba(255, 255, 255, 0.5);
+      border-radius: 7px;
+    }
+
+    .thumb.flow {
+      background:
+        radial-gradient(circle at 25% 25%, var(--teal) 0 9px, transparent 10px),
+        radial-gradient(circle at 72% 30%, var(--gold) 0 7px, transparent 8px),
+        radial-gradient(circle at 44% 72%, var(--coral) 0 10px, transparent 11px),
+        linear-gradient(135deg, #1a2929, #26413f);
+    }
+
+    .thumb.device,
+    .source-thumb.window {
+      background:
+        linear-gradient(90deg, transparent 28px, rgba(255, 255, 255, 0.52) 28px 31px, transparent 31px),
+        linear-gradient(135deg, rgba(255, 106, 79, 0.92), rgba(121, 216, 207, 0.72));
+    }
+
+    .thumb.slides {
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.32) 0 2px, transparent 2px 9px),
+        linear-gradient(135deg, #273a38, #f4c95d);
+      background-size: 10px 100%, auto;
+    }
+
+    .thumb.url,
+    .source-thumb.screen {
+      background:
+        linear-gradient(180deg, rgba(248, 245, 237, 0.24) 0 14px, transparent 14px),
+        linear-gradient(135deg, #203231, #79d8cf);
+    }
+
+    .source-card strong {
+      display: block;
+      overflow: hidden;
+      color: var(--ink);
+      font-size: 14px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stage-wrap {
+      display: block;
+      min-width: 0;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .stage {
+      position: relative;
+      min-width: 0;
+      height: 100%;
+      min-height: 420px;
+      margin: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #091011;
+      box-shadow: var(--shadow);
+    }
+
+    .stage.has-capture .scene-panel.active[data-panel="capture"],
+    .stage.has-capture .scene-panel.active[data-panel="window"] {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .capture-video {
+      position: absolute;
+      inset: 0;
+      display: none;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #050909;
+    }
+
+    .stage.capture-live .capture-video {
+      display: block;
+    }
+
+    .scene-panel {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 34px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .scene-panel.active {
+      display: grid;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .scene-panel[hidden] {
+      display: none !important;
+    }
+
+    .scene-panel:not(.active) {
+      display: none !important;
+      visibility: hidden;
+    }
+
+    .scene-panel[data-panel="flow"] {
+      place-items: stretch;
+      padding: 24px;
+    }
+
+    .scene-surface {
+      display: grid;
+      justify-items: center;
+      gap: 18px;
+      width: min(920px, 92vw);
+      padding: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(24, 35, 36, 0.76), rgba(11, 17, 18, 0.82)),
+        rgba(18, 27, 28, 0.78);
+      text-align: center;
+      backdrop-filter: blur(12px);
+    }
+
+    .scene-surface h1 {
+      margin: 0;
+      font-size: clamp(34px, 6vw, 72px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .scene-surface p {
+      max-width: 560px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .flow-runtime {
+      display: grid;
+      align-content: start;
+      gap: clamp(9px, 1.3vh, 15px);
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      padding: clamp(28px, 4.4vw, 54px);
+      overflow: auto;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(9, 14, 15, 0.42), rgba(9, 14, 15, 0.76)),
+        var(--flow-bg, linear-gradient(135deg, rgba(255, 106, 79, 0.16), rgba(121, 216, 207, 0.12))),
+        #091011;
+      background-position: center;
+      background-size: cover;
+      box-shadow: var(--shadow);
+    }
+
+    .flow-heading {
+      display: grid;
+      gap: 6px;
+      justify-self: center;
+      max-width: 820px;
+      margin: clamp(6px, 2.4vh, 26px) auto clamp(2px, .8vh, 10px);
+      text-align: center;
+    }
+
+    .flow-heading h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 72px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .flow-heading p {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(15px, 1.7vw, 22px);
+      line-height: 1.35;
+    }
+
+    .flow-rows {
+      display: grid;
+      gap: clamp(4px, .65vh, 7px);
+      justify-self: center;
+      width: min(860px, 100%);
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, .52fr) auto;
+      gap: clamp(4px, .48vw, 6px);
+      align-items: center;
+      min-height: 44px;
+      padding: 5px 7px;
+      border: 1px solid rgba(248, 245, 237, 0.1);
+      border-radius: 8px;
+      background: rgba(9, 14, 15, 0.46);
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .flow-row.revealed {
+      border-color: rgba(121, 216, 207, 0.24);
+      box-shadow: inset 0 0 0 1px rgba(121, 216, 207, 0.08), 0 12px 32px rgba(0, 0, 0, 0.18);
+    }
+
+    .flow-cell {
+      display: grid;
+      align-content: center;
+      gap: 2px;
+      min-width: 0;
+      padding: 4px 6px;
+      border: 0;
+      background: transparent;
+    }
+
+    .flow-topic {
+      color: var(--ink);
+      font-size: clamp(18px, 2.2vw, 28px);
+      font-weight: 800;
+      line-height: 1.05;
+    }
+
+    .flow-subtopic,
+    .flow-subimpact {
+      color: var(--muted);
+      font-size: clamp(13px, 1.5vw, 18px);
+      line-height: 1.25;
+    }
+
+    .flow-impact {
+      display: none;
+      padding: 0;
+      background: transparent;
+      text-align: left;
+      color: var(--teal);
+      font-size: clamp(18px, 2.2vw, 28px);
+      font-weight: 800;
+      line-height: 1.05;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .flow-subimpact {
+      display: none;
+      padding: 0;
+      background: transparent;
+      text-align: left;
+      color: rgba(248, 245, 237, 0.78);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .flow-toggle-target {
+      cursor: pointer;
+    }
+
+    .flow-row.revealed .flow-impact,
+    .flow-row.revealed .flow-subimpact {
+      display: block;
+    }
+
+    .flow-connector {
+      display: none;
+    }
+
+    .row-check {
+      display: none;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border: 1px solid rgba(121, 216, 207, 0.28);
+      border-radius: 999px;
+      color: rgba(121, 216, 207, 0.92);
+      background: rgba(121, 216, 207, 0.12);
+      box-shadow: 0 0 18px rgba(121, 216, 207, 0.14);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .flow-row.revealed .row-check {
+      display: grid;
+    }
+
+    .flow-editor-row {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid rgba(248, 245, 237, 0.12);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.045);
+    }
+
+    .flow-editor-row-title {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .flow-row-visible {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: max-content;
+      color: var(--cream);
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .flow-row-visible input {
+      accent-color: var(--coral);
+    }
+
+    .flow-editor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .toggle-line {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .toggle-line input {
+      accent-color: var(--coral);
+    }
+
+    .editor-scene-select {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .editor-scene-select select {
+      border: 1px solid rgba(248, 245, 237, 0.14);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.075);
+      color: var(--ink);
+      font: inherit;
+      padding: 8px 10px;
+    }
+
+    .capture-empty {
+      display: grid;
+      place-items: center;
+      min-height: 100%;
+    }
+
+    .capture-empty .scene-surface {
+      width: min(820px, 90vw);
+    }
+
+    .scene-glyph {
+      position: relative;
+      width: min(156px, 30vw);
+      height: min(112px, 22vw);
+      border: 1px solid rgba(248, 245, 237, 0.22);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(248, 245, 237, 0.12), transparent 34%),
+        linear-gradient(135deg, rgba(255, 106, 79, 0.46), rgba(121, 216, 207, 0.34));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 22px 48px rgba(0, 0, 0, 0.26);
+    }
+
+    .scene-glyph::before,
+    .scene-glyph::after,
+    .scene-mark::before,
+    .scene-mark::after {
+      content: "";
+      position: absolute;
+      border-radius: 6px;
+      background: rgba(248, 245, 237, 0.72);
+    }
+
+    .scene-glyph.capture::before,
+    .scene-glyph.window::before {
+      inset: 24px 34px;
+      border: 4px solid rgba(248, 245, 237, 0.76);
+      background: transparent;
+    }
+
+    .scene-glyph.capture::after {
+      left: 66px;
+      bottom: 24px;
+      width: 28px;
+      height: 28px;
+      transform: rotate(45deg);
+      background: var(--coral);
+    }
+
+    .scene-glyph.window::after {
+      left: 28px;
+      right: 28px;
+      top: 22px;
+      height: 12px;
+      background: rgba(248, 245, 237, 0.42);
+    }
+
+    .scene-glyph.slides::before {
+      left: 28px;
+      top: 24px;
+      width: 86px;
+      height: 52px;
+      background: rgba(248, 245, 237, 0.78);
+    }
+
+    .scene-glyph.slides::after {
+      right: 26px;
+      bottom: 24px;
+      width: 78px;
+      height: 46px;
+      background: rgba(244, 201, 93, 0.7);
+    }
+
+    .scene-glyph.url::before {
+      left: 24px;
+      right: 24px;
+      top: 28px;
+      height: 12px;
+      background: rgba(248, 245, 237, 0.38);
+    }
+
+    .scene-glyph.url::after {
+      left: 38px;
+      right: 38px;
+      bottom: 30px;
+      height: 36px;
+      border: 4px solid rgba(121, 216, 207, 0.72);
+      background: transparent;
+    }
+
+    .bottom-menu {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+      margin: 0;
+      padding: 10px 14px max(10px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line);
+      border-right: 0;
+      border-bottom: 0;
+      border-left: 0;
+      border-radius: 0;
+      background:
+        linear-gradient(180deg, rgba(30, 42, 43, 0.94), rgba(11, 17, 18, 0.94)),
+        rgba(11, 17, 18, 0.94);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+    }
+
+    .scene-nav,
+    .utility-nav {
+      display: flex;
+      align-items: stretch;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .scene-nav {
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    .scene-tab,
+    .utility-tab {
+      display: grid;
+      align-items: center;
+      min-height: 62px;
+      padding: 8px 14px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      text-align: left;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .scene-tab {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
+      min-width: 0;
+      padding-right: 8px;
+    }
+
+    .scene-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 26px;
+      align-items: stretch;
+      gap: 2px;
+      flex: 1 1 0;
+      min-width: 0;
+      border: 1px solid rgba(248, 245, 237, 0.12);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.055);
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .edit-tab {
+      margin: 8px 8px 8px 0;
+      width: 26px;
+      min-width: 26px;
+      min-height: 0;
+      padding: 0 10px;
+      border: 1px solid rgba(248, 245, 237, 0.14);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.045);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .scene-tab .scene-mark {
+      display: none;
+    }
+
+    .utility-tab {
+      width: 44px;
+      min-width: 44px;
+      justify-items: center;
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 750;
+    }
+
+    .tab-label {
+      min-width: 0;
+    }
+
+    .tab-label strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .scene-item:has(.scene-tab.active) {
+      background: linear-gradient(180deg, rgba(255, 106, 79, 0.2), rgba(255, 106, 79, 0.08));
+      border-color: rgba(255, 106, 79, 0.66);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    .scene-item:hover,
+    .edit-tab:hover,
+    .utility-tab:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .scene-mark {
+      position: relative;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(255, 106, 79, 0.9), rgba(121, 216, 207, 0.72));
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .scene-mark.flow {
+      background:
+        radial-gradient(circle at 32% 32%, var(--teal) 0 5px, transparent 6px),
+        radial-gradient(circle at 68% 35%, var(--gold) 0 4px, transparent 5px),
+        radial-gradient(circle at 48% 70%, var(--coral) 0 5px, transparent 6px),
+        #1b2c2d;
+    }
+
+    .scene-mark.capture::before,
+    .scene-mark.window::before {
+      inset: 7px 6px 9px;
+      border: 2px solid rgba(248, 245, 237, 0.72);
+      background: transparent;
+    }
+
+    .scene-mark.window::after {
+      left: 6px;
+      right: 6px;
+      top: 7px;
+      height: 5px;
+      background: rgba(248, 245, 237, 0.46);
+    }
+
+    .scene-mark.slides::before {
+      left: 7px;
+      top: 8px;
+      width: 16px;
+      height: 11px;
+      background: rgba(248, 245, 237, 0.74);
+    }
+
+    .scene-mark.slides::after {
+      right: 7px;
+      bottom: 8px;
+      width: 16px;
+      height: 11px;
+      background: rgba(244, 201, 93, 0.7);
+    }
+
+    .scene-mark.url::before {
+      left: 7px;
+      right: 7px;
+      top: 9px;
+      height: 4px;
+      background: rgba(248, 245, 237, 0.46);
+    }
+
+    .scene-mark.url::after {
+      left: 9px;
+      right: 9px;
+      bottom: 8px;
+      height: 10px;
+      border: 2px solid rgba(121, 216, 207, 0.72);
+      background: transparent;
+    }
+
+    .tab-label {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .tab-label strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--ink);
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+
+    .tab-label span {
+      display: none;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .settings-panel {
+      position: absolute;
+      right: 20px;
+      bottom: 104px;
+      z-index: 10;
+      display: none;
+      width: min(320px, calc(100% - 40px));
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(12, 18, 19, 0.96);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .notes-panel {
+      position: absolute;
+      left: 20px;
+      bottom: 104px;
+      z-index: 10;
+      display: none;
+      width: min(360px, calc(100% - 40px));
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(12, 18, 19, 0.96);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .fancy-cursor-dot {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 100;
+      width: 34px;
+      height: 34px;
+      border: 2px solid rgba(121, 216, 207, .95);
+      border-radius: 999px;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 0 7px rgba(121, 216, 207, .14), 0 0 24px rgba(121, 216, 207, .52);
+    }
+
+    body.cursor-fancy,
+    body.cursor-fancy * {
+      cursor: none !important;
+    }
+
+    body.cursor-fancy .fancy-cursor-dot {
+      opacity: 1;
+    }
+
+    .notes-panel.open {
+      display: grid;
+      gap: 10px;
+    }
+
+    .notes-panel textarea {
+      min-height: 140px;
+      border: 1px solid rgba(248, 245, 237, 0.14);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.075);
+      color: var(--ink);
+      font: inherit;
+      padding: 10px 11px;
+      resize: vertical;
+    }
+
+    .editor-panel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      bottom: 20px;
+      z-index: 12;
+      display: none;
+      width: min(420px, calc(100% - 40px));
+      padding: 16px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(10, 15, 16, 0.97);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .editor-panel.open {
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .editor-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .editor-head strong {
+      font-size: 16px;
+    }
+
+    .field-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid rgba(248, 245, 237, 0.14);
+      border-radius: 8px;
+      background: rgba(248, 245, 237, 0.075);
+      color: var(--ink);
+      font: inherit;
+      padding: 10px 11px;
+    }
+
+    .field textarea {
+      min-height: 82px;
+      resize: vertical;
+    }
+
+    .settings-panel.open {
+      display: grid;
+      gap: 10px;
+    }
+
+    .settings-panel strong {
+      font-size: 14px;
+    }
+
+    .settings-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .status {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+    }
+
+    .status strong {
+      color: var(--green);
+      font-size: 13px;
+    }
+
+    .source-card {
+      width: 100%;
+      margin: 0;
+      grid-template-columns: 70px minmax(0, 1fr);
+      background: rgba(248, 245, 237, 0.07);
+    }
+
+    .source-thumb {
+      width: 58px;
+      height: 54px;
+    }
+
+    .stage-status {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      z-index: 8;
+      width: min(340px, calc(100% - 36px));
+      margin: 0;
+      background: rgba(9, 14, 15, 0.78);
+      backdrop-filter: blur(14px);
+    }
+
+    .stage.url-active .stage-status {
+      display: none;
+    }
+
+    .slide-frame {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #fff;
+    }
+
+    .slide-frame {
+      display: grid;
+      place-items: center;
+      padding: 34px;
+      background-position: center;
+      background-size: cover;
+    }
+
+    .slide-frame img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background: #050909;
+      box-shadow: var(--shadow);
+    }
+
+    .slide-controls {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(9, 14, 15, 0.76);
+      backdrop-filter: blur(14px);
+    }
+
+    .source-card p {
+      margin: 3px 0 0;
+    }
+
+    @media (max-width: 1020px) {
+      .workspace {
+        padding-bottom: 190px;
+      }
+
+      .bottom-menu {
+        grid-template-columns: 1fr;
+      }
+
+      .stage {
+        height: calc(100vh - 260px);
+      }
+
+      .utility-nav {
+        justify-content: stretch;
+      }
+
+      .utility-tab {
+        flex: 0 0 44px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      html,
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100%;
+      }
+
+      .topbar,
+      .workspace {
+        display: block;
+      }
+
+      .brand {
+        margin-bottom: 12px;
+      }
+
+      .stage,
+      .source-card {
+        border: 0;
+      }
+
+      .stage {
+        height: calc(100vh - 260px);
+      }
+
+      .flow-row,
+      .flow-editor-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .scene-panel[data-panel="flow"] {
+        padding: 14px;
+      }
+
+      .flow-runtime {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand" aria-label="CueVue">
+        <img src="buildResources/cuevue-logo.png" alt="CueVue logo">
+        <div class="brand-title">
+          <strong>CueVue</strong>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="button" id="fullscreenBtn" type="button">Fullscreen</button>
+        <button class="button" id="stopBtn" type="button">Stop</button>
+        <button class="button primary" id="captureBtn" type="button">Choose Capture Source</button>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <section class="stage-wrap">
+        <div class="stage" id="stage">
+          <video class="capture-video" id="captureVideo" autoplay muted playsinline></video>
+          <div class="status stage-status">
+            <strong id="captureState">Ready</strong>
+            <span id="captureDetail">Browser capture uses the native source chooser over HTTPS.</span>
+          </div>
+          <section class="scene-panel active" data-panel="capture">
+            <div class="capture-empty" id="captureEmpty">
+              <div class="scene-surface" id="captureSurface">
+                <div class="scene-glyph capture" aria-hidden="true"></div>
+                <h1 data-scene-title="capture">Mobile Device Capture</h1>
+                <p data-scene-notes="capture">Select Entire Screen, the QuickTime Movie Recording window, or any visible window from the browser picker.</p>
+                <div class="source-list">
+                  <button class="source-card" type="button" data-start-capture>
+                    <span class="source-thumb window"></span>
+                    <span><strong>QuickTime Window</strong><p>Choose Movie Recording when visible.</p></span>
+                  </button>
+                  <button class="source-card" type="button" data-start-capture>
+                    <span class="source-thumb screen"></span>
+                    <span><strong>Entire Screen</strong><p>Select the full display for reliable fallback.</p></span>
+                  </button>
+                  <button class="source-card" type="button" data-start-capture>
+                    <span class="source-thumb"></span>
+                    <span><strong>Any Visible Window</strong><p>Manual picker for browser-safe capture.</p></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="scene-panel" data-panel="window">
+            <div class="scene-surface" id="windowSurface">
+              <div class="scene-glyph window" aria-hidden="true"></div>
+              <h1 data-scene-title="window">Window Capture</h1>
+              <p data-scene-notes="window">Use the browser picker to select a single app window, presentation window, or shared display area.</p>
+              <div class="source-list">
+                <button class="source-card" type="button" data-start-capture>
+                  <span class="source-thumb window"></span>
+                  <span><strong>Choose Window</strong><p>Pick any visible window from the native browser picker.</p></span>
+                </button>
+                <button class="source-card" type="button" data-start-capture>
+                  <span class="source-thumb screen"></span>
+                  <span><strong>Fallback Screen</strong><p>Select the full display if a window is blocked.</p></span>
+                </button>
+              </div>
+            </div>
+          </section>
+          <section class="scene-panel" data-panel="flow">
+            <div class="flow-runtime" id="flowRuntime">
+              <header class="flow-heading">
+                <h1 id="flowHeader">Flow</h1>
+                <p id="flowSubheader">Map the idea, impact, and next move for the room.</p>
+              </header>
+              <div class="flow-rows" id="flowRows"></div>
+            </div>
+          </section>
+          <section class="scene-panel" data-panel="slides">
+            <div class="slide-frame" id="slideFrame">
+              <div class="scene-surface" id="slideEmpty">
+                <div class="scene-glyph slides" aria-hidden="true"></div>
+                <h1 data-scene-title="slides">Slides</h1>
+                <p data-scene-notes="slides">Import slide images from Edit, then present them here with notes and quick navigation.</p>
+              </div>
+              <img id="slideImage" alt="Current slide" hidden>
+              <div class="slide-controls" id="slideControls" hidden>
+                <button class="button" id="prevSlideBtn" type="button">Prev</button>
+                <span id="slideCounter">0 / 0</span>
+                <button class="button" id="nextSlideBtn" type="button">Next</button>
+              </div>
+            </div>
+          </section>
+          <section class="scene-panel" data-panel="url">
+            <div class="scene-surface" id="urlOperatorCard">
+              <h1>URL Live opened in separate browser window</h1>
+              <p id="urlOperatorText">Enter a URL in Edit, then activate or refresh URL Live.</p>
+            </div>
+          </section>
+          <div class="settings-panel" id="settingsPanel" aria-live="polite">
+            <strong>CueVue Browser Runtime</strong>
+            <label class="field">Fancy cursor
+              <select id="cursorSetting">
+                <option value="auto">Auto</option>
+                <option value="show">Show cursor</option>
+                <option value="hide">Hide cursor</option>
+                <option value="fancy">Fancy presentation cursor</option>
+              </select>
+            </label>
+            <label class="field">Fullscreen behavior
+              <select id="fullscreenSetting">
+                <option>Stage only</option>
+                <option>Entire app</option>
+              </select>
+            </label>
+            <label class="field">Reconnect behavior
+              <select id="reconnectSetting">
+                <option>Prompt and retry</option>
+                <option>Auto reopen picker</option>
+              </select>
+            </label>
+            <label class="field">Notes behavior
+              <select id="notesSetting">
+                <option>Use detachable notes window</option>
+                <option>Use inline notes panel</option>
+              </select>
+            </label>
+            <p>Browser runtime keeps capture in the native picker while preserving CueVue operator controls.</p>
+          </div>
+          <div class="notes-panel" id="notesPanel" aria-live="polite" hidden>
+            <strong id="notesTitle">CueVue Notes</strong>
+            <span class="scene-meta" id="notesMeta">Current scene</span>
+            <span class="scene-meta">Browser limitation: if the popout is blocked, this floating panel is the fallback. Electron uses an always-on-top notes window.</span>
+            <textarea id="notesText" placeholder="Scene or slide notes"></textarea>
+            <button class="button" id="popoutNotesBtn" type="button">Open Detachable Notes</button>
+          </div>
+          <div class="editor-panel" id="editorPanel" aria-live="polite">
+            <div class="editor-head">
+              <label class="editor-scene-select">Scene:
+                <select id="editorSceneSelect">
+                  <option value="flow">Flow</option>
+                  <option value="url">URL Live</option>
+                  <option value="window">Window Capture</option>
+                  <option value="capture">Mobile Device Capture</option>
+                  <option value="slides">Slides</option>
+                </select>
+              </label>
+              <button class="button" id="closeEditorBtn" type="button">Close</button>
+            </div>
+            <strong id="editorTitle">Edit Scene</strong>
+            <div class="field-grid" id="editorFields"></div>
+            <button class="button primary" id="editorCaptureBtn" type="button" hidden></button>
+          </div>
+        </div>
+
+        <div class="bottom-menu" aria-label="CueVue scene and utility controls">
+          <nav class="scene-nav" id="sceneNav" aria-label="Scenes"></nav>
+          <div class="utility-nav" aria-label="Utilities">
+            <button class="utility-tab" id="addSceneBtn" type="button">+</button>
+            <button class="utility-tab" id="refreshBtn" type="button" aria-label="Refresh" title="Refresh">↻</button>
+            <button class="utility-tab" id="notesBtn" type="button" aria-label="Notes" title="Notes">▤</button>
+            <button class="utility-tab" id="settingsBtn" type="button" aria-label="Settings" title="Settings">⚙</button>
+          </div>
+        </div>
+      </section>
+
+    </section>
+  </main>
+  <div class="fancy-cursor-dot" id="fancyCursorDot"></div>
+
+  <script>
+    const captureVideo = document.getElementById("captureVideo");
+    const captureEmpty = document.getElementById("captureEmpty");
+    const captureState = document.getElementById("captureState");
+    const captureDetail = document.getElementById("captureDetail");
+    const captureBtn = document.getElementById("captureBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const settingsBtn = document.getElementById("settingsBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const notesBtn = document.getElementById("notesBtn");
+    const addSceneBtn = document.getElementById("addSceneBtn");
+    const sceneNav = document.getElementById("sceneNav");
+    const settingsPanel = document.getElementById("settingsPanel");
+    const notesPanel = document.getElementById("notesPanel");
+    const notesTitle = document.getElementById("notesTitle");
+    const notesMeta = document.getElementById("notesMeta");
+    const notesText = document.getElementById("notesText");
+    const popoutNotesBtn = document.getElementById("popoutNotesBtn");
+    const editorPanel = document.getElementById("editorPanel");
+    const editorTitle = document.getElementById("editorTitle");
+    const editorSceneSelect = document.getElementById("editorSceneSelect");
+    const editorFields = document.getElementById("editorFields");
+    const closeEditorBtn = document.getElementById("closeEditorBtn");
+    const editorCaptureBtn = document.getElementById("editorCaptureBtn");
+    const flowRuntime = document.getElementById("flowRuntime");
+    const flowHeader = document.getElementById("flowHeader");
+    const flowSubheader = document.getElementById("flowSubheader");
+    const flowRows = document.getElementById("flowRows");
+    const captureSurface = document.getElementById("captureSurface");
+    const stage = document.getElementById("stage");
+    const windowSurface = document.getElementById("windowSurface");
+    const urlOperatorCard = document.getElementById("urlOperatorCard");
+    const urlOperatorText = document.getElementById("urlOperatorText");
+    const slideFrame = document.getElementById("slideFrame");
+    const slideEmpty = document.getElementById("slideEmpty");
+    const slideImage = document.getElementById("slideImage");
+    const slideControls = document.getElementById("slideControls");
+    const slideCounter = document.getElementById("slideCounter");
+    const prevSlideBtn = document.getElementById("prevSlideBtn");
+    const nextSlideBtn = document.getElementById("nextSlideBtn");
+    const fancyCursorDot = document.getElementById("fancyCursorDot");
+    const SETTINGS_KEY = "cuevue_browser_settings_v2";
+    const WORKSPACE_KEY = "cuevue_browser_workspace_v3";
+    let activeStream = null;
+    let blackFrameTimer = null;
+    let urlLiveWindow = null;
+    let activeScene = "capture";
+    let editingScene = "capture";
+    let notesWindow = null;
+    let sceneOrder = ["flow", "url", "window", "capture", "slides"];
+    let sceneCounter = 1;
+    let globalSettings = loadSettings();
+
+    const editorConfig = {
+      flow: {
+        title: "Flow",
+        fields: []
+      },
+      url: {
+        title: "URL Live",
+        fields: [
+          { key: "title", label: "Title" },
+          { key: "url", label: "URL" },
+          { key: "username", label: "Username Placeholder" },
+          { key: "password", label: "Password Placeholder" },
+          { key: "backgroundImage", label: "Custom Background Image", type: "file" },
+          { key: "layout", label: "Layout" },
+          { key: "notes", label: "Notes", type: "textarea" }
+        ]
+      },
+      window: {
+        title: "Window Capture",
+        fields: [
+          { key: "source", label: "Source" },
+          { key: "title", label: "Title" },
+          { key: "backgroundImage", label: "Custom Background Image", type: "file" },
+          { key: "captureSource", label: "Capture Source" },
+          { key: "layout", label: "Layout" }
+        ]
+      },
+      capture: {
+        title: "Mobile Device Capture",
+        fields: [
+          { key: "source", label: "Source" },
+          { key: "title", label: "Title" },
+          { key: "backgroundImage", label: "Custom Background Image", type: "file" },
+          { key: "captureSource", label: "Capture Source" },
+          { key: "notes", label: "Notes", type: "textarea" }
+        ]
+      },
+      slides: {
+        title: "Slides",
+        fields: [
+          { key: "source", label: "Source" },
+          { key: "title", label: "Title" },
+          { key: "backgroundImage", label: "Custom Background Image", type: "file" },
+          { key: "layout", label: "Layout" },
+          { key: "notes", label: "Notes", type: "textarea" }
+        ]
+      }
+    };
+
+    const sceneState = {
+      flow: {
+        title: "Flow",
+        backgroundImage: "",
+        header: "Flow",
+        subheader: "Map the idea, impact, and next move for the room.",
+        rows: [
+          { topic: "Topic 1", subtopic: "Subtopic 1", impact: "Impact 1", subimpact: "Subimpact 1", revealed: false, rowVisible: true },
+          { topic: "Topic 2", subtopic: "Subtopic 2", impact: "Impact 2", subimpact: "Subimpact 2", revealed: false, rowVisible: true },
+          { topic: "Topic 3", subtopic: "Subtopic 3", impact: "Impact 3", subimpact: "Subimpact 3", revealed: false, rowVisible: true },
+          { topic: "Topic 4", subtopic: "Subtopic 4", impact: "Impact 4", subimpact: "Subimpact 4", revealed: false, rowVisible: true },
+          { topic: "Topic 5", subtopic: "Subtopic 5", impact: "Impact 5", subimpact: "Subimpact 5", revealed: false, rowVisible: true },
+          { topic: "Topic 6", subtopic: "Subtopic 6", impact: "Impact 6", subimpact: "Subimpact 6", revealed: false, rowVisible: true }
+        ]
+      },
+      url: {
+        title: "URL Live",
+        url: "https://jenn.macmms.com",
+        username: "",
+        password: "",
+        backgroundImage: "",
+        layout: "Browser preview",
+        notes: "Prepare a live web source for demos, references, or browser-first CueVue scenes."
+      },
+      window: {
+        source: "Visible app window",
+        title: "Window Capture",
+        backgroundImage: "",
+        captureSource: "Browser picker",
+        layout: "Contain",
+        notes: "Use the browser picker to select a single app window, presentation window, or shared display area."
+      },
+      capture: {
+        source: "QuickTime Movie Recording",
+        title: "Mobile Device Capture",
+        backgroundImage: "",
+        captureSource: "QuickTime window or entire screen",
+        notes: "Select Entire Screen, the QuickTime Movie Recording window, or any visible window from the browser picker."
+      },
+      slides: {
+        source: "Slide deck",
+        title: "Slides",
+        backgroundImage: "",
+        slides: [],
+        slideIndex: 0,
+        slideNotes: [],
+        layout: "Deck preview",
+        notes: "Stage slide content with a clean operator preview and quick switching from the bottom scene bar."
+      }
+    };
+
+    const sceneNotes = {
+      flow: "",
+      url: sceneState.url.notes,
+      window: sceneState.window.notes,
+      capture: sceneState.capture.notes,
+      slides: sceneState.slides.notes
+    };
+
+    function cloneScene(scene) {
+      return JSON.parse(JSON.stringify(scene));
+    }
+
+    function saveWorkspace() {
+      const stateCopy = {};
+      Object.entries(sceneState).forEach(([id, scene]) => {
+        stateCopy[id] = cloneScene(scene);
+        if (Array.isArray(stateCopy[id].rows)) {
+          stateCopy[id].rows = stateCopy[id].rows.map((row) => ({ ...row, revealed: false }));
+        }
+      });
+      localStorage.setItem(WORKSPACE_KEY, JSON.stringify({
+        activeScene,
+        sceneCounter,
+        sceneOrder,
+        sceneState: stateCopy,
+        sceneNotes
+      }));
+    }
+
+    function loadWorkspace() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(WORKSPACE_KEY));
+        if (!saved || typeof saved !== "object") return;
+        if (Array.isArray(saved.sceneOrder) && saved.sceneOrder.length) sceneOrder = saved.sceneOrder;
+        if (Number.isFinite(saved.sceneCounter)) sceneCounter = saved.sceneCounter;
+        if (saved.sceneState && typeof saved.sceneState === "object") {
+          Object.keys(sceneState).forEach((key) => delete sceneState[key]);
+          Object.assign(sceneState, saved.sceneState);
+          Object.values(sceneState).forEach((scene) => {
+            if (Array.isArray(scene.rows)) scene.rows.forEach((row) => {
+              row.revealed = false;
+              if (!Object.prototype.hasOwnProperty.call(row, "rowVisible")) row.rowVisible = true;
+            });
+          });
+        }
+        if (saved.sceneNotes && typeof saved.sceneNotes === "object") {
+          Object.keys(sceneNotes).forEach((key) => delete sceneNotes[key]);
+          Object.assign(sceneNotes, saved.sceneNotes);
+        }
+        if (saved.activeScene && sceneState[saved.activeScene]) activeScene = saved.activeScene;
+      } catch (_) {}
+    }
+
+    function loadSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+        if (saved && typeof saved === "object") return { cursorMode: saved.cursorMode || "auto" };
+      } catch (_) {}
+      return { cursorMode: "auto" };
+    }
+
+    function saveSettings() {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(globalSettings));
+    }
+
+    function setStatus(label, detail) {
+      captureState.textContent = label;
+      captureDetail.textContent = detail;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function normalizeUrl(value) {
+      const trimmed = String(value || "").trim();
+      if (!trimmed) return "";
+      return /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    }
+
+    function readLocalImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(reader.error || new Error("Could not read image."));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function applyBackground(element, image) {
+      if (!element) return;
+      element.style.backgroundImage = image
+        ? `linear-gradient(180deg, rgba(24, 35, 36, 0.42), rgba(11, 17, 18, 0.72)), url("${image}")`
+        : "";
+      element.style.backgroundSize = image ? "cover" : "";
+      element.style.backgroundPosition = image ? "center" : "";
+    }
+
+    function sceneTypeFor(id) {
+      return sceneState[id] && sceneState[id].type ? sceneState[id].type : id;
+    }
+
+    function sceneIconClass(id) {
+      const type = sceneTypeFor(id);
+      return type === "capture" ? "capture" : type;
+    }
+
+    function renderSceneNav() {
+      sceneNav.innerHTML = sceneOrder.map((id) => {
+        const state = sceneState[id];
+        if (!state) return "";
+        const name = state.title || editorConfig[sceneTypeFor(id)].title;
+        return `
+          <div class="scene-item">
+            <button class="scene-tab ${id === activeScene ? "active" : ""}" type="button" data-scene="${id}">
+              <span class="tab-label"><strong>${escapeHtml(name)}</strong><span></span></span>
+            </button>
+            <button class="edit-tab" type="button" data-edit-scene="${id}" aria-label="Edit ${escapeHtml(name)}">✎</button>
+          </div>
+        `;
+      }).join("");
+      sceneNav.querySelectorAll(".scene-tab").forEach((button) => {
+        button.addEventListener("click", () => activateScene(button.dataset.scene));
+      });
+      sceneNav.querySelectorAll("[data-edit-scene]").forEach((button) => {
+        button.addEventListener("click", () => openEditor(button.dataset.editScene));
+      });
+    }
+
+    function renderScene(scene) {
+      const state = sceneState[scene];
+      if (!state) return;
+      const type = sceneTypeFor(scene);
+      if (type === "flow") {
+        renderFlowScene(scene);
+      }
+      if (type === "capture") {
+        applyBackground(captureSurface, state.backgroundImage);
+      }
+      if (type === "window") {
+        applyBackground(windowSurface, state.backgroundImage);
+      }
+      if (type === "url") {
+        applyBackground(urlOperatorCard, state.backgroundImage);
+        renderUrlScene(false, scene);
+      }
+      if (type === "slides") {
+        applyBackground(slideFrame, state.backgroundImage);
+        renderSlides(scene);
+      }
+      document.querySelectorAll(`[data-scene-title="${type}"]`).forEach((node) => {
+        node.textContent = state.title || editorConfig[type].title;
+      });
+      document.querySelectorAll(`[data-scene-notes="${type}"]`).forEach((node) => {
+        node.textContent = state.notes || state.url || "";
+      });
+      renderSceneNav();
+      updateNotesContext();
+    }
+
+    function renderFlowScene(scene = activeScene) {
+      const state = sceneState[scene] || sceneState.flow;
+      flowHeader.textContent = state.header || state.title || "Flow";
+      flowSubheader.textContent = state.subheader || "";
+      flowRuntime.style.setProperty("--flow-bg", state.backgroundImage ? `url("${state.backgroundImage}")` : "linear-gradient(135deg, rgba(255, 106, 79, 0.16), rgba(121, 216, 207, 0.12))");
+      flowRows.innerHTML = state.rows.map((row, index) => row.rowVisible === false ? "" : `
+        <article class="flow-row ${row.revealed ? "revealed" : ""}" data-flow-row="${index}" onclick="toggleFlowRow(${index})">
+          <div class="flow-cell">
+            <strong class="flow-topic">${escapeHtml(row.topic)}</strong>
+            <span class="flow-subtopic">${escapeHtml(row.subtopic)}</span>
+          </div>
+          <div class="flow-cell">
+            <strong class="flow-impact">${escapeHtml(row.impact)}</strong>
+            <span class="flow-subimpact">${escapeHtml(row.subimpact)}</span>
+          </div>
+          <span class="row-check" aria-hidden="true">✓</span>
+        </article>
+      `).join("");
+    }
+
+    function toggleFlowRow(index) {
+      const flowScene = sceneTypeFor(activeScene) === "flow" ? sceneState[activeScene] : sceneState.flow;
+      const row = flowScene.rows[index];
+      if (!row || row.rowVisible === false) return;
+      row.revealed = !row.revealed;
+      renderFlowScene(activeScene);
+    }
+
+    function renderFlowEditor() {
+      const state = sceneState[editingScene] || sceneState.flow;
+      editorTitle.textContent = "Edit Flow";
+      editorFields.innerHTML = `
+        <div class="field"><label for="flow-title">Scene Name</label><input id="flow-title" data-flow-key="title" value="${escapeHtml(state.title)}"></div>
+        <div class="field"><label for="flow-background">Custom Background Image</label><input id="flow-background" data-flow-key="backgroundImage" type="file" accept="image/*"></div>
+        <div class="field"><label for="flow-header">Header</label><input id="flow-header" data-flow-key="header" value="${escapeHtml(state.header)}"></div>
+        <div class="field"><label for="flow-subheader">Subheader</label><input id="flow-subheader" data-flow-key="subheader" value="${escapeHtml(state.subheader)}"></div>
+        ${state.rows.map((row, index) => `
+          <section class="flow-editor-row">
+            <strong class="flow-editor-row-title">Row ${index + 1}</strong>
+            <label class="flow-row-visible"><input type="checkbox" data-flow-row="${index}" data-flow-row-visible ${row.rowVisible === false ? "" : "checked"}> Row ${index + 1} Visible</label>
+            <div class="flow-editor-grid">
+              <div class="field"><label>Topic ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="topic" value="${escapeHtml(row.topic)}"></div>
+              <div class="field"><label>Impact ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="impact" value="${escapeHtml(row.impact)}"></div>
+              <div class="field"><label>Subtopic ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="subtopic" value="${escapeHtml(row.subtopic)}"></div>
+              <div class="field"><label>Subimpact ${index + 1}</label><input data-flow-row="${index}" data-flow-row-key="subimpact" value="${escapeHtml(row.subimpact)}"></div>
+            </div>
+          </section>
+        `).join("")}
+      `;
+      editorFields.querySelectorAll("[data-flow-key]").forEach((field) => {
+        field.addEventListener("input", async () => {
+          if (field.type === "file") {
+            const file = field.files && field.files[0];
+            if (!file) return;
+            state[field.dataset.flowKey] = await readLocalImage(file);
+            renderScene(editingScene);
+            saveWorkspace();
+            return;
+          }
+          state[field.dataset.flowKey] = field.value;
+          renderScene(editingScene);
+          saveWorkspace();
+        });
+      });
+      editorFields.querySelectorAll("[data-flow-row-key]").forEach((field) => {
+        field.addEventListener("input", () => {
+          state.rows[Number(field.dataset.flowRow)][field.dataset.flowRowKey] = field.value;
+          renderScene(editingScene);
+          saveWorkspace();
+        });
+      });
+      editorFields.querySelectorAll("[data-flow-row-visible]").forEach((field) => {
+        field.addEventListener("change", () => {
+          const row = state.rows[Number(field.dataset.flowRow)];
+          row.rowVisible = field.checked;
+          if (!field.checked) row.revealed = false;
+          renderScene(editingScene);
+          saveWorkspace();
+        });
+      });
+      editorPanel.classList.add("open");
+      settingsPanel.classList.remove("open");
+      editorCaptureBtn.hidden = true;
+      editorCaptureBtn.textContent = "";
+    }
+
+    function renderUrlScene(force = false, scene = activeScene) {
+      const state = sceneState[scene] || sceneState.url;
+      const url = normalizeUrl(state.url);
+      const isActiveUrlScene = scene === activeScene && sceneTypeFor(scene) === "url";
+      if (!url) {
+        urlOperatorText.textContent = "No URL configured. Enter a URL in Edit, then activate or refresh URL Live.";
+        if (isActiveUrlScene && force) setStatus("URL missing", "Enter a URL in Edit, then activate or refresh URL Live.");
+        return;
+      }
+      if (state.url !== url) {
+        state.url = url;
+        saveWorkspace();
+      }
+      urlOperatorText.textContent = url;
+      if (!force) return;
+      const opened = window.open(url, "cuevue-url-live");
+      if (opened) {
+        urlLiveWindow = opened;
+        try {
+          urlLiveWindow.focus();
+        } catch (_) {}
+        setStatus("URL opened", `${url} opened in the CueVue URL Live browser window.`);
+      } else {
+        setStatus("Browser popup blocked", `Allow popups for CueVue, then refresh URL Live to open ${url}.`);
+      }
+    }
+
+    function refreshActiveScene() {
+      const type = sceneTypeFor(activeScene);
+      if (type === "url") {
+        renderUrlScene(true, activeScene);
+        return;
+      }
+      if (type === "window" || type === "capture") {
+        startCapture();
+        return;
+      }
+      if (type === "slides") {
+        renderSlides(activeScene);
+        setStatus("Slides refreshed", `${(sceneState[activeScene].slides || []).length} slides ready.`);
+        return;
+      }
+      renderScene(activeScene);
+      setStatus("Scene refreshed", `${sceneState[activeScene].title || activeScene} refreshed.`);
+    }
+
+    function activateScene(scene) {
+      activeScene = scene;
+      document.querySelectorAll(".scene-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.scene === scene));
+      const type = sceneTypeFor(scene);
+      captureBtn.hidden = !(type === "window" || type === "capture");
+      document.querySelectorAll(".scene-panel").forEach((panel) => {
+        const isActive = panel.dataset.panel === type;
+        panel.classList.toggle("active", isActive);
+        panel.hidden = !isActive;
+      });
+      stage.classList.toggle("capture-live", Boolean(activeStream) && (type === "capture" || type === "window"));
+      stage.classList.toggle("url-active", type === "url");
+      renderScene(scene);
+      if (type === "url") renderUrlScene(true, scene);
+      updateNotesContext();
+      saveWorkspace();
+    }
+
+    function openEditor(scene) {
+      editingScene = scene;
+      const type = sceneTypeFor(scene);
+      editorSceneSelect.value = type;
+      if (type === "flow") {
+        renderFlowEditor();
+        return;
+      }
+      const config = editorConfig[type] || editorConfig.capture;
+      const state = sceneState[scene] || sceneState.capture;
+      editorTitle.textContent = `Edit ${config.title}`;
+      const extraControls = type === "url"
+        ? `<div class="field-grid"><p class="scene-meta">Browser-test URL Live opens in a separate named browser window. Electron renders URL scenes inside a native webview for authenticated sites.</p><button class="button primary" id="urlRefreshBtn" type="button">Refresh/Reconnect URL Window</button></div>`
+          : type === "slides"
+            ? `<div class="field-grid"><button class="button primary" id="slidesUploadBtn" type="button">Upload Slides</button><input id="slidesUploadInput" type="file" accept="image/*" multiple hidden><div id="slideList" class="source-list"></div></div>`
+          : type === "capture"
+            ? `<div class="field-grid"><button class="button primary" id="quicktimeGuideBtn" type="button">Open QuickTime Player</button><p class="scene-meta">Open QuickTime Player, choose File > New Movie Recording, select the mobile device in QuickTime, then choose that window as the capture source.</p></div>`
+            : "";
+      editorFields.innerHTML = `<div class="field"><label>Scene Name</label><input data-editor-key="title" value="${escapeHtml(state.title || config.title)}"></div>` + config.fields.filter(({ key }) => key !== "title").map(({ key, label, type }) => {
+        const id = `editor-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+        const value = escapeHtml(state[key] || "");
+        if (type === "file") {
+          return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="file" accept="image/*" data-editor-key="${key}"></div>`;
+        }
+        if (type === "textarea") {
+          return `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" data-editor-key="${key}">${value}</textarea></div>`;
+        }
+        return `<div class="field"><label for="${id}">${label}</label><input id="${id}" data-editor-key="${key}" value="${value}"></div>`;
+      }).join("") + extraControls;
+      editorFields.querySelectorAll("[data-editor-key]").forEach((field) => {
+        field.addEventListener("input", async () => {
+          if (field.type === "file") {
+            const file = field.files && field.files[0];
+            if (!file) return;
+            state[field.dataset.editorKey] = await readLocalImage(file);
+            renderScene(scene);
+            saveWorkspace();
+            return;
+          }
+          state[field.dataset.editorKey] = field.value;
+          renderScene(scene);
+          saveWorkspace();
+        });
+      });
+      const urlRefresh = document.getElementById("urlRefreshBtn");
+      if (urlRefresh) urlRefresh.addEventListener("click", () => {
+        state.url = normalizeUrl(state.url);
+        renderUrlScene(true, scene);
+      });
+      const quicktimeGuide = document.getElementById("quicktimeGuideBtn");
+      if (quicktimeGuide) quicktimeGuide.addEventListener("click", () => {
+        setStatus("Browser test limitation", "QuickTime launch is only available in the Electron app. Open QuickTime Player manually, then select the movie recording window.");
+      });
+      const slidesUpload = document.getElementById("slidesUploadBtn");
+      const slidesInput = document.getElementById("slidesUploadInput");
+      if (slidesUpload && slidesInput) {
+        slidesUpload.addEventListener("click", () => slidesInput.click());
+        slidesInput.addEventListener("change", async () => {
+          const files = Array.from(slidesInput.files || []).filter((file) => file.type.startsWith("image/"));
+          const imported = await Promise.all(files.map(readLocalImage));
+          state.slides = (state.slides || []).concat(imported);
+          state.slideNotes = state.slides.map((_, index) => state.slideNotes[index] || "");
+          if (state.slides.length === imported.length) state.slideIndex = 0;
+          renderSlides(scene);
+          renderSlideList();
+          updateNotesContext();
+          saveWorkspace();
+        });
+        renderSlideList();
+      }
+      editorPanel.classList.add("open");
+      settingsPanel.classList.remove("open");
+      notesPanel.classList.remove("open");
+      const editorUsesCapture = type === "window" || type === "capture";
+      editorCaptureBtn.hidden = !editorUsesCapture;
+      editorCaptureBtn.textContent = editorUsesCapture ? "Choose Capture Source" : "";
+    }
+
+    function renderSlideList() {
+      const list = document.getElementById("slideList");
+      if (!list) return;
+      const slideScene = sceneState[editingScene] || sceneState.slides;
+      const slides = slideScene.slides || [];
+      list.innerHTML = slides.length
+        ? slides.map((src, index) => `<div class="source-card"><button type="button" data-slide-index="${index}" style="display:contents"><img class="source-thumb" src="${src}" alt=""><span><strong>Slide ${index + 1}</strong><p>${index === slideScene.slideIndex ? "Current slide" : "Click to present"}</p></span></button><button class="button" type="button" data-slide-up="${index}">↑</button><button class="button" type="button" data-slide-down="${index}">↓</button></div>`).join("")
+        : `<p class="scene-meta">No slides uploaded yet.</p>`;
+      list.querySelectorAll("[data-slide-index]").forEach((button) => {
+        button.addEventListener("click", () => {
+          slideScene.slideIndex = Number(button.dataset.slideIndex);
+          renderSlides(editingScene);
+          renderSlideList();
+          updateNotesContext();
+        });
+      });
+      list.querySelectorAll("[data-slide-up]").forEach((button) => {
+        button.addEventListener("click", () => moveSlide(Number(button.dataset.slideUp), -1));
+      });
+      list.querySelectorAll("[data-slide-down]").forEach((button) => {
+        button.addEventListener("click", () => moveSlide(Number(button.dataset.slideDown), 1));
+      });
+    }
+
+    function moveSlide(index, delta) {
+      const target = index + delta;
+      const slideScene = sceneState[editingScene] || sceneState.slides;
+      const slides = slideScene.slides || [];
+      if (target < 0 || target >= slides.length) return;
+      [slides[index], slides[target]] = [slides[target], slides[index]];
+      [slideScene.slideNotes[index], slideScene.slideNotes[target]] = [slideScene.slideNotes[target], slideScene.slideNotes[index]];
+      slideScene.slideIndex = target;
+      renderSlides(editingScene);
+      renderSlideList();
+      updateNotesContext();
+      saveWorkspace();
+    }
+
+    function renderSlides(scene = activeScene) {
+      const state = sceneState[scene] || sceneState.slides;
+      const slides = state.slides || [];
+      const hasSlides = slides.length > 0;
+      slideEmpty.style.display = hasSlides ? "none" : "grid";
+      slideImage.hidden = !hasSlides;
+      slideControls.hidden = !hasSlides;
+      if (!hasSlides) return;
+      state.slideIndex = Math.max(0, Math.min(Number(state.slideIndex) || 0, slides.length - 1));
+      slideImage.src = slides[state.slideIndex];
+      slideCounter.textContent = `${state.slideIndex + 1} / ${slides.length}`;
+    }
+
+    function changeSlide(delta) {
+      const state = sceneState[activeScene] || sceneState.slides;
+      if (!state.slides.length) return;
+      state.slideIndex = Math.max(0, Math.min(state.slideIndex + delta, state.slides.length - 1));
+      renderSlides(activeScene);
+      renderSlideList();
+      updateNotesContext();
+    }
+
+    function currentNotesKey() {
+      const state = sceneState[activeScene] || sceneState.slides;
+      if (sceneTypeFor(activeScene) === "slides" && state.slides && state.slides.length) {
+        return `${activeScene}:slide:${state.slideIndex}`;
+      }
+      return activeScene;
+    }
+
+    function updateNotesContext() {
+      const sceneTitle = sceneState[activeScene] && sceneState[activeScene].title ? sceneState[activeScene].title : activeScene;
+      const state = sceneState[activeScene] || {};
+      const slideLabel = sceneTypeFor(activeScene) === "slides" && state.slides && state.slides.length ? `Slide ${state.slideIndex + 1}` : "";
+      const key = currentNotesKey();
+      notesTitle.textContent = sceneTitle;
+      notesMeta.textContent = slideLabel || "Scene notes";
+      notesText.value = sceneNotes[key] || "";
+      if (notesWindow && !notesWindow.closed) {
+        notesWindow.document.body.innerHTML = `<main style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:18px;background:#fbf2cf;color:#1c1710;min-height:100vh;"><h2 style="margin:0 0 6px;">${escapeHtml(sceneTitle)}</h2><p style="margin:0 0 10px;color:#675f52;">${escapeHtml(slideLabel || "Scene notes")}</p><p style="margin:0 0 16px;color:#8a3f38;font-size:12px;">Browser test limitation: this popout cannot force always-on-top. Electron uses an always-on-top notes window.</p><pre style="white-space:pre-wrap;font:inherit;line-height:1.45;">${escapeHtml(sceneNotes[key] || "")}</pre></main>`;
+      }
+    }
+
+    function stopCapture() {
+      clearTimeout(blackFrameTimer);
+      blackFrameTimer = null;
+      if (activeStream) {
+        activeStream.getTracks().forEach((track) => track.stop());
+      }
+      activeStream = null;
+      captureVideo.srcObject = null;
+      captureEmpty.style.display = "grid";
+      stage.classList.remove("has-capture");
+      stage.classList.remove("capture-live");
+      setStatus("Ready", "Open the browser picker again to choose screen, QuickTime, or another window.");
+    }
+
+    async function startCapture() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        setStatus("Browser unsupported", "Use current Chrome, Edge, or Safari over HTTPS.");
+        return;
+      }
+
+      clearTimeout(blackFrameTimer);
+      setStatus("Opening picker", "Choose Entire Screen, QuickTime Movie Recording, or any visible window.");
+
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            frameRate: { ideal: 30, max: 60 },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+
+        stopCapture();
+        activeStream = stream;
+        captureVideo.srcObject = stream;
+        captureEmpty.style.display = "none";
+        stage.classList.add("has-capture");
+        stage.classList.toggle("capture-live", sceneTypeFor(activeScene) === "capture" || sceneTypeFor(activeScene) === "window");
+        window.focus();
+        document.body.focus();
+        setStatus("Capture active", "If the selected source is blank, click Choose Capture Source and pick Entire Screen.");
+
+        const [videoTrack] = stream.getVideoTracks();
+        if (videoTrack) {
+          videoTrack.addEventListener("ended", () => {
+            stopCapture();
+            setStatus("Source ended", "The source disappeared. Reopen the picker and choose Entire Screen for fallback.");
+          });
+        }
+
+        blackFrameTimer = setTimeout(() => {
+          if (!captureVideo.videoWidth || !captureVideo.videoHeight) {
+            setStatus("No visible frames", "The selected window did not provide frames. Click Choose Capture Source and select Entire Screen.");
+            stage.classList.remove("has-capture");
+            stage.classList.remove("capture-live");
+            if (activeScene === "capture") captureEmpty.style.display = "grid";
+          }
+        }, 2200);
+      } catch (error) {
+        window.focus();
+        setStatus("Picker closed", error && error.message ? error.message : "No source was selected.");
+      }
+    }
+
+    function openNotesWindow() {
+      const features = "popup=yes,width=380,height=560,left=80,top=80";
+      notesWindow = window.open("about:blank", "cuevue-notes", features);
+      if (!notesWindow) {
+        setStatus("Browser notes limitation", "The browser blocked the detachable notes popout. Electron uses an always-on-top notes window.");
+      }
+      updateNotesContext();
+    }
+
+    function applyCursorMode() {
+      document.body.classList.toggle("cursor-fancy", globalSettings.cursorMode === "fancy");
+      if (globalSettings.cursorMode === "hide") document.body.style.cursor = "none";
+      else document.body.style.cursor = "";
+    }
+
+    function addScene() {
+      editorTitle.textContent = "Add Scene";
+      editorFields.innerHTML = `
+        <div class="field"><label>Scene Type</label>
+          <select id="newSceneType">
+            <option value="flow">Flow</option>
+            <option value="url">URL Live</option>
+            <option value="window">Window Capture</option>
+            <option value="capture">Mobile Device Capture</option>
+            <option value="slides">Slides</option>
+          </select>
+        </div>
+        <div class="field"><label>Scene Name</label><input id="newSceneName" value="New Scene"></div>
+        <button class="button primary" id="createSceneBtn" type="button">Create Scene</button>
+      `;
+      editorCaptureBtn.hidden = true;
+      editorCaptureBtn.textContent = "";
+      editorPanel.classList.add("open");
+      settingsPanel.classList.remove("open");
+      notesPanel.classList.remove("open");
+      document.getElementById("createSceneBtn").addEventListener("click", createSceneFromChooser);
+    }
+
+    function createSceneFromChooser() {
+      const sceneType = document.getElementById("newSceneType").value;
+      sceneCounter += 1;
+      const id = `scene-${Date.now().toString(36)}-${sceneCounter}`;
+      const base = sceneType === "flow"
+        ? { ...sceneState.flow, rows: sceneState.flow.rows.map((row) => ({ ...row, revealed: false })) }
+        : { ...sceneState[sceneType] };
+      base.type = sceneType;
+      base.title = document.getElementById("newSceneName").value.trim() || editorConfig[sceneType].title;
+      if (sceneType === "slides") {
+        base.slides = [];
+        base.slideIndex = 0;
+        base.slideNotes = [];
+      }
+      sceneState[id] = base;
+      sceneNotes[id] = base.notes || "";
+      sceneOrder.push(id);
+      renderSceneNav();
+      saveWorkspace();
+      openEditor(id);
+    }
+
+    document.querySelectorAll("[data-start-capture]").forEach((button) => {
+      button.addEventListener("click", startCapture);
+    });
+    captureBtn.addEventListener("click", startCapture);
+    stopBtn.addEventListener("click", stopCapture);
+    refreshBtn.addEventListener("click", refreshActiveScene);
+    addSceneBtn.addEventListener("click", addScene);
+    settingsBtn.addEventListener("click", () => {
+      const cursorSetting = document.getElementById("cursorSetting");
+      if (cursorSetting) cursorSetting.value = globalSettings.cursorMode || "auto";
+      settingsPanel.classList.toggle("open");
+      editorPanel.classList.remove("open");
+      notesPanel.classList.remove("open");
+    });
+    notesBtn.addEventListener("click", () => {
+      openNotesWindow();
+      settingsPanel.classList.remove("open");
+      editorPanel.classList.remove("open");
+    });
+    notesText.addEventListener("input", () => {
+      sceneNotes[currentNotesKey()] = notesText.value;
+      updateNotesContext();
+      saveWorkspace();
+    });
+    popoutNotesBtn.addEventListener("click", () => {
+      openNotesWindow();
+    });
+    closeEditorBtn.addEventListener("click", () => {
+      editorPanel.classList.remove("open");
+    });
+    editorCaptureBtn.addEventListener("click", startCapture);
+    editorSceneSelect.addEventListener("change", () => {
+      openEditor(editorSceneSelect.value);
+    });
+    fullscreenBtn.addEventListener("click", () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    document.getElementById("cursorSetting").addEventListener("change", (event) => {
+      globalSettings.cursorMode = event.target.value;
+      saveSettings();
+      applyCursorMode();
+    });
+    prevSlideBtn.addEventListener("click", () => changeSlide(-1));
+    nextSlideBtn.addEventListener("click", () => changeSlide(1));
+    document.addEventListener("mousemove", (event) => {
+      if (globalSettings.cursorMode !== "fancy") return;
+      fancyCursorDot.style.left = `${event.clientX}px`;
+      fancyCursorDot.style.top = `${event.clientY}px`;
+    });
+    renderSceneNav();
+    loadWorkspace();
+    renderSceneNav();
+    Object.keys(sceneState).forEach(renderScene);
+    activateScene(activeScene);
+    applyCursorMode();
+    updateNotesContext();
+  </script>
+</body>
+</html>

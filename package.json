@@ -1,6 +1,6 @@
 {
   "name": "cuevue",
-  "version": "17.0.0",
+  "version": "0.2.13",
   "productName": "CueVue",
   "author": "Smokey River Studio",
   "description": "CueVue - Professional Demo Scene Controller",
@@ -9,7 +9,7 @@
     "start": "electron .",
     "build": "electron-builder --mac",
     "build:mac-dir": "electron-builder --mac dir",
-    "build:dmg": "electron-builder --mac dmg",
+    "build:dmg": "electron-builder --mac dmg --publish never",
     "build:unsigned": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac -c.mac.identity=null"
   },
   "devDependencies": {
@@ -20,13 +20,10 @@
   "build": {
     "appId": "com.cuevue.app",
     "productName": "CueVue",
-    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "artifactName": "CueVue-${version}-${arch}.${ext}",
     "mac": {
       "category": "public.app-category.business",
-      "target": [
-        "dir",
-        "dmg"
-      ],
+      "target": ["dir", "dmg"],
       "icon": "buildResources/icon.icns",
       "gatekeeperAssess": false,
       "hardenedRuntime": true,
@@ -39,33 +36,17 @@
       }
     },
     "afterSign": "scripts/notarize.js",
+    "publish": null,
     "dmg": {
       "title": "CueVue ${version}",
       "format": "UDZO",
       "size": "1200m",
       "contents": [
-        {
-          "x": 130,
-          "y": 220
-        },
-        {
-          "x": 410,
-          "y": 220,
-          "type": "link",
-          "path": "/Applications"
-        }
+        {"x": 130, "y": 220},
+        {"x": 410, "y": 220, "type": "link", "path": "/Applications"}
       ]
     },
-    "directories": {
-      "output": "dist",
-      "buildResources": "buildResources"
-    },
-    "files": [
-      "main.js",
-      "preload.js",
-      "index.html",
-      "splash.html",
-      "package.json"
-    ]
+    "directories": {"output": "dist", "buildResources": "buildResources"},
+    "files": ["main.js", "preload.js", "index.html", "splash.html", "package.json"]
   }
 }

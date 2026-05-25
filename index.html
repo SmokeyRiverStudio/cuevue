@@ -536,6 +536,8 @@
     let activeId = scenes[0].id;
     let editingId = activeId;
     let currentStream = null;
+    let captureFrameWatchdog = null;    // interval that checks for frozen stream frames
+    let captureLastFrameTime = 0;       // timestamp of last received video frame
     let permissionPromptSceneId = '';
     let quickTimeDetectTimer = null;
     let permissionRecoveryTimer = null;
@@ -1092,9 +1094,14 @@
         const edit = document.createElement('button');
         edit.className = 'edit-scene-button';
         edit.textContent = '✎';
+        edit.setAttribute('aria-label', 'Scene settings');
+        edit.title = 'Scene settings';
         edit.addEventListener('click', (event) => {
           event.stopPropagation();
-          openEditor(scene.id);
+          // Always switch to the scene before opening its editor so the
+          // editor preview and capture pipeline are in sync with activeId.
+          if (scene.id !== activeId) showScene(scene.id);
+          setTimeout(() => openEditor(scene.id), 0);
         });
         slot.appendChild(button);
         slot.appendChild(edit);
@@ -1818,7 +1825,7 @@
         return autoPick ? startFullscreenDeviceFallback('No mobile capture source was selectable; using full-screen fallback.') : false;
       }
       setQuickTimeStep('recording', 'done');
-      if (autoPick) await selectCaptureSource('device', preferred);
+      if (autoPick) await selectCaptureSource('device', preferred, activeId);
       return true;
     }
 
@@ -1918,8 +1925,8 @@
       });
     }
 
-    async function selectCaptureSource(kind, source) {
-      const scene = sceneById(editingId);
+    async function selectCaptureSource(kind, source, sceneId = editingId) {
+      const scene = sceneById(sceneId);
       scene.sourceId = source.id;
       scene.sourceName = source.name;
       saveScenes();
@@ -2195,11 +2202,10 @@
         const videoConstraints = {
           mandatory: {
             chromeMediaSource: 'desktop',
-            chromeMediaSourceId: source.id,
-            minWidth: 640,
-            maxWidth: 3840,
-            minHeight: 360,
-            maxHeight: 2160
+            chromeMediaSourceId: source.id
+            // minWidth/minHeight/maxWidth/maxHeight intentionally omitted:
+            // QuickTime Movie Recording window can be portrait/small and mandatory
+            // dimension constraints throw OverconstrainedError on such sources.
           }
         };
         if (globalSettings.cursorMode === 'hide' || globalSettings.cursorMode === 'fancy') videoConstraints.cursor = 'never';
@@ -2254,8 +2260,49 @@
           failure: ''
         });
         if (isDeviceVideo && deviceDiagnosticsEl) deviceDiagnosticsEl.classList.add('hidden');
+
+        // --- Live-stream keepalive watchdog ---
+        // requestVideoFrameCallback fires each time a new frame is delivered.
+        // If frames stop arriving for > 4 s the stream has frozen; restart capture.
+        if (captureFrameWatchdog) clearInterval(captureFrameWatchdog);
+        captureLastFrameTime = Date.now();
+        const attachFrameCallback = (v) => {
+          if (!v.requestVideoFrameCallback) return;
+          const tick = () => {
+            captureLastFrameTime = Date.now();
+            // Only re-register if this is still the active stream
+            if (v.srcObject === currentStream) v.requestVideoFrameCallback(tick);
+          };
+          v.requestVideoFrameCallback(tick);
+        };
+        attachFrameCallback(video);
+        captureFrameWatchdog = setInterval(async () => {
+          // If the stream ended or was replaced, clear watchdog
+          if (!currentStream || video.srcObject !== currentStream) {
+            clearInterval(captureFrameWatchdog); captureFrameWatchdog = null; return;
+          }
+          const age = Date.now() - captureLastFrameTime;
+          if (age > 4000) {
+            console.warn('[captureWatchdog] No frames for', age, 'ms — restarting capture');
+            clearInterval(captureFrameWatchdog); captureFrameWatchdog = null;
+            // Re-fetch the source (window IDs can change between QuickTime refreshes)
+            const scene = sceneById(activeId);
+            if (scene && (scene.type === 'device' || scene.type === 'window')) {
+              const scan = await queryCaptureSources(scene.type).catch(() => null);
+              const fresh = scan && (
+                scan.sources.find(s => s.id === source.id) ||
+                scan.sources.find(s => s.name === source.name) ||
+                (scene.type === 'device' ? scan.sources.find(s => rankSource(s, 'device') <= 20) : null)
+              );
+              if (fresh) await startCapture(fresh, video, statusEl, options);
+            }
+          }
+        }, 2000);
+        // -----------------------------------------
+
         return true;
       } catch (error) {
+        console.error('[startCapture] getUserMedia failed:', error.name, error.message, error.constraint || '', error);
         showStatus(statusEl, `Capture failed: ${error.message || 'Unable to start selected source.'}`);
         if (video === iphoneVideo) {
           const permission = await ipcRenderer.invoke('check-screen-permission').catch(() => 'unknown');
@@ -2288,6 +2335,8 @@
     }
 
     function stopStream() {
+      if (captureFrameWatchdog) { clearInterval(captureFrameWatchdog); captureFrameWatchdog = null; }
+      captureLastFrameTime = 0;
       if (currentStream) currentStream.getTracks().forEach((track) => track.stop());
       currentStream = null;
       windowVideo.srcObject = null;

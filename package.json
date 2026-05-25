@@ -1,6 +1,6 @@
 {
   "name": "cuevue",
-  "version": "0.2.13",
+  "version": "0.2.14",
   "productName": "CueVue",
   "author": "Smokey River Studio",
   "description": "CueVue - Professional Demo Scene Controller",
@@ -23,7 +23,10 @@
     "artifactName": "CueVue-${version}-${arch}.${ext}",
     "mac": {
       "category": "public.app-category.business",
-      "target": ["dir", "dmg"],
+      "target": [
+        "dir",
+        "dmg"
+      ],
       "icon": "buildResources/icon.icns",
       "gatekeeperAssess": false,
       "hardenedRuntime": true,
@@ -42,11 +45,28 @@
       "format": "UDZO",
       "size": "1200m",
       "contents": [
-        {"x": 130, "y": 220},
-        {"x": 410, "y": 220, "type": "link", "path": "/Applications"}
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     },
-    "directories": {"output": "dist", "buildResources": "buildResources"},
-    "files": ["main.js", "preload.js", "index.html", "splash.html", "package.json"]
+    "directories": {
+      "output": "dist",
+      "buildResources": "buildResources"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "splash.html",
+      "package.json"
+    ]
   }
 }

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, shell, systemPreferences, safeStorage, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, shell, systemPreferences, safeStorage, dialog, session } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -757,6 +757,19 @@ function getCredentials(sceneId) {
 }
 
 app.whenReady().then(() => {
+  // Allow sandboxed renderers to use getUserMedia / desktopCapturer streams.
+  // Without this, app.enableSandbox() blocks media permission checks silently.
+  session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+    if (permission === 'media' || permission === 'display-capture') return true;
+    return null; // defer everything else to default
+  });
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'media' || permission === 'display-capture') {
+      callback(true);
+      return;
+    }
+    callback(false);
+  });
   createSplashWindow();
   createMainWindow();
 });

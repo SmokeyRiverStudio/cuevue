@@ -17,7 +17,7 @@
     button.danger:hover { background: #612828; }
     input, select { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid #555; border-radius: 10px; color: #fff; background: #111; }
     label { display: grid; gap: 6px; color: #ccc; font-size: 13px; }
-    .app { display: grid; grid-template-rows: 1fr 82px; height: 100%; min-width: 900px; }
+    .app { display: grid; grid-template-rows: 1fr 50px; height: 100%; min-width: 900px; }
     .viewport { position: relative; min-height: 0; background: #181818; }
     .scene { position: absolute; inset: 0; display: none; min-width: 0; min-height: 0; background-position: center; background-size: cover; }
     .scene.active { display: block; }
@@ -47,8 +47,8 @@
     .flow-topic-check { display: grid; place-items: center; width: clamp(24px, calc(29px * var(--flow-scale)), 30px); height: clamp(24px, calc(29px * var(--flow-scale)), 30px); border-radius: 999px; color: #91d18b; font-size: clamp(18px, calc(23px * var(--flow-scale)), 24px); font-weight: 900; opacity: .22; transform: scale(.72); transition: opacity .16s ease, transform .16s ease, box-shadow .16s ease, background .16s ease; }
     .flow-topic.revealed .flow-topic-check { opacity: 1; transform: scale(1); background: rgba(145,209,139,.13); box-shadow: 0 0 0 1px rgba(145,209,139,.34), 0 0 18px rgba(145,209,139,.18); }
     .flow-topic-impact { display: grid; gap: 3px; min-width: 0; max-height: 0; opacity: 0; transform: translateX(-8px); transition: opacity .18s ease, transform .18s ease, max-height .18s ease; pointer-events: none; }
-    .flow-topic.revealed .flow-topic-impact { opacity: 1; transform: translateX(0); }
-    .flow-topic.revealed .flow-topic-impact { max-height: 120px; }
+    .flow-topic.has-impact .flow-topic-impact { pointer-events: auto; }
+    .flow-topic.revealed.has-impact .flow-topic-impact { opacity: 1; transform: translateX(0); max-height: 120px; }
     .flow-topic-impact-heading { color: #e8f4ea; font-size: clamp(13px, calc(19px * var(--flow-scale)), 21px); font-weight: 850; line-height: 1.18; overflow-wrap: anywhere; }
     .flow-topic-impact-subheading { color: #a7c9a7; font-size: clamp(11px, calc(15px * var(--flow-scale)), 16px); line-height: 1.26; overflow-wrap: anywhere; }
     .slides-stage { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; height: 100%; padding: 34px; background: #080a0d; }
@@ -65,7 +65,7 @@
     .bezel::before { content: ""; position: absolute; top: 10px; left: 50%; z-index: 4; width: 94px; height: 26px; border-radius: 999px; background: #000; transform: translateX(-50%); }
     #iphone-video { width: 100%; height: 100%; object-fit: cover; background: #000; }
     .quiet-status { position: absolute; left: 24px; bottom: 24px; z-index: 4; max-width: 520px; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; background: rgba(8, 12, 17, 0.72); color: #c6d0dd; line-height: 1.4; }
-    .toolbar { height: 82px; display: flex; gap: 6px; align-items: stretch; padding: 7px 8px; border-top: 1px solid #333; background: #181818; }
+    .toolbar { height: 50px; display: flex; gap: 5px; align-items: stretch; padding: 3px 6px; border-top: 1px solid #2a2a2a; background: #141414; }
     .scene-slot { flex: 1; position: relative; min-width: 0; }
     .scene-button { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; border-radius: 6px; padding: 0 8px; font-weight: 700; background: #242424; font-size: 12px; text-align: center; display: flex; align-items: center; justify-content: center; }
     .scene-button.active { border-color: #53687a; background: #303f4c; }
@@ -89,10 +89,10 @@
     .scene-preview.slides-preview::after { content: ""; position: static; width: 70%; aspect-ratio: 16 / 9; border: 1px solid rgba(255,255,255,.18); background: url("buildResources/icon-source.png") center / 36% auto no-repeat, linear-gradient(135deg, #182833, #21372f); box-shadow: 0 5px 18px rgba(0,0,0,.45); }
     .scene-preview.has-image::after, .scene-preview.has-image::before { display: none; }
     .scene-button-label { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 16px 7px 5px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.76)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
-    .edit-scene-button { position: absolute; right: 5px; top: 4px; width: 22px; height: 20px; min-height: 0; border: 0; border-radius: 5px; padding: 0; background: rgba(255,255,255,0.13); color: #fff; font-size: 13px; line-height: 1; }
+    .edit-scene-button { position: absolute; right: 3px; top: 3px; width: 17px; height: 15px; min-height: 0; border: 0; border-radius: 4px; padding: 0; background: rgba(255,255,255,0.11); color: rgba(255,255,255,.75); font-size: 10px; line-height: 1; }
     .scene-slot.permission-target .edit-scene-button { outline: 2px solid #d5a842; outline-offset: 1px; }
     .scene-slot.permission-target::before { content: "Screen access needed →"; position: absolute; right: 30px; top: -30px; z-index: 4; padding: 5px 8px; border: 1px solid rgba(213,168,66,0.55); border-radius: 6px; color: #f0d88a; background: rgba(8, 12, 17, 0.9); font-size: 12px; font-weight: 700; white-space: nowrap; pointer-events: none; }
-    .toolbar-icon-button { flex: 0 0 44px; min-height: 0; padding: 0; border-radius: 6px; font-size: 18px; font-weight: 700; background: #242424; }
+    .toolbar-icon-button { flex: 0 0 36px; min-height: 0; padding: 0; border-radius: 5px; font-size: 14px; font-weight: 700; background: #242424; }
     .toolbar-icon-button.active { border-color: #53687a; background: #303f4c; }
     .fancy-cursor { position: fixed; left: 0; top: 0; z-index: 200; width: 34px; height: 34px; border: 2px solid rgba(125, 189, 255, .95); border-radius: 50%; pointer-events: none; translate: -50% -50%; box-shadow: 0 0 0 7px rgba(45, 125, 255, .16), 0 0 24px rgba(125, 189, 255, .62); opacity: 0; transition: opacity .12s ease; }
     .fancy-cursor::after { content: ""; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; border-radius: 50%; background: #f6fbff; translate: -50% -50%; }
@@ -167,15 +167,43 @@
     .slide-thumb-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #cfd7e2; font-size: 12px; font-weight: 800; }
     .slide-thumb-label span:last-child { color: #8793a2; font-weight: 700; }
     @media (max-width: 1040px), (max-height: 700px) {
-      .app { grid-template-rows: 1fr 72px; min-width: 760px; }
-      .toolbar { height: 72px; }
-      .toolbar-icon-button { flex-basis: 38px; font-size: 16px; }
+      .app { grid-template-rows: 1fr 44px; min-width: 760px; }
+      .toolbar { height: 44px; }
+      .toolbar-icon-button { flex-basis: 32px; font-size: 13px; }
       .flow-header { grid-template-columns: minmax(86px, 120px) minmax(0, 1fr) minmax(86px, 120px); }
       .flow-topic { grid-template-columns: clamp(24px, calc(30px * var(--flow-scale)), 32px) minmax(0, 1fr); align-items: start; }
       .flow-topic-check { grid-column: 1; grid-row: 2; }
       .flow-topic-impact { grid-column: 2; grid-row: 2; }
     }
     .hidden { display: none !important; }
+
+    /* ── Split Layout ─────────────────────────────────────────── */
+    .split-layout { position: relative; z-index: 1; width: 100%; height: 100%; display: grid; }
+    .split-layout.horizontal  { grid-template-columns: 1fr 5px 1fr; grid-template-rows: 1fr; }
+    .split-layout.horizontal-60 { grid-template-columns: 3fr 5px 2fr; grid-template-rows: 1fr; }
+    .split-layout.horizontal-70 { grid-template-columns: 7fr 5px 3fr; grid-template-rows: 1fr; }
+    .split-layout.vertical    { grid-template-rows: 1fr 5px 1fr; grid-template-columns: 1fr; }
+    .split-layout.pip         { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    .split-layout[style*="--sa"] { grid-template-columns: var(--sa,1fr) 5px var(--sb,1fr); }
+    .split-layout.vertical[style*="--sa"] { grid-template-columns: 1fr; grid-template-rows: var(--sa,1fr) 5px var(--sb,1fr); }
+    .split-pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #0a0c0f; }
+    .split-pane webview { position: relative; z-index: 1; width: 100%; height: 100%; border: 0; background: #fff; }
+    .split-pane video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; border: 0; }
+    .split-flow { position: absolute; inset: 0; overflow: hidden; }
+    .split-placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: #5a6672; font-size: 13px; text-align: center; padding: 24px; }
+    .split-divider { z-index: 5; background: #252525; transition: background .14s; touch-action: none; }
+    .split-layout.horizontal .split-divider, .split-layout.horizontal-60 .split-divider, .split-layout.horizontal-70 .split-divider { cursor: col-resize; }
+    .split-layout.vertical .split-divider { cursor: row-resize; }
+    .split-layout.pip .split-divider { display: none; }
+    .split-divider:hover, .split-divider.dragging { background: #2577ed; }
+    .split-pip-overlay { position: absolute; right: 14px; bottom: 14px; z-index: 10; width: 28%; aspect-ratio: 9/16; border: 2px solid rgba(255,255,255,.22); border-radius: 8px; overflow: hidden; cursor: move; box-shadow: 0 8px 32px rgba(0,0,0,.6); background: #000; min-width: 80px; }
+    .split-pip-overlay video, .split-pip-overlay webview { width: 100%; height: 100%; object-fit: cover; border: 0; }
+    .split-source-label { position: absolute; top: 6px; left: 7px; z-index: 4; padding: 2px 7px; border: 1px solid rgba(255,255,255,.12); border-radius: 999px; color: rgba(255,255,255,.5); background: rgba(0,0,0,.5); font-size: 10px; font-weight: 800; letter-spacing: .05em; pointer-events: none; text-transform: uppercase; }
+    /* ── Cameo Overlay ──────────────────────────────────────────── */
+    .cameo-layer { position: fixed; right: 22px; bottom: 58px; z-index: 98; width: 220px; height: 124px; border: 2px solid rgba(255,255,255,.22); border-radius: 8px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,.6); background: #000; display: none; cursor: move; min-width: 80px; min-height: 45px; }
+    .cameo-layer.active { display: block; }
+    .cameo-layer video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .toolbar-icon-button.cameo-on { border-color: #53687a; background: #1a3060; color: #7bbdff; }
   </style>
 </head>
 <body>
@@ -220,7 +248,18 @@
         </div>
         <div id="slides-status" class="quiet-status hidden"></div>
       </section>
+
+      <section id="scene-split" class="scene">
+        <div id="split-layout" class="split-layout horizontal">
+          <div id="split-pane-a" class="split-pane"></div>
+          <div id="split-divider" class="split-divider" tabindex="-1" aria-hidden="true"></div>
+          <div id="split-pane-b" class="split-pane"></div>
+        </div>
+      </section>
     </main>
+    <div id="cameo-layer" class="cameo-layer" aria-hidden="true">
+      <video id="cameo-video" autoplay muted playsinline></video>
+    </div>
     <nav id="toolbar" class="toolbar" aria-label="Scenes">
       <div class="scene-slot"><button class="scene-button active">Flow</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
       <div class="scene-slot"><button class="scene-button">Jenn Demo</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
@@ -259,6 +298,7 @@
                 <option value="window">Window</option>
                 <option value="device">Device</option>
                 <option value="slides">PPT Slides</option>
+                <option value="split">Split View</option>
               </select>
             </label>
             <div class="grid-2">
@@ -418,6 +458,47 @@
               <div class="status-line" id="slides-import-status">No slides imported.</div>
               <div id="slide-thumb-grid" class="slide-thumb-grid"></div>
             </div>
+
+            <div id="panel-split" class="type-panel">
+              <label>Layout
+                <select id="edit-split-layout">
+                  <option value="horizontal">Side by Side — 50/50</option>
+                  <option value="horizontal-60">Wide Left — 60/40</option>
+                  <option value="horizontal-70">Dominant Left — 70/30</option>
+                  <option value="vertical">Stack — Top / Bottom</option>
+                  <option value="pip">Picture in Picture</option>
+                </select>
+              </label>
+              <div class="settings-grid">
+                <section class="settings-card">
+                  <div class="card-title">Left / Main Source</div>
+                  <label>Source type
+                    <select id="edit-split-a-type">
+                      <option value="url">URL / Live Site</option>
+                      <option value="device">Mobile Device</option>
+                      <option value="window">Window Capture</option>
+                      <option value="flow">Flow Agenda</option>
+                      <option value="webcam">Webcam</option>
+                    </select>
+                  </label>
+                  <label>URL (if URL type) <input id="edit-split-a-url" type="url" spellcheck="false" placeholder="https://"></label>
+                </section>
+                <section class="settings-card">
+                  <div class="card-title">Right / Overlay Source</div>
+                  <label>Source type
+                    <select id="edit-split-b-type">
+                      <option value="device">Mobile Device</option>
+                      <option value="url">URL / Live Site</option>
+                      <option value="window">Window Capture</option>
+                      <option value="flow">Flow Agenda</option>
+                      <option value="webcam">Webcam</option>
+                    </select>
+                  </label>
+                  <label>URL (if URL type) <input id="edit-split-b-url" type="url" spellcheck="false" placeholder="https://"></label>
+                </section>
+              </div>
+              <p class="muted" style="margin-top:8px">Drag the divider bar in the live scene to resize panels. Device and Window sources use saved capture selections from their own scenes.</p>
+            </div>
           </section>
 
         </div>
@@ -570,6 +651,14 @@
     const webviewHealthTimers = new Map();
     const scenePreviewCache = new Map();
 
+    // ── Split scene state ──────────────────────────────────────────
+    const splitUrlWebviews = new Map();  // key: `${sceneId}-a` / `${sceneId}-b`
+    let splitStreams = { a: null, b: null };
+    let splitDividerDragging = false;
+    let splitDragStartX = 0, splitDragStartY = 0, splitDragStartRatio = 0.5;
+    // ── Cameo state ───────────────────────────────────────────────
+    let cameoStream = null;
+
     const toolbar = document.getElementById('toolbar');
     const urlScene = document.getElementById('scene-url');
     const windowVideo = document.getElementById('window-video');
@@ -679,9 +768,19 @@
       return merged.concat(extras).slice(0, 24).sort((a, b) => Number(a.order) - Number(b.order));
     }
 
+    function normalizeSplitSource(src) {
+      const type = ['url', 'device', 'window', 'flow', 'webcam'].includes(src && src.type) ? src.type : 'url';
+      return { type, url: (src && src.url) || '', sourceId: (src && src.sourceId) || '', sourceName: (src && src.sourceName) || '' };
+    }
+
+    function normalizeSplitSources(sources) {
+      const arr = Array.isArray(sources) ? sources : [];
+      return [normalizeSplitSource(arr[0]), normalizeSplitSource(arr[1])];
+    }
+
     function normalizeScene(scene) {
-      const type = ['flow', 'url', 'window', 'device', 'slides'].includes(scene.type) ? scene.type : 'flow';
-      return {
+      const type = ['flow', 'url', 'window', 'device', 'slides', 'split'].includes(scene.type) ? scene.type : 'flow';
+      const base = {
         id: scene.id || makeSceneId(),
         name: scene.name || 'New Scene',
         type,
@@ -696,6 +795,12 @@
         slideSource: scene.slideSource || '',
         flow: type === 'flow' ? normalizeFlow(scene.flow) : scene.flow
       };
+      if (type === 'split') {
+        base.layout = ['horizontal', 'horizontal-60', 'horizontal-70', 'vertical', 'pip'].includes(scene.layout) ? scene.layout : 'horizontal';
+        base.splitRatio = (typeof scene.splitRatio === 'number' && scene.splitRatio >= 0.1 && scene.splitRatio <= 0.9) ? scene.splitRatio : 0.5;
+        base.sources = normalizeSplitSources(scene.sources);
+      }
+      return base;
     }
 
     function normalizeSceneUrl(value) {
@@ -784,8 +889,9 @@
         const hasVisibleImpact = Boolean(topicImpact || topicSubImpact);
         item.className = [
           'flow-topic',
-          hasVisibleImpact ? 'clickable' : '',
-          hasVisibleImpact && topic.revealed ? 'revealed' : ''
+          'clickable',                                          // Always clickable — check mark toggles
+          topic.revealed ? 'revealed' : '',                    // revealed drives check mark
+          hasVisibleImpact && topic.revealed ? 'has-impact' : ''  // impact text only when content exists
         ].filter(Boolean).join(' ');
         item.dataset.flowTopicIndex = String(index);
         item.innerHTML = `
@@ -808,9 +914,11 @@
     function toggleFlowImpact(index) {
       const scene = sceneById(activeId);
       if (!scene || scene.type !== 'flow') return;
-      scene.flow = normalizeFlow(scene.flow);
-      const topic = scene.flow.topics[index];
-      if (!topic || topic.rowVisible === false || (!(topic.impact) && !(topic.subImpact))) return;
+      // Direct mutation — avoid re-normalizing which can shift indices.
+      const topics = scene.flow && Array.isArray(scene.flow.topics) ? scene.flow.topics : [];
+      if (index < 0 || index >= topics.length) return;
+      const topic = topics[index];
+      if (!topic || topic.rowVisible === false) return;
       topic.revealed = !topic.revealed;
       saveScenes();
       renderFlow(scene);
@@ -855,6 +963,202 @@
       if (!filePath) return `Slide ${index + 1}`;
       const parts = String(filePath).split(/[\\/]/);
       return parts[parts.length - 1] || `Slide ${index + 1}`;
+    }
+
+    // ── Split scene rendering ──────────────────────────────────────
+
+    function applySplitRatio(scene) {
+      const layout = document.getElementById('split-layout');
+      if (!layout) return;
+      const ratio = scene.splitRatio || 0.5;
+      const isVertical = scene.layout === 'vertical';
+      const a = ratio.toFixed(4);
+      const b = (1 - ratio).toFixed(4);
+      if (isVertical) {
+        layout.style.gridTemplateRows = `${a}fr 5px ${b}fr`;
+        layout.style.gridTemplateColumns = '';
+      } else {
+        layout.style.gridTemplateColumns = `${a}fr 5px ${b}fr`;
+        layout.style.gridTemplateRows = '';
+      }
+    }
+
+    function clearSplitScene() {
+      ['a', 'b'].forEach((pane) => {
+        if (splitStreams[pane]) {
+          splitStreams[pane].getTracks().forEach((t) => t.stop());
+          splitStreams[pane] = null;
+        }
+      });
+      splitUrlWebviews.forEach((wv) => {
+        try { wv.stop(); } catch (_) {}
+        wv.remove();
+      });
+      splitUrlWebviews.clear();
+      const pa = document.getElementById('split-pane-a');
+      const pb = document.getElementById('split-pane-b');
+      if (pa) pa.innerHTML = '';
+      if (pb) pb.innerHTML = '';
+    }
+
+    function getSplitUrlWebview(scene, pane) {
+      const key = `${scene.id}-${pane}`;
+      if (splitUrlWebviews.has(key)) return splitUrlWebviews.get(key);
+      const source = scene.sources[pane === 'a' ? 0 : 1];
+      const wv = document.createElement('webview');
+      wv.setAttribute('partition', `persist:cuevue-split-${scene.id}-${pane}`);
+      wv.setAttribute('allowpopups', '');
+      wv.setAttribute('webpreferences', 'contextIsolation=yes,nodeIntegration=no,sandbox=yes');
+      splitUrlWebviews.set(key, wv);
+      if (source.url) wv.setAttribute('src', normalizeSceneUrl(source.url));
+      return wv;
+    }
+
+    async function renderSplitPane(scene, source, paneEl, pane) {
+      paneEl.innerHTML = '';
+
+      if (!source || !source.type) {
+        paneEl.innerHTML = '<div class="split-placeholder">No source configured.<br>Open scene settings.</div>';
+        return;
+      }
+
+      // Label chip
+      const label = document.createElement('div');
+      label.className = 'split-source-label';
+      label.textContent = { url: 'URL', device: 'Mobile', window: 'Window', flow: 'Flow', webcam: 'Webcam' }[source.type] || source.type;
+      paneEl.appendChild(label);
+
+      if (source.type === 'url') {
+        const wv = getSplitUrlWebview(scene, pane);
+        paneEl.appendChild(wv);
+        return;
+      }
+
+      if (source.type === 'flow') {
+        const flowScene = scenes.find((s) => s.type === 'flow') || scene;
+        const flow = normalizeFlow(flowScene.flow || {});
+        const container = document.createElement('div');
+        container.className = 'flow-scene split-flow';
+        container.style.setProperty('--flow-scale', '0.62');
+        container.innerHTML = `
+          <div class="flow-header">
+            <div class="flow-logo" style="font-size:11px">${escapeHtml(flow.logoLeft || 'CueVue')}</div>
+            <div class="flow-title-block">
+              <div class="flow-title" style="font-size:clamp(18px,3.5vw,42px)">${escapeHtml(flow.title || '')}</div>
+              <div class="flow-subtitle" style="font-size:clamp(11px,1.5vw,18px)">${escapeHtml(flow.subtitle || '')}</div>
+            </div>
+            <div class="flow-logo" style="font-size:11px">${escapeHtml(flow.logoRight || '')}</div>
+          </div>
+          <div class="flow-topics">${
+            flow.topics.filter((t) => t.rowVisible !== false).map((t, i) => `
+              <div class="flow-topic${t.revealed ? ' revealed' : ''}" data-flow-topic-index="${i}">
+                <div class="flow-topic-number">${i + 1}</div>
+                <div class="flow-topic-copy">
+                  ${t.heading ? `<div class="flow-topic-heading">${escapeHtml(t.heading)}</div>` : ''}
+                  ${t.subheading ? `<div class="flow-topic-subheading">${escapeHtml(t.subheading)}</div>` : ''}
+                </div>
+                <div class="flow-topic-check">✓</div>
+                <div class="flow-topic-impact">
+                  ${t.impact ? `<div class="flow-topic-impact-heading">${escapeHtml(t.impact)}</div>` : ''}
+                  ${t.subImpact ? `<div class="flow-topic-impact-subheading">${escapeHtml(t.subImpact)}</div>` : ''}
+                </div>
+              </div>
+            `).join('')
+          }</div>
+        `;
+        paneEl.appendChild(container);
+        return;
+      }
+
+      if (source.type === 'webcam') {
+        const video = document.createElement('video');
+        video.autoplay = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.style.cssText = 'width:100%;height:100%;object-fit:cover;background:#000;display:block;';
+        paneEl.appendChild(video);
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          splitStreams[pane] = stream;
+          video.srcObject = stream;
+          await video.play();
+        } catch (err) {
+          paneEl.innerHTML = `<div class="split-placeholder">Webcam error: ${escapeHtml(err.message)}</div>`;
+        }
+        return;
+      }
+
+      // device or window capture
+      const video = document.createElement('video');
+      video.autoplay = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000;display:block;';
+      paneEl.appendChild(video);
+
+      if (!source.sourceId && !source.sourceName) {
+        paneEl.innerHTML = `<div class="split-placeholder">No ${source.type} source selected.<br>Open scene settings → choose source in Scene Settings for this type, then re-enter this scene.</div>`;
+        return;
+      }
+
+      try {
+        const scan = await queryCaptureSources(source.type);
+        const found = scan.sources.find((s) => s.id === source.sourceId)
+          || scan.sources.find((s) => s.name === source.sourceName)
+          || (source.type === 'device' ? scan.sources.find((s) => rankSource(s, 'device') <= 20) : null);
+        if (!found) {
+          paneEl.innerHTML = `<div class="split-placeholder">Source not found: ${escapeHtml(source.sourceName || source.sourceId || 'unknown')}.<br>Open scene settings to reconfigure.</div>`;
+          return;
+        }
+        paneEl.appendChild(video);
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: found.id } }
+        });
+        splitStreams[pane] = stream;
+        video.srcObject = stream;
+        await video.play();
+      } catch (err) {
+        paneEl.innerHTML = `<div class="split-placeholder">Capture failed: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    async function renderSplitScene(scene) {
+      const layout = document.getElementById('split-layout');
+      const paneA = document.getElementById('split-pane-a');
+      const paneB = document.getElementById('split-pane-b');
+      const divider = document.getElementById('split-divider');
+      if (!layout || !paneA || !paneB) return;
+
+      const sources = normalizeSplitSources(scene.sources);
+      const isPip = scene.layout === 'pip';
+
+      // Apply layout class
+      layout.className = `split-layout ${scene.layout || 'horizontal'}`;
+
+      // For custom ratio (not preset) apply via style
+      if (!['horizontal-60', 'horizontal-70'].includes(scene.layout)) {
+        applySplitRatio(scene);
+      } else {
+        layout.style.gridTemplateColumns = '';
+        layout.style.gridTemplateRows = '';
+      }
+
+      if (isPip) {
+        // PIP: pane A fills the space; pane B becomes an overlay
+        paneA.style.cssText = '';
+        paneB.style.cssText = 'position:absolute;right:14px;bottom:14px;width:28%;aspect-ratio:9/16;z-index:10;border:2px solid rgba(255,255,255,.22);border-radius:8px;overflow:hidden;cursor:move;box-shadow:0 8px 32px rgba(0,0,0,.6);background:#000;';
+        if (divider) divider.style.display = 'none';
+      } else {
+        paneA.style.cssText = '';
+        paneB.style.cssText = '';
+        if (divider) divider.style.display = '';
+      }
+
+      await Promise.all([
+        renderSplitPane(scene, sources[0], paneA, 'a'),
+        renderSplitPane(scene, sources[1], paneB, 'b')
+      ]);
     }
 
     function sendNotesContext(scene) {
@@ -1126,6 +1430,14 @@
       });
       toolbar.appendChild(notes);
 
+      const cameoBtn = document.createElement('button');
+      cameoBtn.className = 'toolbar-icon-button' + (cameoStream ? ' cameo-on' : '');
+      cameoBtn.textContent = '◉';
+      cameoBtn.title = cameoStream ? 'Stop cameo webcam overlay' : 'Start cameo webcam overlay';
+      cameoBtn.setAttribute('aria-label', 'Toggle cameo webcam overlay');
+      cameoBtn.addEventListener('click', () => toggleCameo());
+      toolbar.appendChild(cameoBtn);
+
       const settings = document.createElement('button');
       settings.className = 'toolbar-icon-button';
       settings.textContent = '⚙';
@@ -1167,6 +1479,7 @@
         scene.hidden = !isTarget;
       });
       if (type !== 'url') hideAllUrlWebviews();
+      if (type !== 'split') clearSplitScene();
       const target = document.getElementById(`scene-${type}`) || document.getElementById('scene-flow');
       target.hidden = false;
       target.classList.add('active');
@@ -1218,6 +1531,14 @@
         applySceneBackground(scene);
         renderSlides(scene);
         sendNotesContext(scene);
+        return;
+      }
+
+      if (scene.type === 'split') {
+        showOnly('split');
+        applySceneBackground(scene);
+        sendNotesContext(scene);
+        await renderSplitScene(scene);
         return;
       }
 
@@ -1413,6 +1734,14 @@
       if (scene.type === 'device') {
         updatePermissionDetail();
       }
+      if (scene.type === 'split') {
+        const src = normalizeSplitSources(scene.sources);
+        document.getElementById('edit-split-layout').value = scene.layout || 'horizontal';
+        document.getElementById('edit-split-a-type').value = src[0].type;
+        document.getElementById('edit-split-a-url').value = src[0].url || '';
+        document.getElementById('edit-split-b-type').value = src[1].type;
+        document.getElementById('edit-split-b-url').value = src[1].url || '';
+      }
     }
 
     function closeEditor() {
@@ -1482,6 +1811,25 @@
           username: document.getElementById('edit-username').value.trim(),
           password: document.getElementById('edit-password').value
         });
+      }
+
+      if (scene.type === 'split') {
+        scene.layout = document.getElementById('edit-split-layout').value;
+        const prevSources = normalizeSplitSources(scene.sources);
+        scene.sources = normalizeSplitSources([
+          {
+            type: document.getElementById('edit-split-a-type').value,
+            url: normalizeSceneUrl(document.getElementById('edit-split-a-url').value),
+            sourceId: prevSources[0].sourceId,
+            sourceName: prevSources[0].sourceName
+          },
+          {
+            type: document.getElementById('edit-split-b-type').value,
+            url: normalizeSceneUrl(document.getElementById('edit-split-b-url').value),
+            sourceId: prevSources[1].sourceId,
+            sourceName: prevSources[1].sourceName
+          }
+        ]);
       }
 
       scenes = orderedScenes().map((item, index) => ({ ...item, order: index + 1 }));
@@ -1964,31 +2312,25 @@
     }
 
     async function startFullscreenDeviceFallback(reason, options = {}) {
+      // ── Hall-of-mirrors prevention ───────────────────────────────
+      // Auto-capturing screen:0:0 captures CueVue itself → recursive mirror.
+      // Instead: show guidance and let the user choose a source manually.
       if (options.fullscreenFallback) return false;
       const scene = sceneById(activeId);
       if (!scene || scene.type !== 'device') return false;
       stopQuickTimeDetection();
       stopPermissionRecovery();
       document.getElementById('device-fallback').classList.add('open');
-      document.getElementById('selected-device-label').textContent = 'Mobile capture failed. Switching to full-screen capture for demo reliability.';
-      let scan = { ok: false, sources: [], diagnostics: { sourceScanError: '' } };
+      const msg = reason || 'Mobile capture unavailable.';
+      document.getElementById('selected-device-label').textContent = `${msg} Open QuickTime Player → New Movie Recording → select your iPhone, then click Retry Detect.`;
+      updateDeviceDiagnostics({ failure: msg });
+      showStatus(deviceStatus, `${msg} Use Retry Detect or choose a source from the list below.`);
+      // Scan sources so the manual picker has fresh entries, but do NOT auto-start capture.
       try {
-        scan = await queryCaptureSources('device');
+        const scan = await queryCaptureSources('device');
         updateDeviceDiagnostics(scan.diagnostics);
-      } catch (error) {
-        updateDeviceDiagnostics({ failure: error.message || 'Full-screen fallback source scan failed.' });
-      }
-      const fallback = fallbackScreenSource(scan);
-      scene.sourceId = fallback.id;
-      scene.sourceName = fallback.name;
-      saveScenes();
-      updateDeviceDiagnostics({
-        selectedSource: `${fallback.name} [${fallback.id}]`,
-        staleSource: false,
-        failure: reason || 'Using full-screen capture fallback.'
-      });
-      showStatus(deviceStatus, 'Using full-screen fallback. Keep the mobile mirror visible on screen.');
-      return startCapture(fallback, iphoneVideo, deviceStatus, { fullscreenFallback: true });
+      } catch (_) {}
+      return false;
     }
 
     async function retryDeviceCaptureAfterBlackFrame(failedSource, video, statusEl, options = {}) {
@@ -2330,7 +2672,60 @@
       currentStream = null;
       windowVideo.srcObject = null;
       iphoneVideo.srcObject = null;
+      // Also stop split-pane capture streams
+      if (splitStreams.a) { splitStreams.a.getTracks().forEach((t) => t.stop()); splitStreams.a = null; }
+      if (splitStreams.b) { splitStreams.b.getTracks().forEach((t) => t.stop()); splitStreams.b = null; }
     }
+
+    // ── Cameo (floating webcam overlay) ──────────────────────────────────────
+    async function toggleCameo() {
+      const layer = document.getElementById('cameo-layer');
+      const video = document.getElementById('cameo-video');
+      if (cameoStream) {
+        cameoStream.getTracks().forEach((t) => t.stop());
+        cameoStream = null;
+        video.srcObject = null;
+        layer.classList.remove('active');
+        renderToolbar();
+        return;
+      }
+      try {
+        cameoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = cameoStream;
+        await video.play().catch(() => {});
+        layer.classList.add('active');
+      } catch (err) {
+        console.error('[Cameo]', err.message);
+      }
+      renderToolbar();
+    }
+
+    // Cameo drag-to-reposition
+    (function initCameoDrag() {
+      const layer = document.getElementById('cameo-layer');
+      let dragging = false;
+      let ox = 0, oy = 0;
+      layer.addEventListener('mousedown', (e) => {
+        dragging = true;
+        const r = layer.getBoundingClientRect();
+        ox = e.clientX - r.left;
+        oy = e.clientY - r.top;
+        layer.style.transition = 'none';
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const w = layer.offsetWidth, h = layer.offsetHeight;
+        const left = Math.max(0, Math.min(vw - w, e.clientX - ox));
+        const top  = Math.max(0, Math.min(vh - h, e.clientY - oy));
+        layer.style.right  = 'auto';
+        layer.style.bottom = 'auto';
+        layer.style.left   = `${left}px`;
+        layer.style.top    = `${top}px`;
+      });
+      document.addEventListener('mouseup', () => { dragging = false; });
+    }());
 
     function openGlobalSettings() {
       document.getElementById('cursor-mode').value = globalSettings.cursorMode || 'auto';
@@ -2553,13 +2948,54 @@
     document.getElementById('quicktime-help-button').addEventListener('click', () => ipcRenderer.send('open-url', 'https://support.apple.com/guide/quicktime-player/welcome/mac'));
     document.getElementById('import-slides-button').addEventListener('click', importSlides);
 
-    document.addEventListener('mousemove', (event) => {
-      if (globalSettings.cursorMode !== 'fancy') return;
-      const cursor = document.getElementById('fancy-cursor');
-      cursor.style.left = `${event.clientX}px`;
-      cursor.style.top = `${event.clientY}px`;
-      cursor.style.opacity = '1';
-    });
+    // ── Split divider drag ────────────────────────────────────────────────────
+    (function initSplitDividerDrag() {
+      const dividerEl  = document.getElementById('split-divider');
+      const layoutEl   = document.getElementById('split-layout');
+
+      dividerEl.addEventListener('mousedown', (e) => {
+        const scene = sceneById(activeId);
+        if (!scene || scene.type !== 'split') return;
+        splitDividerDragging = true;
+        splitDragStartX = e.clientX;
+        splitDragStartY = e.clientY;
+        splitDragStartRatio = (typeof scene.splitRatio === 'number') ? scene.splitRatio : 0.5;
+        dividerEl.classList.add('dragging');
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        // Fancy cursor
+        if (globalSettings.cursorMode === 'fancy') {
+          const cursor = document.getElementById('fancy-cursor');
+          if (cursor) {
+            cursor.style.left = `${e.clientX}px`;
+            cursor.style.top  = `${e.clientY}px`;
+            cursor.style.opacity = '1';
+          }
+        }
+        // Split divider resize
+        if (!splitDividerDragging) return;
+        const scene = sceneById(activeId);
+        if (!scene || scene.type !== 'split') { splitDividerDragging = false; return; }
+        const rect = layoutEl.getBoundingClientRect();
+        const isVertical = scene.layout === 'vertical';
+        const ratio = isVertical
+          ? Math.max(0.1, Math.min(0.9, (e.clientY - rect.top)  / rect.height))
+          : Math.max(0.1, Math.min(0.9, (e.clientX - rect.left) / rect.width));
+        scene.splitRatio = ratio;
+        applySplitRatio(scene);
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (!splitDividerDragging) return;
+        splitDividerDragging = false;
+        dividerEl.classList.remove('dragging');
+        const scene = sceneById(activeId);
+        if (scene && scene.type === 'split') saveScenes();
+      });
+    }());
+
     document.addEventListener('mouseleave', () => {
       const cursor = document.getElementById('fancy-cursor');
       if (cursor) cursor.style.opacity = '0';

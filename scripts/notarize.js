@@ -12,10 +12,7 @@ exports.default = async function notarizeMacBuild(context) {
   const appPath = `${appOutDir}/${appName}`;
 
   if (!appleId || !appleIdPassword || !teamId) {
-    if (process.env.CI) {
-      throw new Error('Missing notarization credentials: APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID are required.');
-    }
-    console.log('Skipping macOS notarization: APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID are required.');
+    console.log('Skipping macOS notarization: credentials not available (no Apple Developer ID yet).');
     return;
   }
 

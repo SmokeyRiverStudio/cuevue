@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build-macos-dmg:
-    name: Build signed notarized macOS DMG
+    name: Build macOS DMG
     runs-on: macos-14
 
     steps:
@@ -32,21 +32,25 @@ jobs:
       - name: Clean previous build output
         run: rm -rf dist
 
-      - name: Verify signing and notarization secrets
+      - name: Check signing secrets
+        id: signing
+        shell: bash
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        shell: bash
         run: |
-          set -euo pipefail
-          test -n "$CSC_LINK"
-          test -n "$CSC_KEY_PASSWORD"
-          test -n "$APPLE_ID"
-          test -n "$APPLE_APP_SPECIFIC_PASSWORD"
-          test -n "$APPLE_TEAM_ID"
+          if [ -n "$CSC_LINK" ] && [ -n "$CSC_KEY_PASSWORD" ] && [ -n "$APPLE_ID" ] && [ -n "$APPLE_APP_SPECIFIC_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "build_cmd=npm run build:dmg" >> "$GITHUB_OUTPUT"
+            echo "[signing] All secrets present — building signed + notarized DMG"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "build_cmd=npm run build:unsigned" >> "$GITHUB_OUTPUT"
+            echo "[signing] Signing secrets missing — building unsigned DMG (no Apple Developer ID yet)"
+          fi
 
       - name: Read package version
         id: pkg
@@ -55,44 +59,49 @@ jobs:
           version="$(node -p "require('./package.json').version")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
-          echo "dmg=dist/CueVue-${version}-arm64.dmg" >> "$GITHUB_OUTPUT"
 
-      - name: Build signed notarized Apple Silicon DMG
+      - name: Build DMG
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: npm run build:dmg
+        run: ${{ steps.signing.outputs.build_cmd }}
 
-      - name: Verify DMG output
+      - name: Find DMG output
+        id: dmg
         shell: bash
         run: |
           set -euo pipefail
-          dmg="${{ steps.pkg.outputs.dmg }}"
           ls -lah dist/
-          test -f "$dmg"
-          test -s "$dmg"
-          ls -lh "$dmg"
+          dmg="$(find dist -name '*.dmg' | head -1)"
+          if [ -z "$dmg" ]; then
+            echo "ERROR: No DMG found in dist/" >&2
+            exit 1
+          fi
+          echo "path=$dmg" >> "$GITHUB_OUTPUT"
+          echo "Found DMG: $dmg ($(du -sh "$dmg" | cut -f1))"
 
-      - name: Upload workflow artifact backup
+      - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CueVue-${{ steps.pkg.outputs.version }}-arm64-dmg
-          path: ${{ steps.pkg.outputs.dmg }}
+          name: CueVue-${{ steps.pkg.outputs.version }}-dmg
+          path: ${{ steps.dmg.outputs.path }}
           if-no-files-found: error
 
-      - name: Publish GitHub Release asset
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || steps.pkg.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: CueVue Beta ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || steps.pkg.outputs.tag }}
+          name: CueVue Beta ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || steps.pkg.outputs.tag }}${{ steps.signing.outputs.signed == 'false' && ' (unsigned)' || '' }}
+          body: |
+            ${{ steps.signing.outputs.signed == 'true' && 'Signed and notarized build.' || 'Unsigned build — Apple Developer ID pending (DUNS conversion in progress). To open: right-click the app → Open.' }}
           draft: false
           prerelease: true
           make_latest: true
           fail_on_unmatched_files: true
-          files: ${{ steps.pkg.outputs.dmg }}
+          files: ${{ steps.dmg.outputs.path }}

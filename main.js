@@ -1056,30 +1056,39 @@ function screenPermissionStatus() {
 
 async function enumerateCaptureSources() {
   const permission = screenPermissionStatus();
-  try {
-    const sources = await desktopCapturer.getSources({
-      types: ['window', 'screen'],
-      thumbnailSize: { width: 320, height: 180 }
-    });
-    return {
-      ok: true,
-      permission,
-      error: '',
-      sources: sources.map((source) => ({
-        id: source.id,
-        name: source.name,
-        kind: source.id.startsWith('screen:') ? 'screen' : 'window',
-        thumbnail: source.thumbnail.toDataURL()
-      }))
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      permission,
-      error: error && error.message ? error.message : 'Unable to list capture sources.',
-      sources: []
-    };
+  let lastError = null;
+  // Retry up to 3 times — desktopCapturer.getSources() can transiently fail
+  // on first call after macOS sleep/wake or session startup before Screen
+  // Recording permission has been fully activated by the OS.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 600));
+    try {
+      const sources = await desktopCapturer.getSources({
+        types: ['window', 'screen'],
+        thumbnailSize: { width: 320, height: 180 },
+        fetchWindowIcons: false
+      });
+      return {
+        ok: true,
+        permission,
+        error: '',
+        sources: sources.map((source) => ({
+          id: source.id,
+          name: source.name,
+          kind: source.id.startsWith('screen:') ? 'screen' : 'window',
+          thumbnail: source.thumbnail.toDataURL()
+        }))
+      };
+    } catch (error) {
+      lastError = error;
+    }
   }
+  return {
+    ok: false,
+    permission,
+    error: lastError && lastError.message ? lastError.message : 'Unable to list capture sources.',
+    sources: []
+  };
 }
 
 ipcMain.handle('get-capture-sources', async () => enumerateCaptureSources());

@@ -200,7 +200,7 @@
     .split-pip-overlay video, .split-pip-overlay webview { width: 100%; height: 100%; object-fit: cover; border: 0; }
     .split-source-label { position: absolute; top: 6px; left: 7px; z-index: 4; padding: 2px 7px; border: 1px solid rgba(255,255,255,.12); border-radius: 999px; color: rgba(255,255,255,.5); background: rgba(0,0,0,.5); font-size: 10px; font-weight: 800; letter-spacing: .05em; pointer-events: none; text-transform: uppercase; }
     /* ── Cameo Overlay ──────────────────────────────────────────── */
-    .cameo-layer { position: fixed; right: 22px; bottom: 58px; z-index: 98; width: 220px; height: 124px; border: 2px solid rgba(255,255,255,.22); border-radius: 8px; overflow: visible; box-shadow: 0 8px 32px rgba(0,0,0,.6); background: #000; display: none; min-width: 80px; min-height: 45px; user-select: none; }
+    .cameo-layer { position: fixed; right: 22px; bottom: 58px; z-index: 98; width: 220px; height: 124px; border: 2px solid rgba(255,255,255,.22); border-radius: 8px; overflow: visible; box-shadow: 0 8px 32px rgba(0,0,0,.6); background: #000; display: none; min-width: 80px; min-height: 45px; user-select: none; transition: opacity 0.2s; }
     .cameo-layer.active { display: block; }
     .cameo-handle { position: absolute; inset: 0 0 auto 0; height: 18px; z-index: 3; cursor: move; border-radius: 6px 6px 0 0; background: linear-gradient(rgba(255,255,255,.07),transparent); }
     .cameo-content { position: absolute; inset: 0; border-radius: 6px; overflow: hidden; }
@@ -208,6 +208,13 @@
     .cameo-resize-se { position: absolute; right: -5px; bottom: -5px; width: 18px; height: 18px; cursor: se-resize; z-index: 4; }
     .cameo-resize-se::after { content: ''; position: absolute; right: 3px; bottom: 3px; width: 8px; height: 8px; border-right: 2px solid rgba(255,255,255,.45); border-bottom: 2px solid rgba(255,255,255,.45); border-radius: 1px; }
     .toolbar-icon-button.cameo-on { border-color: #53687a; background: #1a3060; color: #7bbdff; }
+    /* Cameo shape variants */
+    .cameo-layer.shape-circle { border-radius: 50%; }
+    .cameo-layer.shape-circle .cameo-content { border-radius: 50%; }
+    .cameo-layer.shape-square .cameo-content { border-radius: 4px; }
+    .cameo-layer.shape-cutout { border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
+    .cameo-layer.shape-cutout .cameo-content { border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
+    .cameo-layer.mirrored video { transform: scaleX(-1); }
   </style>
 </head>
 <body>
@@ -544,16 +551,13 @@
             </select>
           </label>
         </section>
-        <section class="settings-card">
-          <div>
-            <div class="card-title">Status</div>
-            <p class="card-subtitle">Saved source and connection state for the current scene.</p>
-          </div>
-          <div class="status-line" id="selected-window-label">No capture window selected.</div>
-          <div class="status-line" id="selected-device-label">No mobile device source selected.</div>
-          <div class="status-line" id="selected-slides-label">No slides window selected.</div>
-          <div class="status-line" id="credential-status">URL credentials are saved when you save the scene.</div>
-        </section>
+        <!-- Status elements kept hidden in DOM — JS uses these IDs throughout -->
+        <div style="display:none" aria-hidden="true">
+          <div id="selected-window-label"></div>
+          <div id="selected-device-label"></div>
+          <div id="selected-slides-label"></div>
+          <div id="credential-status"></div>
+        </div>
         <section class="settings-card">
           <div>
             <div class="card-title">Workspace</div>
@@ -586,6 +590,46 @@
             <span>CueVue verifies capture access by asking Electron for fresh window and screen sources. macOS permission status is shown as a hint only.</span>
             <button id="global-open-screen-settings-button" type="button">Apple Settings</button>
             <span id="global-permission-detail" class="muted">Permission status not checked yet.</span>
+          </div>
+        </section>
+        <section class="settings-card" id="cameo-settings-card">
+          <div>
+            <div class="card-title">Presenter Cameo</div>
+            <p class="card-subtitle">Webcam overlay style. Toggle with ◉ in the toolbar.</p>
+          </div>
+          <label>Shape
+            <select id="cameo-shape-select">
+              <option value="circle">Circle bubble</option>
+              <option value="square">Square</option>
+              <option value="cutout">Presenter cutout</option>
+            </select>
+          </label>
+          <label>Size
+            <select id="cameo-size-select">
+              <option value="small">Small</option>
+              <option value="medium">Medium</option>
+              <option value="large">Large</option>
+            </select>
+          </label>
+          <label>Opacity <span id="cameo-opacity-value">100</span>%
+            <input type="range" id="cameo-opacity-slider" min="40" max="100" step="5" value="100" style="width:100%">
+          </label>
+          <label>Edge feathering <span id="cameo-feather-value">0</span>
+            <input type="range" id="cameo-feather-slider" min="0" max="20" step="1" value="0" style="width:100%">
+          </label>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
+            <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cameo-mirror-toggle"> Mirror</label>
+            <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cameo-border-toggle"> Border</label>
+            <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cameo-shadow-toggle" checked> Shadow</label>
+          </div>
+          <div style="margin-top:8px;">
+            <div style="font-size:12px;color:#8fa0b2;margin-bottom:6px;">Snap to corner</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:220px;">
+              <button class="cameo-corner-btn" data-corner="TL" style="font-size:11px;padding:5px 8px;background:#1a2230;border:1px solid #2d3e50;border-radius:5px;color:#c6d0dd;cursor:pointer;">↖ Top Left</button>
+              <button class="cameo-corner-btn" data-corner="TR" style="font-size:11px;padding:5px 8px;background:#1a2230;border:1px solid #2d3e50;border-radius:5px;color:#c6d0dd;cursor:pointer;">↗ Top Right</button>
+              <button class="cameo-corner-btn" data-corner="BL" style="font-size:11px;padding:5px 8px;background:#1a2230;border:1px solid #2d3e50;border-radius:5px;color:#c6d0dd;cursor:pointer;">↙ Bottom Left</button>
+              <button class="cameo-corner-btn" data-corner="BR" style="font-size:11px;padding:5px 8px;background:#1a2230;border:1px solid #2d3e50;border-radius:5px;color:#c6d0dd;cursor:pointer;">↘ Bottom Right</button>
+            </div>
           </div>
         </section>
       </div>
@@ -707,14 +751,65 @@
       const layer = document.getElementById('cameo-layer');
       if (!layer) return;
       const r = layer.getBoundingClientRect();
-      localStorage.setItem(CAMEO_KEY, JSON.stringify({ left: r.left, top: r.top, width: r.width, height: r.height }));
+      const prev = loadCameoState();
+      localStorage.setItem(CAMEO_KEY, JSON.stringify({
+        ...prev,
+        left: r.left, top: r.top, width: r.width, height: r.height
+      }));
     }
+    function saveCameoSetting(key, value) {
+      const prev = loadCameoState();
+      localStorage.setItem(CAMEO_KEY, JSON.stringify({ ...prev, [key]: value }));
+    }
+
+    // Size presets (width x height in px)
+    const CAMEO_SIZES = { small: [160, 90], medium: [220, 124], large: [300, 169] };
+
+    function applyCameoVisuals() {
+      const s = loadCameoState();
+      const layer = document.getElementById('cameo-layer');
+      if (!layer) return;
+      const content = layer.querySelector('.cameo-content');
+
+      // Shape
+      layer.classList.remove('shape-circle', 'shape-square', 'shape-cutout');
+      layer.classList.add(`shape-${s.shape || 'circle'}`);
+      // Mirror
+      layer.classList.toggle('mirrored', Boolean(s.mirror));
+      // Border
+      layer.style.borderColor = s.border ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.22)';
+      layer.style.borderWidth = s.border ? '3px' : '2px';
+      // Shadow
+      layer.style.boxShadow = s.shadow === false ? 'none' : '0 8px 32px rgba(0,0,0,0.6)';
+      // Opacity
+      layer.style.opacity = typeof s.opacity === 'number' ? String(s.opacity / 100) : '1';
+      // Feathering via mask (applies to content area)
+      if (content) {
+        const feather = typeof s.feather === 'number' ? s.feather : 0;
+        if (feather > 0) {
+          const pct = Math.max(0, 100 - feather * 4);
+          content.style.webkitMaskImage = `radial-gradient(ellipse at center, black ${pct}%, transparent 100%)`;
+        } else {
+          content.style.webkitMaskImage = '';
+        }
+      }
+    }
+
     function applyCameoState() {
       const s = loadCameoState();
       const layer = document.getElementById('cameo-layer');
       if (!layer) return;
-      if (typeof s.width === 'number')  layer.style.width  = `${Math.max(80, s.width)}px`;
-      if (typeof s.height === 'number') layer.style.height = `${Math.max(45, s.height)}px`;
+
+      // Size: prefer explicit size preset over stored dimensions
+      if (s.sizePreset && CAMEO_SIZES[s.sizePreset]) {
+        const [w, h] = CAMEO_SIZES[s.sizePreset];
+        layer.style.width = `${w}px`;
+        layer.style.height = `${h}px`;
+      } else {
+        if (typeof s.width === 'number')  layer.style.width  = `${Math.max(80, s.width)}px`;
+        if (typeof s.height === 'number') layer.style.height = `${Math.max(45, s.height)}px`;
+      }
+
       if (typeof s.left === 'number' && typeof s.top === 'number') {
         const vw = window.innerWidth, vh = window.innerHeight;
         const w = layer.offsetWidth || s.width || 220;
@@ -726,6 +821,48 @@
         layer.style.left   = `${safeL}px`;
         layer.style.top    = `${safeT}px`;
       }
+      applyCameoVisuals();
+    }
+
+    function snapCameoToCorner(corner) {
+      const layer = document.getElementById('cameo-layer');
+      if (!layer) return;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const w = layer.offsetWidth || 220, h = layer.offsetHeight || 124;
+      const pad = 22;
+      const positions = {
+        TL: { left: pad, top: pad },
+        TR: { left: vw - w - pad, top: pad },
+        BL: { left: pad, top: vh - h - 58 },
+        BR: { left: vw - w - pad, top: vh - h - 58 }
+      };
+      const pos = positions[corner] || positions.BR;
+      layer.style.right = 'auto';
+      layer.style.bottom = 'auto';
+      layer.style.left = `${pos.left}px`;
+      layer.style.top = `${pos.top}px`;
+      saveCameoSetting('corner', corner);
+      saveCameoState();
+    }
+
+    function syncCameoSettingsUI() {
+      const s = loadCameoState();
+      const shapeEl = document.getElementById('cameo-shape-select');
+      const sizeEl = document.getElementById('cameo-size-select');
+      const opacityEl = document.getElementById('cameo-opacity-slider');
+      const opacityVal = document.getElementById('cameo-opacity-value');
+      const featherEl = document.getElementById('cameo-feather-slider');
+      const featherVal = document.getElementById('cameo-feather-value');
+      const mirrorEl = document.getElementById('cameo-mirror-toggle');
+      const borderEl = document.getElementById('cameo-border-toggle');
+      const shadowEl = document.getElementById('cameo-shadow-toggle');
+      if (shapeEl) shapeEl.value = s.shape || 'circle';
+      if (sizeEl) sizeEl.value = s.sizePreset || 'medium';
+      if (opacityEl) { opacityEl.value = s.opacity ?? 100; if (opacityVal) opacityVal.textContent = s.opacity ?? 100; }
+      if (featherEl) { featherEl.value = s.feather ?? 0; if (featherVal) featherVal.textContent = s.feather ?? 0; }
+      if (mirrorEl) mirrorEl.checked = Boolean(s.mirror);
+      if (borderEl) borderEl.checked = Boolean(s.border);
+      if (shadowEl) shadowEl.checked = s.shadow !== false;
     }
 
     function loadScenes() {
@@ -2135,6 +2272,15 @@
           sources: []
         };
       }
+      // If main-process enumeration failed (e.g. transient OS/sandbox error),
+      // wait 900 ms and try exactly once more before surfacing the error.
+      if (!result.ok) {
+        await new Promise((r) => setTimeout(r, 900));
+        try {
+          const retry = await ipcRenderer.invoke('get-capture-sources', { reason: `${kind || 'manual'}-retry` });
+          if (retry && retry.ok) result = retry;
+        } catch (_) { /* keep original error */ }
+      }
       const allSources = Array.isArray(result.sources) ? result.sources : [];
       const sources = allSources.slice().sort((a, b) => rankSource(a, kind) - rankSource(b, kind) || a.name.localeCompare(b.name));
       const rejected = kind === 'device'
@@ -2865,6 +3011,7 @@
 
     function openGlobalSettings() {
       document.getElementById('cursor-mode').value = globalSettings.cursorMode || 'auto';
+      syncCameoSettingsUI();
       refreshGlobalStatus();
       refreshRecentWorkspaces();
       globalSettingsOverlay.classList.add('open');
@@ -3067,6 +3214,50 @@
       const scene = sceneById(activeId);
       if (scene && (scene.type === 'window' || scene.type === 'device' || scene.type === 'slides')) showScene(activeId);
     });
+
+    // ── Cameo settings UI wiring ────────────────────────────────────
+    document.getElementById('cameo-shape-select').addEventListener('change', (e) => {
+      saveCameoSetting('shape', e.target.value);
+      applyCameoVisuals();
+    });
+    document.getElementById('cameo-size-select').addEventListener('change', (e) => {
+      const preset = e.target.value;
+      saveCameoSetting('sizePreset', preset);
+      if (CAMEO_SIZES[preset]) {
+        const [w, h] = CAMEO_SIZES[preset];
+        const layer = document.getElementById('cameo-layer');
+        if (layer) { layer.style.width = `${w}px`; layer.style.height = `${h}px`; }
+        saveCameoState();
+      }
+    });
+    document.getElementById('cameo-opacity-slider').addEventListener('input', (e) => {
+      const val = Number(e.target.value);
+      document.getElementById('cameo-opacity-value').textContent = val;
+      saveCameoSetting('opacity', val);
+      applyCameoVisuals();
+    });
+    document.getElementById('cameo-feather-slider').addEventListener('input', (e) => {
+      const val = Number(e.target.value);
+      document.getElementById('cameo-feather-value').textContent = val;
+      saveCameoSetting('feather', val);
+      applyCameoVisuals();
+    });
+    document.getElementById('cameo-mirror-toggle').addEventListener('change', (e) => {
+      saveCameoSetting('mirror', e.target.checked);
+      applyCameoVisuals();
+    });
+    document.getElementById('cameo-border-toggle').addEventListener('change', (e) => {
+      saveCameoSetting('border', e.target.checked);
+      applyCameoVisuals();
+    });
+    document.getElementById('cameo-shadow-toggle').addEventListener('change', (e) => {
+      saveCameoSetting('shadow', e.target.checked);
+      applyCameoVisuals();
+    });
+    document.querySelectorAll('.cameo-corner-btn').forEach((btn) => {
+      btn.addEventListener('click', () => snapCameoToCorner(btn.dataset.corner));
+    });
+    // ── End Cameo settings wiring ────────────────────────────────────
     document.getElementById('open-quicktime-button').addEventListener('click', openQuickTimeAndScan);
     document.getElementById('retry-device-button').addEventListener('click', async () => {
       stopQuickTimeDetection();

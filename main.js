@@ -406,69 +406,138 @@ function notesWindowHtml() {
     .notebook { position: relative; display: grid; grid-template-rows: auto auto 1fr; height: 100%; padding: 18px 16px 16px 34px; background: #fbf2cf; box-shadow: inset 10px 0 0 #d7534a; }
     .notebook::before { content: ""; position: absolute; left: 9px; top: 18px; bottom: 18px; width: 12px; background: repeating-linear-gradient(to bottom, #42352d 0 8px, transparent 8px 26px); border-radius: 999px; opacity: .8; }
     .notebook::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, transparent 0 29px, rgba(66, 95, 150, .28) 29px 30px); }
-    .head { position: relative; z-index: 1; display: grid; gap: 4px; padding-bottom: 10px; border-bottom: 2px solid rgba(190, 73, 68, .38); }
+    .head { position: relative; z-index: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding-bottom: 10px; border-bottom: 2px solid rgba(190, 73, 68, .38); }
+    .head-text { flex: 1; min-width: 0; }
     .title { color: #2d2922; font-size: 18px; font-weight: 900; line-height: 1.15; overflow-wrap: anywhere; }
     .subtitle { display: none; }
+    .select-slide-btn { flex: 0 0 auto; padding: 4px 8px; border: 1px solid rgba(190, 73, 68, .5); border-radius: 6px; background: rgba(190, 73, 68, .1); color: #7a2a22; font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .select-slide-btn:hover { background: rgba(190, 73, 68, .2); }
+    .select-slide-btn.hidden { display: none; }
     .slides { position: relative; z-index: 1; display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 0 8px; }
     .slides.open { display: grid; }
-    .slide-card { display: grid; gap: 4px; min-width: 0; color: #655447; font-size: 11px; font-weight: 800; text-align: center; }
+    .slide-card { display: grid; gap: 4px; min-width: 0; color: #655447; font-size: 11px; font-weight: 800; text-align: center; cursor: pointer; }
+    .slide-card:hover img { border-color: #d7534a; }
     .slide-card.current { color: #23456f; }
-    .slide-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid rgba(92, 76, 59, .28); border-radius: 5px; background: rgba(255,255,255,.45); }
+    .slide-card.current img { border-color: #23456f; }
+    .slide-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 2px solid rgba(92, 76, 59, .28); border-radius: 5px; background: rgba(255,255,255,.45); transition: border-color .12s; }
     textarea { position: relative; z-index: 1; width: 100%; height: 100%; resize: none; border: 0; outline: 0; padding: 12px 2px 4px 0; color: #2b261f; background: transparent; font: 16px/30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     .empty-thumb { display: grid; place-items: center; width: 100%; aspect-ratio: 16 / 9; border: 1px dashed rgba(92, 76, 59, .28); border-radius: 5px; background: rgba(255,255,255,.25); }
+    /* Slide picker overlay */
+    .picker-overlay { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(40,30,20,.72); overflow: auto; padding: 16px; }
+    .picker-overlay.open { display: block; }
+    .picker-box { background: #fbf2cf; border-radius: 12px; padding: 14px; max-width: 540px; margin: 0 auto; }
+    .picker-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .picker-title { font-size: 15px; font-weight: 900; color: #2d2922; }
+    .picker-close { padding: 3px 8px; border: 1px solid rgba(92,76,59,.4); border-radius: 6px; background: transparent; color: #655447; font-size: 12px; cursor: pointer; }
+    .picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+    .picker-thumb { display: grid; gap: 4px; cursor: pointer; padding: 6px; border: 2px solid transparent; border-radius: 7px; text-align: center; color: #655447; font-size: 11px; font-weight: 800; }
+    .picker-thumb:hover { border-color: #d7534a; background: rgba(215,83,74,.08); }
+    .picker-thumb.current { border-color: #23456f; background: rgba(35,69,111,.08); color: #23456f; }
+    .picker-thumb img { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 4px; background: rgba(255,255,255,.45); }
   </style>
 </head>
 <body>
   <div class="notebook">
     <div class="head">
-      <div id="title" class="title">CueVue Notes</div>
-      <div id="subtitle" class="subtitle">No scene selected</div>
+      <div class="head-text">
+        <div id="title" class="title">CueVue Notes</div>
+        <div id="subtitle" class="subtitle">No scene selected</div>
+      </div>
+      <button id="select-slide-btn" class="select-slide-btn hidden">Select Slide</button>
     </div>
     <div id="slides" class="slides"></div>
     <textarea id="notes" spellcheck="true" placeholder=""></textarea>
   </div>
+
+  <div id="picker-overlay" class="picker-overlay">
+    <div class="picker-box">
+      <div class="picker-head">
+        <div class="picker-title">Select Slide</div>
+        <button id="picker-close" class="picker-close">Close</button>
+      </div>
+      <div id="picker-grid" class="picker-grid"></div>
+    </div>
+  </div>
+
   <script>
     const { ipcRenderer, fileUrl: cuevueFileUrl } = window.cuevue;
     let currentKey = '';
+    let currentContext = null;
     let saveTimer = null;
-    const title = document.getElementById('title');
-    const subtitle = document.getElementById('subtitle');
+    const titleEl = document.getElementById('title');
     const notes = document.getElementById('notes');
-    const slides = document.getElementById('slides');
+    const slidesEl = document.getElementById('slides');
+    const selectSlideBtn = document.getElementById('select-slide-btn');
+    const pickerOverlay = document.getElementById('picker-overlay');
+    const pickerGrid = document.getElementById('picker-grid');
 
-    function fileUrl(filePath) {
-      return cuevueFileUrl(filePath);
+    function fileUrl(filePath) { return cuevueFileUrl(filePath); }
+
+    function sendSlideSelect(index) {
+      if (!currentContext) return;
+      ipcRenderer.send('notes-slide-select', currentContext.sceneId, index);
     }
 
     function renderSlides(context) {
-      slides.innerHTML = '';
+      slidesEl.innerHTML = '';
       if (!context || context.type !== 'slides' || !Array.isArray(context.slidePaths) || !context.slidePaths.length) {
-        slides.classList.remove('open');
+        slidesEl.classList.remove('open');
+        selectSlideBtn.classList.add('hidden');
         return;
       }
-      slides.classList.add('open');
+      slidesEl.classList.add('open');
+      selectSlideBtn.classList.remove('hidden');
       const index = Number(context.slideIndex) || 0;
       [
-        { label: 'Previous', path: context.slidePaths[index - 1], cls: '' },
-        { label: 'Current', path: context.slidePaths[index], cls: 'current' },
-        { label: 'Next', path: context.slidePaths[index + 1], cls: '' }
+        { label: 'Previous', targetIndex: index - 1, path: context.slidePaths[index - 1], cls: '' },
+        { label: 'Current',  targetIndex: index,     path: context.slidePaths[index],     cls: 'current' },
+        { label: 'Next',     targetIndex: index + 1, path: context.slidePaths[index + 1], cls: '' }
       ].forEach((item) => {
         const card = document.createElement('div');
         card.className = 'slide-card ' + item.cls;
+        card.title = item.path ? 'Click to go to ' + item.label : '';
         card.innerHTML = item.path
           ? '<img src="' + fileUrl(item.path) + '" alt=""><span>' + item.label + '</span>'
-          : '<div class="empty-thumb">-</div><span>' + item.label + '</span>';
-        slides.appendChild(card);
+          : '<div class="empty-thumb">–</div><span>' + item.label + '</span>';
+        if (item.path && item.targetIndex >= 0 && item.targetIndex < context.slidePaths.length) {
+          card.addEventListener('click', () => sendSlideSelect(item.targetIndex));
+        }
+        slidesEl.appendChild(card);
+      });
+    }
+
+    function renderPicker(context) {
+      pickerGrid.innerHTML = '';
+      if (!context || context.type !== 'slides' || !Array.isArray(context.slidePaths)) return;
+      const index = Number(context.slideIndex) || 0;
+      context.slidePaths.forEach((slidePath, i) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'picker-thumb' + (i === index ? ' current' : '');
+        thumb.innerHTML = '<img src="' + fileUrl(slidePath) + '" alt=""><span>Slide ' + (i + 1) + '</span>';
+        thumb.addEventListener('click', () => {
+          sendSlideSelect(i);
+          pickerOverlay.classList.remove('open');
+        });
+        pickerGrid.appendChild(thumb);
       });
     }
 
     async function loadContext(context) {
-      currentKey = context.noteKey || '';
-      title.textContent = context.title || 'CueVue Notes';
-      subtitle.textContent = context.subtitle || '';
+      currentContext = context || null;
+      currentKey = (context && context.noteKey) || '';
+      titleEl.textContent = (context && context.title) || 'CueVue Notes';
       renderSlides(context);
       notes.value = currentKey ? await ipcRenderer.invoke('notes-get', currentKey) : '';
     }
+
+    selectSlideBtn.addEventListener('click', () => {
+      renderPicker(currentContext);
+      pickerOverlay.classList.add('open');
+    });
+
+    document.getElementById('picker-close').addEventListener('click', () => {
+      pickerOverlay.classList.remove('open');
+    });
 
     notes.addEventListener('input', () => {
       if (!currentKey) return;
@@ -828,6 +897,12 @@ ipcMain.on('notes-context', (_, context) => {
 
 ipcMain.on('notes-ready', (event) => {
   if (lastNotesContext) event.sender.send('notes-context', lastNotesContext);
+});
+
+ipcMain.on('notes-slide-select', (_, sceneId, slideIndex) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('notes-slide-select', sceneId, slideIndex);
+  }
 });
 
 ipcMain.handle('notes-get', async (_, key) => {

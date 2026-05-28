@@ -200,9 +200,13 @@
     .split-pip-overlay video, .split-pip-overlay webview { width: 100%; height: 100%; object-fit: cover; border: 0; }
     .split-source-label { position: absolute; top: 6px; left: 7px; z-index: 4; padding: 2px 7px; border: 1px solid rgba(255,255,255,.12); border-radius: 999px; color: rgba(255,255,255,.5); background: rgba(0,0,0,.5); font-size: 10px; font-weight: 800; letter-spacing: .05em; pointer-events: none; text-transform: uppercase; }
     /* ── Cameo Overlay ──────────────────────────────────────────── */
-    .cameo-layer { position: fixed; right: 22px; bottom: 58px; z-index: 98; width: 220px; height: 124px; border: 2px solid rgba(255,255,255,.22); border-radius: 8px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,.6); background: #000; display: none; cursor: move; min-width: 80px; min-height: 45px; }
+    .cameo-layer { position: fixed; right: 22px; bottom: 58px; z-index: 98; width: 220px; height: 124px; border: 2px solid rgba(255,255,255,.22); border-radius: 8px; overflow: visible; box-shadow: 0 8px 32px rgba(0,0,0,.6); background: #000; display: none; min-width: 80px; min-height: 45px; user-select: none; }
     .cameo-layer.active { display: block; }
-    .cameo-layer video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cameo-handle { position: absolute; inset: 0 0 auto 0; height: 18px; z-index: 3; cursor: move; border-radius: 6px 6px 0 0; background: linear-gradient(rgba(255,255,255,.07),transparent); }
+    .cameo-content { position: absolute; inset: 0; border-radius: 6px; overflow: hidden; }
+    .cameo-content video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cameo-resize-se { position: absolute; right: -5px; bottom: -5px; width: 18px; height: 18px; cursor: se-resize; z-index: 4; }
+    .cameo-resize-se::after { content: ''; position: absolute; right: 3px; bottom: 3px; width: 8px; height: 8px; border-right: 2px solid rgba(255,255,255,.45); border-bottom: 2px solid rgba(255,255,255,.45); border-radius: 1px; }
     .toolbar-icon-button.cameo-on { border-color: #53687a; background: #1a3060; color: #7bbdff; }
   </style>
 </head>
@@ -258,7 +262,11 @@
       </section>
     </main>
     <div id="cameo-layer" class="cameo-layer" aria-hidden="true">
-      <video id="cameo-video" autoplay muted playsinline></video>
+      <div class="cameo-handle" id="cameo-handle"></div>
+      <div class="cameo-content">
+        <video id="cameo-video" autoplay muted playsinline></video>
+      </div>
+      <div class="cameo-resize-se" id="cameo-resize-se"></div>
     </div>
     <nav id="toolbar" class="toolbar" aria-label="Scenes">
       <div class="scene-slot"><button class="scene-button active">Flow</button><button class="edit-scene-button" aria-label="Scene settings">✎</button></div>
@@ -590,6 +598,7 @@
 
     const STORAGE_KEY = 'cuevue_scenes_v2';
     const SETTINGS_KEY = 'cuevue_global_settings_v1';
+    const CAMEO_KEY = 'cuevue_cameo_v1';
     const QUICK_FLOW_KEY = 'cuevue.flow.quickedit.v1';
     const defaultFlow = {
       title: 'Demo Flow',
@@ -685,6 +694,38 @@
 
     function saveGlobalSettings() {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(globalSettings));
+    }
+
+    function loadCameoState() {
+      try {
+        const s = JSON.parse(localStorage.getItem(CAMEO_KEY));
+        if (s && typeof s === 'object') return s;
+      } catch (_) {}
+      return {};
+    }
+    function saveCameoState() {
+      const layer = document.getElementById('cameo-layer');
+      if (!layer) return;
+      const r = layer.getBoundingClientRect();
+      localStorage.setItem(CAMEO_KEY, JSON.stringify({ left: r.left, top: r.top, width: r.width, height: r.height }));
+    }
+    function applyCameoState() {
+      const s = loadCameoState();
+      const layer = document.getElementById('cameo-layer');
+      if (!layer) return;
+      if (typeof s.width === 'number')  layer.style.width  = `${Math.max(80, s.width)}px`;
+      if (typeof s.height === 'number') layer.style.height = `${Math.max(45, s.height)}px`;
+      if (typeof s.left === 'number' && typeof s.top === 'number') {
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const w = layer.offsetWidth || s.width || 220;
+        const h = layer.offsetHeight || s.height || 124;
+        const safeL = Math.max(0, Math.min(vw - w, s.left));
+        const safeT = Math.max(0, Math.min(vh - h, s.top));
+        layer.style.right  = 'auto';
+        layer.style.bottom = 'auto';
+        layer.style.left   = `${safeL}px`;
+        layer.style.top    = `${safeT}px`;
+      }
     }
 
     function loadScenes() {
@@ -1089,28 +1130,65 @@
       }
 
       // device or window capture
+      const isDevice = source.type === 'device';
+      let resolvedSourceId = source.sourceId;
+      let resolvedSourceName = source.sourceName;
+
+      // For device type: fall back to main device scene's saved selection when split has none
+      if (isDevice && !resolvedSourceId && !resolvedSourceName) {
+        const deviceScene = scenes.find((s) => s.type === 'device');
+        if (deviceScene) {
+          resolvedSourceId = deviceScene.sourceId;
+          resolvedSourceName = deviceScene.sourceName;
+        }
+      }
+
+      // Build the video element (inside bezel for device type)
       const video = document.createElement('video');
       video.autoplay = true;
       video.muted = true;
       video.playsInline = true;
-      video.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000;display:block;';
-      paneEl.appendChild(video);
 
-      if (!source.sourceId && !source.sourceName) {
-        paneEl.innerHTML = `<div class="split-placeholder">No ${source.type} source selected.<br>Open scene settings → choose source in Scene Settings for this type, then re-enter this scene.</div>`;
-        return;
+      let videoContainer;
+      if (isDevice) {
+        // Reuse the same iphone-stage + bezel layout as the main device scene
+        videoContainer = document.createElement('div');
+        videoContainer.style.cssText = 'position:absolute;inset:0;display:grid;place-items:center;padding:16px 24px;';
+        const bezel = document.createElement('div');
+        bezel.className = 'bezel';
+        bezel.style.cssText = 'width:min(280px,36vh);';
+        video.style.cssText = 'width:100%;height:100%;object-fit:cover;background:#000;';
+        bezel.appendChild(video);
+        videoContainer.appendChild(bezel);
+      } else {
+        videoContainer = video;
+        video.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000;display:block;';
       }
 
       try {
         const scan = await queryCaptureSources(source.type);
-        const found = scan.sources.find((s) => s.id === source.sourceId)
-          || scan.sources.find((s) => s.name === source.sourceName)
-          || (source.type === 'device' ? scan.sources.find((s) => rankSource(s, 'device') <= 20) : null);
+        let found = null;
+
+        if (resolvedSourceId || resolvedSourceName) {
+          found = scan.sources.find((s) => s.id === resolvedSourceId)
+            || scan.sources.find((s) => s.name === resolvedSourceName)
+            || scan.sources.find((s) => resolvedSourceName && s.name.toLowerCase() === resolvedSourceName.toLowerCase());
+        }
+
+        // For device: auto-detect QuickTime by name rank if no explicit source or stale ID
+        if (!found && isDevice) {
+          found = scan.sources.find((s) => rankSource(s, 'device') <= 20);
+        }
+
         if (!found) {
-          paneEl.innerHTML = `<div class="split-placeholder">Source not found: ${escapeHtml(source.sourceName || source.sourceId || 'unknown')}.<br>Open scene settings to reconfigure.</div>`;
+          const ph = document.createElement('div');
+          ph.className = 'split-placeholder';
+          ph.textContent = isDevice ? 'Mobile device disconnected.' : `Source not found: ${source.sourceName || source.sourceId || 'unknown'}.`;
+          paneEl.appendChild(ph);
           return;
         }
-        paneEl.appendChild(video);
+
+        paneEl.appendChild(videoContainer);
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: false,
           video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: found.id } }
@@ -1119,7 +1197,7 @@
         video.srcObject = stream;
         await video.play();
       } catch (err) {
-        paneEl.innerHTML = `<div class="split-placeholder">Capture failed: ${escapeHtml(err.message)}</div>`;
+        paneEl.innerHTML = `<div class="split-placeholder">${isDevice ? 'Mobile device disconnected.' : `Capture failed: ${escapeHtml(err.message)}`}</div>`;
       }
     }
 
@@ -2111,8 +2189,7 @@
         ['Playback', deviceDiagnostics.playback],
         ['Failure', deviceDiagnostics.failure || 'none']
       ];
-      deviceDiagnosticsEl.innerHTML = `<h3>Mobile Device Capture Diagnostics</h3><dl>${rows.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd class="${statusClass(value)}">${escapeHtml(value)}</dd>`).join('')}</dl>`;
-      if (deviceDiagnostics.failure) deviceDiagnosticsEl.classList.remove('hidden');
+      if (deviceDiagnosticsEl) deviceDiagnosticsEl.innerHTML = `<h3>Mobile Device Capture Diagnostics</h3><dl>${rows.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd class="${statusClass(value)}">${escapeHtml(value)}</dd>`).join('')}</dl>`;
     }
 
     async function refreshDeviceDiagnostics(patch = {}) {
@@ -2494,15 +2571,17 @@
         || sources.find((item) => scene.sourceName && item.name.toLowerCase() === scene.sourceName.toLowerCase());
       if (!source) {
         if (scene.type === 'device') {
-          const staleSelection = scene.sourceName || scene.sourceId || '';
-          updateDeviceDiagnostics({
-            staleSource: Boolean(scene.sourceId || scene.sourceName),
-            selectedSource: staleSelection,
-            failure: 'Saved source is stale or no longer visible. CueVue cleared it and will look for QuickTime again.'
-          });
-          clearCaptureSource(scene);
-          showDeviceFallback();
-          await startFullscreenDeviceFallback('Saved mobile capture source disappeared; using full-screen fallback.');
+          // Source ID stale (window IDs change when QuickTime restarts) — find by name rank
+          const autoFound = sources.find((s) => rankSource(s, 'device') <= 20);
+          if (autoFound) {
+            scene.sourceId = autoFound.id;
+            scene.sourceName = autoFound.name;
+            saveScenes();
+            await startCapture(autoFound, video, statusEl);
+            return;
+          }
+          // Nothing found — show passive disconnected message
+          showStatus(statusEl, 'Mobile device disconnected. Open QuickTime → New Movie Recording → select your device.');
           return;
         }
         hideStatus(statusEl);
@@ -2557,8 +2636,12 @@
         if (!track) throw new Error('Selected source returned no video track.');
         if (isDeviceVideo) {
           track.addEventListener('ended', () => {
-            updateDeviceDiagnostics({ videoTrack: false, playback: 'ended', failure: 'Capture track ended. Switching to full-screen fallback.' });
-            startFullscreenDeviceFallback('Capture track ended; using full-screen fallback.');
+            updateDeviceDiagnostics({ videoTrack: false, playback: 'ended', failure: 'Capture track ended — reconnecting.' });
+            const s = sceneById(activeId);
+            if (s && s.type === 'device') {
+              showStatus(statusEl, 'Mobile device disconnected. Reconnecting...');
+              setTimeout(() => restoreCapture(s, video, statusEl), 1500);
+            }
           }, { once: true });
         }
         try {
@@ -2690,41 +2773,94 @@
         return;
       }
       try {
-        cameoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+        const videoDev = devices.find((d) => d.kind === 'videoinput');
+        if (!videoDev) throw new Error('No camera found. Check System Settings → Privacy → Camera.');
+        cameoStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: videoDev.deviceId }, audio: false });
         video.srcObject = cameoStream;
         await video.play().catch(() => {});
-        layer.classList.add('active');
+        if (video.readyState >= 2 || cameoStream.getVideoTracks().length) {
+          layer.classList.add('active');
+        } else {
+          throw new Error('Camera stream started but produced no video.');
+        }
       } catch (err) {
         console.error('[Cameo]', err.message);
+        if (cameoStream) { cameoStream.getTracks().forEach((t) => t.stop()); cameoStream = null; }
+        video.srcObject = null;
+        // Show brief passive error inside the cameo layer so user sees why it failed
+        layer.classList.add('active');
+        const errEl = document.createElement('div');
+        errEl.style.cssText = 'position:absolute;inset:0;display:grid;place-items:center;padding:8px;color:#ffadad;font-size:11px;text-align:center;background:#0a0a0a;border-radius:6px;';
+        errEl.textContent = err.message || 'Camera unavailable.';
+        layer.appendChild(errEl);
+        setTimeout(() => { errEl.remove(); layer.classList.remove('active'); }, 4000);
       }
       renderToolbar();
     }
 
-    // Cameo drag-to-reposition
-    (function initCameoDrag() {
-      const layer = document.getElementById('cameo-layer');
-      let dragging = false;
-      let ox = 0, oy = 0;
-      layer.addEventListener('mousedown', (e) => {
-        dragging = true;
-        const r = layer.getBoundingClientRect();
-        ox = e.clientX - r.left;
-        oy = e.clientY - r.top;
-        layer.style.transition = 'none';
-        e.preventDefault();
-      });
-      document.addEventListener('mousemove', (e) => {
-        if (!dragging) return;
-        const vw = window.innerWidth, vh = window.innerHeight;
-        const w = layer.offsetWidth, h = layer.offsetHeight;
-        const left = Math.max(0, Math.min(vw - w, e.clientX - ox));
-        const top  = Math.max(0, Math.min(vh - h, e.clientY - oy));
+    // Cameo drag + resize + persistence
+    (function initCameoInteraction() {
+      const layer  = document.getElementById('cameo-layer');
+      const handle = document.getElementById('cameo-handle');
+      const rseEl  = document.getElementById('cameo-resize-se');
+      let dragMode = null;   // 'move' | 'resize-se' | null
+      let ox = 0, oy = 0, startW = 0, startH = 0, startL = 0, startT = 0;
+
+      function getRect() { return layer.getBoundingClientRect(); }
+      function ensureAbsolute() {
+        const r = getRect();
         layer.style.right  = 'auto';
         layer.style.bottom = 'auto';
-        layer.style.left   = `${left}px`;
-        layer.style.top    = `${top}px`;
+        layer.style.left   = `${r.left}px`;
+        layer.style.top    = `${r.top}px`;
+      }
+
+      handle.addEventListener('mousedown', (e) => {
+        dragMode = 'move';
+        const r = getRect();
+        ox = e.clientX - r.left;
+        oy = e.clientY - r.top;
+        ensureAbsolute();
+        e.preventDefault();
+        e.stopPropagation();
       });
-      document.addEventListener('mouseup', () => { dragging = false; });
+
+      rseEl.addEventListener('mousedown', (e) => {
+        dragMode = 'resize-se';
+        const r = getRect();
+        ox = e.clientX;
+        oy = e.clientY;
+        startW = r.width;
+        startH = r.height;
+        startL = r.left;
+        startT = r.top;
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!dragMode) return;
+        if (dragMode === 'move') {
+          const vw = window.innerWidth, vh = window.innerHeight;
+          const w = layer.offsetWidth, h = layer.offsetHeight;
+          const left = Math.max(0, Math.min(vw - w, e.clientX - ox));
+          const top  = Math.max(0, Math.min(vh - h, e.clientY - oy));
+          layer.style.left = `${left}px`;
+          layer.style.top  = `${top}px`;
+        } else if (dragMode === 'resize-se') {
+          const newW = Math.max(80,  startW + (e.clientX - ox));
+          const newH = Math.max(45, startH + (e.clientY - oy));
+          layer.style.width  = `${newW}px`;
+          layer.style.height = `${newH}px`;
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (!dragMode) return;
+        dragMode = null;
+        saveCameoState();
+      });
     }());
 
     function openGlobalSettings() {
@@ -2956,6 +3092,16 @@
       dividerEl.addEventListener('mousedown', (e) => {
         const scene = sceneById(activeId);
         if (!scene || scene.type !== 'split') return;
+        // If on a preset layout class, compute the current rendered ratio and switch to free mode
+        if (['horizontal-60', 'horizontal-70'].includes(scene.layout)) {
+          const rect = layoutEl.getBoundingClientRect();
+          const paneA = document.getElementById('split-pane-a');
+          const paneRect = paneA ? paneA.getBoundingClientRect() : null;
+          const inferredRatio = paneRect ? (paneRect.width / rect.width) : (scene.layout === 'horizontal-60' ? 0.6 : 0.7);
+          scene.layout = 'horizontal';
+          scene.splitRatio = inferredRatio;
+          layoutEl.className = 'split-layout horizontal';
+        }
         splitDividerDragging = true;
         splitDragStartX = e.clientX;
         splitDragStartY = e.clientY;
@@ -3034,6 +3180,18 @@
       if (index >= 0 && index < ordered.length) showScene(ordered[index].id);
     });
 
+    ipcRenderer.on('notes-slide-select', (_, sceneId, slideIndex) => {
+      const scene = sceneById(sceneId);
+      if (!scene || scene.type !== 'slides') return;
+      const slides = Array.isArray(scene.slidePaths) ? scene.slidePaths : [];
+      const idx = Math.max(0, Math.min(Number(slideIndex) || 0, slides.length - 1));
+      scene.slideIndex = idx;
+      saveScenes();
+      if (scene.id === activeId) renderSlides(scene);
+      sendNotesContext(scene);
+      if (editor.classList.contains('open') && scene.type === 'slides') renderSlideThumbnails(scene);
+    });
+
     window.addEventListener('beforeunload', () => {
       stopStream();
       stopQuickTimeDetection();
@@ -3043,6 +3201,7 @@
     });
 
     applyCursorMode();
+    applyCameoState();
     renderToolbar();
     refreshRecentWorkspaces();
     showScene(activeId);

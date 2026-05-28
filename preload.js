@@ -18,7 +18,8 @@ const sendChannels = new Set([
   'notes-save',
   'launch-quicktime',
   'minimize-quicktime',
-  'open-screen-settings'
+  'open-screen-settings',
+  'notes-slide-select'
 ]);
 
 const invokeChannels = new Set([
@@ -44,7 +45,8 @@ const invokeChannels = new Set([
 ]);
 
 const receiveChannels = new Set([
-  'notes-context'
+  'notes-context',
+  'notes-slide-select'
 ]);
 
 contextBridge.exposeInMainWorld('cuevue', {

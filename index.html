@@ -203,7 +203,11 @@
     .cameo-layer { position: fixed; right: 22px; bottom: 58px; z-index: 98; width: 220px; height: 124px; border: 2px solid rgba(255,255,255,.22); border-radius: 8px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,.6); background: #000; display: none; cursor: move; min-width: 80px; min-height: 45px; }
     .cameo-layer.active { display: block; }
     .cameo-layer video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cameo-layer.resizable { resize: both; }
+    .cameo-layer.no-shadow { box-shadow: none; }
+    .cameo-layer.square { border-radius: 0; }
     .toolbar-icon-button.cameo-on { border-color: #53687a; background: #1a3060; color: #7bbdff; }
+    .hidden-status-bucket { display: none; }
   </style>
 </head>
 <body>
@@ -538,14 +542,26 @@
         </section>
         <section class="settings-card">
           <div>
-            <div class="card-title">Status</div>
-            <p class="card-subtitle">Saved source and connection state for the current scene.</p>
+            <div class="card-title">Cameo</div>
+            <p class="card-subtitle">Browser-safe webcam overlay. Starts only when you toggle it on.</p>
           </div>
-          <div class="status-line" id="selected-window-label">No capture window selected.</div>
-          <div class="status-line" id="selected-device-label">No mobile device source selected.</div>
-          <div class="status-line" id="selected-slides-label">No slides window selected.</div>
-          <div class="status-line" id="credential-status">URL credentials are saved when you save the scene.</div>
+          <label>Camera source
+            <select id="cameo-camera-source">
+              <option value="">Default camera</option>
+            </select>
+          </label>
+          <label>Size <input id="cameo-size" type="range" min="120" max="520" step="10"></label>
+          <label><input id="cameo-visible" type="checkbox"> Visible</label>
+          <label><input id="cameo-free-drag" type="checkbox"> Free drag / resize</label>
+          <label><input id="cameo-rounded" type="checkbox"> Rounded corners</label>
+          <label><input id="cameo-shadow" type="checkbox"> Shadow</label>
         </section>
+        <div class="hidden-status-bucket" aria-hidden="true">
+          <div id="selected-window-label">No capture window selected.</div>
+          <div id="selected-device-label">No mobile device source selected.</div>
+          <div id="selected-slides-label">No slides window selected.</div>
+          <div id="credential-status">URL credentials are saved when you save the scene.</div>
+        </div>
         <section class="settings-card">
           <div>
             <div class="card-title">Workspace</div>
@@ -676,12 +692,32 @@
     const globalSettingsOverlay = document.getElementById('global-settings');
     const editType = document.getElementById('edit-type');
 
+    function normalizeCameoSettings(cameo = {}) {
+      return {
+        cameraId: cameo.cameraId || '',
+        visible: Boolean(cameo.visible),
+        size: Math.max(120, Math.min(Number(cameo.size) || 220, 520)),
+        freeDrag: cameo.freeDrag !== false,
+        rounded: cameo.rounded !== false,
+        shadow: cameo.shadow !== false,
+        x: Number.isFinite(cameo.x) ? cameo.x : null,
+        y: Number.isFinite(cameo.y) ? cameo.y : null,
+        width: Number(cameo.width) || 220,
+        height: Number(cameo.height) || 124
+      };
+    }
+
     function loadGlobalSettings() {
       try {
         const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
-        if (saved && typeof saved === 'object') return { cursorMode: saved.cursorMode || 'auto' };
+        if (saved && typeof saved === 'object') {
+          return {
+            cursorMode: saved.cursorMode || 'auto',
+            cameo: normalizeCameoSettings(saved.cameo)
+          };
+        }
       } catch (_) {}
-      return { cursorMode: 'auto' };
+      return { cursorMode: 'auto', cameo: normalizeCameoSettings() };
     }
 
     function saveGlobalSettings() {
@@ -1111,6 +1147,7 @@
         const connected = await attachRememberedSource(saved, splitVideo, null, {
           adoptAsCurrent: false,
           registerSplitStream: true,
+          splitPaneKey: pane,
           passive: true
         });
         idle.textContent = connected
@@ -1133,6 +1170,7 @@
         const connected = await attachRememberedSource(source, video, null, {
           adoptAsCurrent: false,
           registerSplitStream: true,
+          splitPaneKey: pane,
           passive: true
         });
         if (!connected) {
@@ -1364,20 +1402,6 @@
     }
 
     async function refreshScenePreviews() {
-      const sourceScenes = scenes.filter((scene) => (scene.type === 'window' || scene.type === 'device') && (scene.sourceId || scene.sourceName));
-      if (sourceScenes.length) {
-        try {
-          const scan = await queryCaptureSources('preview');
-          const sources = scan.allSources;
-          sourceScenes.forEach((scene) => {
-            const source = sources.find((item) => item.id === scene.sourceId)
-              || sources.find((item) => item.name === scene.sourceName)
-              || sources.find((item) => scene.sourceName && item.name.toLowerCase() === scene.sourceName.toLowerCase());
-            if (source && source.thumbnail) updateScenePreview(scene, source.thumbnail);
-          });
-        } catch (_) {}
-      }
-
       const activeScene = sceneById(activeId);
       if (activeScene && activeScene.type === 'url') {
         const webview = urlWebviews.get(activeScene.id);
@@ -2552,7 +2576,12 @@
           video: videoConstraints
         });
         if (adoptAsCurrent) currentStream = stream;
-        if (options.registerSplitStream) splitStreams.push(stream);
+        if (options.registerSplitStream) {
+          if (options.splitPaneKey && Object.prototype.hasOwnProperty.call(splitStreams, options.splitPaneKey)) {
+            if (splitStreams[options.splitPaneKey]) splitStreams[options.splitPaneKey].getTracks().forEach((track) => track.stop());
+            splitStreams[options.splitPaneKey] = stream;
+          }
+        }
         video.srcObject = stream;
         const track = stream.getVideoTracks()[0];
         if (isDeviceVideo) updateDeviceDiagnostics({
@@ -2680,25 +2709,68 @@
     }
 
     // ── Cameo (floating webcam overlay) ──────────────────────────────────────
-    async function toggleCameo() {
+    function applyCameoAppearance() {
+      const layer = document.getElementById('cameo-layer');
+      if (!layer) return;
+      const cameo = normalizeCameoSettings(globalSettings.cameo);
+      globalSettings.cameo = cameo;
+      layer.style.width = `${cameo.width || cameo.size}px`;
+      layer.style.height = `${cameo.height || Math.round((cameo.width || cameo.size) * 9 / 16)}px`;
+      layer.classList.toggle('resizable', cameo.freeDrag);
+      layer.classList.toggle('square', !cameo.rounded);
+      layer.classList.toggle('no-shadow', !cameo.shadow);
+      if (cameo.x !== null && cameo.y !== null) {
+        layer.style.left = `${cameo.x}px`;
+        layer.style.top = `${cameo.y}px`;
+        layer.style.right = 'auto';
+        layer.style.bottom = 'auto';
+      }
+    }
+
+    function syncCameoControls() {
+      const cameo = normalizeCameoSettings(globalSettings.cameo);
+      globalSettings.cameo = cameo;
+      const camera = document.getElementById('cameo-camera-source');
+      if (camera) camera.value = cameo.cameraId || '';
+      document.getElementById('cameo-size').value = cameo.size;
+      document.getElementById('cameo-visible').checked = Boolean(cameoStream || cameo.visible);
+      document.getElementById('cameo-free-drag').checked = cameo.freeDrag;
+      document.getElementById('cameo-rounded').checked = cameo.rounded;
+      document.getElementById('cameo-shadow').checked = cameo.shadow;
+    }
+
+    async function toggleCameo(forceVisible = null) {
       const layer = document.getElementById('cameo-layer');
       const video = document.getElementById('cameo-video');
-      if (cameoStream) {
+      const shouldStop = forceVisible === false || (forceVisible === null && cameoStream);
+      if (shouldStop) {
         cameoStream.getTracks().forEach((t) => t.stop());
         cameoStream = null;
         video.srcObject = null;
         layer.classList.remove('active');
+        globalSettings.cameo = { ...normalizeCameoSettings(globalSettings.cameo), visible: false };
+        saveGlobalSettings();
+        syncCameoControls();
         renderToolbar();
         return;
       }
+      if (cameoStream) return;
       try {
-        cameoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        const cameo = normalizeCameoSettings(globalSettings.cameo);
+        const videoConstraints = cameo.cameraId ? { deviceId: { exact: cameo.cameraId } } : true;
+        cameoStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
         video.srcObject = cameoStream;
         await video.play().catch(() => {});
+        globalSettings.cameo = { ...cameo, visible: true };
+        applyCameoAppearance();
+        saveGlobalSettings();
         layer.classList.add('active');
       } catch (err) {
         console.error('[Cameo]', err.message);
+        globalSettings.cameo = { ...normalizeCameoSettings(globalSettings.cameo), visible: false };
+        saveGlobalSettings();
       }
+      syncCameoControls();
       renderToolbar();
     }
 
@@ -2726,11 +2798,25 @@
         layer.style.left   = `${left}px`;
         layer.style.top    = `${top}px`;
       });
-      document.addEventListener('mouseup', () => { dragging = false; });
+      document.addEventListener('mouseup', () => {
+        if (!dragging) return;
+        dragging = false;
+        const r = layer.getBoundingClientRect();
+        globalSettings.cameo = {
+          ...normalizeCameoSettings(globalSettings.cameo),
+          x: r.left,
+          y: r.top,
+          width: r.width,
+          height: r.height
+        };
+        saveGlobalSettings();
+      });
     }());
 
     function openGlobalSettings() {
       document.getElementById('cursor-mode').value = globalSettings.cursorMode || 'auto';
+      applyCameoAppearance();
+      syncCameoControls();
       refreshGlobalStatus();
       refreshRecentWorkspaces();
       globalSettingsOverlay.classList.add('open');
@@ -2825,7 +2911,7 @@
       scenes = normalizeScenes(workspace.scenes || defaultScenes);
       activeId = workspace.activeId && sceneById(workspace.activeId) ? workspace.activeId : (orderedScenes()[0] && orderedScenes()[0].id) || 'flow';
       globalSettings = workspace.settings && typeof workspace.settings === 'object'
-        ? { cursorMode: workspace.settings.cursorMode || 'auto' }
+        ? { cursorMode: workspace.settings.cursorMode || 'auto', cameo: normalizeCameoSettings(workspace.settings.cameo) }
         : loadGlobalSettings();
       currentWorkspacePath = result.path || '';
       clearAllUrlWebviews();
@@ -2932,6 +3018,32 @@
       applyCursorMode();
       const scene = sceneById(activeId);
       if (scene && (scene.type === 'window' || scene.type === 'device' || scene.type === 'slides')) showScene(activeId);
+    });
+    document.getElementById('cameo-camera-source').addEventListener('change', (event) => {
+      globalSettings.cameo = { ...normalizeCameoSettings(globalSettings.cameo), cameraId: event.target.value };
+      saveGlobalSettings();
+      if (cameoStream) toggleCameo(false);
+    });
+    document.getElementById('cameo-size').addEventListener('input', (event) => {
+      const size = Number(event.target.value) || 220;
+      globalSettings.cameo = { ...normalizeCameoSettings(globalSettings.cameo), size, width: size, height: Math.round(size * 9 / 16) };
+      applyCameoAppearance();
+      saveGlobalSettings();
+    });
+    document.getElementById('cameo-visible').addEventListener('change', (event) => {
+      toggleCameo(event.target.checked);
+    });
+    ['cameo-free-drag', 'cameo-rounded', 'cameo-shadow'].forEach((id) => {
+      document.getElementById(id).addEventListener('change', () => {
+        globalSettings.cameo = {
+          ...normalizeCameoSettings(globalSettings.cameo),
+          freeDrag: document.getElementById('cameo-free-drag').checked,
+          rounded: document.getElementById('cameo-rounded').checked,
+          shadow: document.getElementById('cameo-shadow').checked
+        };
+        applyCameoAppearance();
+        saveGlobalSettings();
+      });
     });
     document.getElementById('open-quicktime-button').addEventListener('click', openQuickTimeAndScan);
     document.getElementById('retry-device-button').addEventListener('click', async () => {
@@ -3044,6 +3156,7 @@
     });
 
     applyCursorMode();
+    applyCameoAppearance();
     renderToolbar();
     refreshRecentWorkspaces();
     showScene(activeId);

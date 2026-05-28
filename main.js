@@ -433,14 +433,13 @@ function notesWindowHtml() {
     .notebook { position: relative; display: grid; grid-template-rows: auto auto 1fr; height: 100%; padding: 18px 16px 16px 34px; background: #fbf2cf; box-shadow: inset 10px 0 0 #d7534a; }
     .notebook::before { content: ""; position: absolute; left: 9px; top: 18px; bottom: 18px; width: 12px; background: repeating-linear-gradient(to bottom, #42352d 0 8px, transparent 8px 26px); border-radius: 999px; opacity: .8; }
     .notebook::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, transparent 0 29px, rgba(66, 95, 150, .28) 29px 30px); }
-    .head { position: relative; z-index: 1; display: grid; gap: 4px; padding-bottom: 10px; border-bottom: 2px solid rgba(190, 73, 68, .38); }
+    .head { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 10px; padding-bottom: 10px; border-bottom: 2px solid rgba(190, 73, 68, .38); }
     .title { color: #2d2922; font-size: 18px; font-weight: 900; line-height: 1.15; overflow-wrap: anywhere; }
     .subtitle { display: none; }
     .slides { position: relative; z-index: 1; display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 0 8px; }
     .slides.open { display: grid; }
-    .slide-tools { position: relative; z-index: 1; display: none; gap: 8px; padding: 0 0 8px; }
-    .slide-tools.open { display: grid; }
-    .slide-tools button { min-height: 30px; border: 1px solid rgba(92, 76, 59, .35); border-radius: 7px; color: #2d2922; background: rgba(255,255,255,.34); font-weight: 900; }
+    .select-slide { display: none; min-height: 30px; padding: 0 10px; border: 1px solid rgba(92, 76, 59, .35); border-radius: 7px; color: #2d2922; background: rgba(255,255,255,.34); font-weight: 900; white-space: nowrap; }
+    .select-slide.open { display: inline-grid; place-items: center; }
     .slide-card { display: grid; gap: 4px; min-width: 0; color: #655447; font-size: 11px; font-weight: 800; text-align: center; }
     .slide-card.current { color: #23456f; }
     .slide-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid rgba(92, 76, 59, .28); border-radius: 5px; background: rgba(255,255,255,.45); }
@@ -458,11 +457,13 @@ function notesWindowHtml() {
 <body>
   <div class="notebook">
     <div class="head">
-      <div id="title" class="title">CueVue Notes</div>
-      <div id="subtitle" class="subtitle">No scene selected</div>
+      <div>
+        <div id="title" class="title">CueVue Notes</div>
+        <div id="subtitle" class="subtitle">No scene selected</div>
+      </div>
+      <button id="selectSlide" class="select-slide" type="button">Select Slide</button>
     </div>
     <div id="slides" class="slides"></div>
-    <div id="slideTools" class="slide-tools"><button id="selectSlide" type="button">Select Slide</button></div>
     <textarea id="notes" spellcheck="true" placeholder=""></textarea>
     <div id="picker" class="picker">
       <div class="picker-head"><span>Select Slide</span><button id="closePicker" type="button">Close</button></div>
@@ -477,7 +478,6 @@ function notesWindowHtml() {
     const subtitle = document.getElementById('subtitle');
     const notes = document.getElementById('notes');
     const slides = document.getElementById('slides');
-    const slideTools = document.getElementById('slideTools');
     const selectSlide = document.getElementById('selectSlide');
     const picker = document.getElementById('picker');
     const pickerGrid = document.getElementById('pickerGrid');
@@ -500,12 +500,12 @@ function notesWindowHtml() {
       const items = context && context.type === 'slides' ? slideItems(context) : [];
       if (!context || context.type !== 'slides' || !items.length) {
         slides.classList.remove('open');
-        slideTools.classList.remove('open');
+        selectSlide.classList.remove('open');
         picker.classList.remove('open');
         return;
       }
       slides.classList.add('open');
-      slideTools.classList.add('open');
+      selectSlide.classList.add('open');
       const index = Number(context.slideIndex) || 0;
       [
         { label: 'Previous', item: items[index - 1], cls: '' },

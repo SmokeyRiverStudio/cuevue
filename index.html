@@ -143,7 +143,7 @@
     .device-check.fail { color: #ff8f8f; }
     .device-fallback { display: none; gap: 10px; }
     .device-fallback.open { display: grid; }
-    .device-diagnostics { position: absolute; right: 18px; bottom: 18px; z-index: 8; width: min(520px, calc(100% - 36px)); max-height: 42vh; overflow: auto; padding: 12px; border: 1px solid rgba(99, 161, 255, .45); border-radius: 8px; background: rgba(8, 12, 17, .86); color: #dce5ef; font-size: 12px; line-height: 1.35; }
+    .device-diagnostics { display: none !important; position: absolute; right: 18px; bottom: 18px; z-index: 8; width: min(520px, calc(100% - 36px)); max-height: 42vh; overflow: auto; padding: 12px; border: 1px solid rgba(99, 161, 255, .45); border-radius: 8px; background: rgba(8, 12, 17, .86); color: #dce5ef; font-size: 12px; line-height: 1.35; }
     .device-diagnostics.hidden { display: none; }
     .device-diagnostics h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; color: #8fc1ff; }
     .device-diagnostics dl { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(0, 1fr); gap: 5px 10px; margin: 0; }
@@ -1327,6 +1327,23 @@
       return true;
     }
 
+    function selectSlideFromNotes(payload = {}) {
+      const scene = sceneById(payload.sceneId);
+      if (!scene || scene.type !== 'slides') return;
+      const slides = Array.isArray(scene.slidePaths) ? scene.slidePaths : [];
+      if (!slides.length) return;
+      const index = Math.max(0, Math.min(Number(payload.slideIndex) || 0, slides.length - 1));
+      scene.slideIndex = index;
+      saveScenes();
+      if (activeId !== scene.id) {
+        showScene(scene.id);
+      } else {
+        renderSlides(scene);
+        sendNotesContext(scene);
+      }
+      if (editingId === scene.id) renderSlideThumbnails(scene);
+    }
+
     function sceneBackgroundUrl(scene) {
       if (!scene.bg) return '';
       try {
@@ -1772,7 +1789,6 @@
       loadCredentials(scene);
       syncTypePanels();
       editor.classList.add('open');
-      if (scene.type === 'window') setTimeout(() => scanSources('window'), 0);
       if (scene.type === 'slides') {
         document.getElementById('slides-import-status').textContent = scene.slidePaths && scene.slidePaths.length
           ? `${scene.slidePaths.length} slides imported${scene.slideSource ? ` from ${scene.slideSource}` : ''}.`
@@ -2072,10 +2088,10 @@
           permission: options.permission || deviceDiagnostics.permission,
           selectedSource: scene.sourceName || scene.sourceId || 'none',
           staleSource: false,
-          failure: options.message || 'Electron could not enumerate capture sources.'
+          failure: options.message || 'Mobile device disconnected.'
         });
       }
-      showStatus(scene.type === 'device' ? deviceStatus : windowStatus, options.message || 'Capture is disconnected. Use the manual source picker when you are ready to reconnect.');
+      showStatus(scene.type === 'device' ? deviceStatus : windowStatus, scene.type === 'device' ? 'Mobile device disconnected.' : (options.message || 'Capture is disconnected.'));
     }
 
     async function queryCaptureSources(kind, options = {}) {
@@ -2148,34 +2164,22 @@
         ['Failure', deviceDiagnostics.failure || 'none']
       ];
       deviceDiagnosticsEl.innerHTML = `<h3>Mobile Device Capture Diagnostics</h3><dl>${rows.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd class="${statusClass(value)}">${escapeHtml(value)}</dd>`).join('')}</dl>`;
-      if (deviceDiagnostics.failure) deviceDiagnosticsEl.classList.remove('hidden');
+      deviceDiagnosticsEl.classList.add('hidden');
     }
 
     async function refreshDeviceDiagnostics(patch = {}) {
-      const next = { ...patch };
-      if (!next.permission) {
-        try {
-          next.permission = `${await ipcRenderer.invoke('check-screen-permission')} (macOS API hint)`;
-        } catch (error) {
-          next.permission = error.message || 'unknown';
-        }
-      }
-      try {
-        const quickTime = await ipcRenderer.invoke('quicktime-status');
-        next.quickTimeRunning = Boolean(quickTime && quickTime.running);
-        next.quickTimeWindows = quickTime && Array.isArray(quickTime.windows) ? quickTime.windows : [];
-        next.movieRecordingWindow = Boolean(quickTime && quickTime.movieRecording);
-        if (quickTime && !quickTime.ok && quickTime.message) next.failure = quickTime.message;
-      } catch (error) {
-        next.failure = error.message || 'Unable to inspect QuickTime.';
-      }
-      updateDeviceDiagnostics(next);
+      updateDeviceDiagnostics({
+        permission: 'not probed',
+        quickTimeRunning: false,
+        quickTimeWindows: [],
+        movieRecordingWindow: false,
+        ...patch
+      });
     }
 
     function showDeviceFallback() {
       document.getElementById('device-fallback').classList.add('open');
       updateDeviceDiagnostics({ failure: 'Manual Source Picker opened.' });
-      scanSources('device', false, true);
     }
 
     async function detectQuickTimeSource(autoPick = true) {
@@ -2184,7 +2188,7 @@
       updateDeviceDiagnostics(scan.diagnostics);
       if (!scan.ok) {
         showDeviceFallback();
-        document.getElementById('selected-device-label').textContent = `Could not gather capture sources: ${scan.diagnostics.sourceScanError || 'unknown Electron error'}`;
+        document.getElementById('selected-device-label').textContent = 'Mobile device disconnected.';
         return autoPick ? startFullscreenDeviceFallback(`Source enumeration failed; using full-screen fallback. ${scan.diagnostics.sourceScanError || ''}`) : false;
       }
       const preferred = scan.sources.find((source) => rankSource(source, 'device') <= 20);
@@ -2210,16 +2214,7 @@
       document.getElementById('device-fallback').classList.remove('open');
       setQuickTimeStep('opened', 'active');
       setQuickTimeStep('recording', 'active');
-      const status = await ipcRenderer.invoke('quicktime-status');
-      if (!status || !status.running) {
-        const launched = await ipcRenderer.invoke('quicktime-new-movie-recording');
-        await refreshDeviceDiagnostics({ quickTimeLaunched: Boolean(launched && launched.ok), failure: launched && !launched.ok ? launched.message : '' });
-        if (!launched || !launched.ok) {
-          setQuickTimeStep('opened', 'fail');
-          document.getElementById('selected-device-label').textContent = launched && launched.message ? launched.message : 'QuickTime could not be launched.';
-          return false;
-        }
-      }
+      document.getElementById('selected-device-label').textContent = 'Open QuickTime Player manually, choose File > New Movie Recording, then select the Movie Recording window.';
       setQuickTimeStep('opened', 'done');
       let attempts = 0;
       return new Promise((resolve) => {
@@ -2235,12 +2230,12 @@
           } catch (error) {
             updateDeviceDiagnostics({ failure: error.message || 'QuickTime reconnect failed.' });
           }
-          document.getElementById('selected-device-label').textContent = 'Reconnecting mobile capture. Keep the Movie Recording window open and the device selected.';
+          document.getElementById('selected-device-label').textContent = 'Mobile device disconnected.';
           if (attempts >= 24) {
             stopQuickTimeDetection();
             setQuickTimeStep('recording', 'fail');
             showDeviceFallback();
-            await startFullscreenDeviceFallback('QuickTime reconnect timed out; using full-screen fallback.');
+            showStatus(deviceStatus, 'Mobile device disconnected.');
             resolve(false);
           }
         }, 1000);
@@ -2259,19 +2254,19 @@
         if (kind === 'device') await refreshDeviceDiagnostics(scan.diagnostics);
         if (!scan.ok) {
           if (grid) grid.innerHTML = `<p class="muted">Could not gather sources: ${escapeHtml(scan.diagnostics.sourceScanError || 'Electron capture enumeration failed.')}</p>`;
-          if (kind === 'device') document.getElementById('selected-device-label').textContent = `Could not gather capture sources: ${scan.diagnostics.sourceScanError || 'Electron capture enumeration failed.'}`;
+          if (kind === 'device') document.getElementById('selected-device-label').textContent = 'Mobile device disconnected.';
           return;
         }
       } catch (error) {
         if (grid) grid.innerHTML = `<p class="muted">Could not gather sources: ${escapeHtml(error.message || 'Electron capture enumeration failed.')}</p>`;
-        if (kind === 'device') document.getElementById('selected-device-label').textContent = `Could not gather capture sources: ${error.message || 'Electron capture enumeration failed.'}`;
+        if (kind === 'device') document.getElementById('selected-device-label').textContent = 'Mobile device disconnected.';
         if (kind === 'device') await refreshDeviceDiagnostics({ failure: error.message || 'Electron capture enumeration failed.' });
         return;
       }
       if (grid) grid.innerHTML = '';
       if (!sources.length) {
         if (grid) grid.innerHTML = `<p class="muted">No windows or screens found. Open the source you want to capture, then refresh.</p>`;
-        if (kind === 'device') document.getElementById('selected-device-label').textContent = 'Electron returned no capturable windows or screens. QuickTime may be visible but not capturable to CueVue yet.';
+        if (kind === 'device') document.getElementById('selected-device-label').textContent = 'Mobile device disconnected.';
         if (kind === 'device') await refreshDeviceDiagnostics({ sources: [], failure: 'desktopCapturer returned no sources.' });
         return;
       }
@@ -2279,7 +2274,7 @@
         if (await detectQuickTimeSource(true)) {
           stopQuickTimeDetection();
         } else {
-          document.getElementById('selected-device-label').textContent = 'No mobile capture window found yet. Start the recording window, then refresh.';
+          document.getElementById('selected-device-label').textContent = 'Mobile device disconnected.';
         }
         return;
       }
@@ -2361,9 +2356,9 @@
       stopPermissionRecovery();
       document.getElementById('device-fallback').classList.add('open');
       const msg = reason || 'Mobile capture unavailable.';
-      document.getElementById('selected-device-label').textContent = `${msg} Open QuickTime Player → New Movie Recording → select your iPhone, then click Retry Detect.`;
+      document.getElementById('selected-device-label').textContent = 'Mobile device disconnected.';
       updateDeviceDiagnostics({ failure: msg });
-      showStatus(deviceStatus, `${msg} Use Retry Detect or choose a source from the list below.`);
+      showStatus(deviceStatus, 'Mobile device disconnected.');
       // Scan sources so the manual picker has fresh entries, but do NOT auto-start capture.
       try {
         let scan = { diagnostics: {} };
@@ -2408,7 +2403,7 @@
       scene.sourceName = fallback.name;
       saveScenes();
       document.getElementById('device-fallback').classList.add('open');
-      document.getElementById('selected-device-label').textContent = `0 x 0 capture from ${failedSource.name}. Trying fallback: ${fallback.name}.`;
+      document.getElementById('selected-device-label').textContent = 'Mobile device disconnected.';
       updateDeviceDiagnostics({
         selectedSource: `${fallback.name} [${fallback.id}]`,
         staleSource: true,
@@ -2421,40 +2416,11 @@
       stopQuickTimeDetection();
       setQuickTimeStep(null);
       document.getElementById('device-fallback').classList.remove('open');
-      document.getElementById('selected-device-label').textContent = 'Opening QuickTime and looking for the Movie Recording window...';
-      setQuickTimeStep('opened', 'active');
-      const result = await ipcRenderer.invoke('quicktime-new-movie-recording');
-      await refreshDeviceDiagnostics({ quickTimeLaunched: Boolean(result && result.ok), failure: result && !result.ok ? result.message : '' });
-      if (result && !result.ok) {
-        setQuickTimeStep('opened', 'fail');
-        document.getElementById('selected-device-label').textContent = result.message;
-        return;
-      }
+      document.getElementById('selected-device-label').textContent = 'Open QuickTime Player manually, then choose File > New Movie Recording.';
       setQuickTimeStep('opened', 'done');
       setQuickTimeStep('recording', 'active');
-      let attempts = 0;
-      quickTimeDetectTimer = setInterval(async () => {
-        attempts += 1;
-        try {
-          if (await detectQuickTimeSource(true)) {
-            stopQuickTimeDetection();
-            return;
-          }
-        } catch (error) {
-          stopQuickTimeDetection();
-          setQuickTimeStep('recording', 'fail');
-          document.getElementById('selected-device-label').textContent = `Could not gather QuickTime windows: ${error.message || 'Electron capture scan failed.'}`;
-          await startFullscreenDeviceFallback(`QuickTime scan failed; using full-screen fallback. ${error.message || ''}`);
-          return;
-        }
-        document.getElementById('selected-device-label').textContent = 'Looking for QuickTime Movie Recording. Choose the mobile device in QuickTime if it is not already showing.';
-        if (attempts >= 20) {
-          stopQuickTimeDetection();
-          setQuickTimeStep('recording', 'fail');
-          showDeviceFallback();
-          await startFullscreenDeviceFallback('QuickTime recording window was not capturable; using full-screen fallback.');
-        }
-      }, 1000);
+      document.getElementById('device-fallback').classList.add('open');
+      await scanSources('device', false, true);
     }
 
     async function updatePermissionDetail(message) {
@@ -2465,17 +2431,8 @@
         detail.className = message.toLowerCase().includes('permission is on') ? 'permission-ok' : 'muted';
         return;
       }
-      const permission = await ipcRenderer.invoke('check-screen-permission');
-      if (permission === 'granted') {
-        detail.textContent = 'Permission is on. CueVue can list and capture windows.';
-        detail.className = 'permission-ok';
-      } else if (permission === 'denied' || permission === 'restricted') {
-        detail.textContent = 'macOS API reports denied, but CueVue will still try desktopCapturer because System Settings may already be enabled.';
-        detail.className = 'muted';
-      } else {
-        detail.textContent = 'macOS API has no settled permission value yet. CueVue will verify by enumerating capture sources.';
-        detail.className = 'muted';
-      }
+      detail.textContent = 'Capture access is checked only when you manually choose or retry a source.';
+      detail.className = 'muted';
     }
 
     async function getOrderedSources(kind) {
@@ -2528,14 +2485,13 @@
     }
 
     async function restoreCapture(scene, video, statusEl) {
-      if (scene.type === 'device') await refreshDeviceDiagnostics({ failure: '' });
       if (scene.id === permissionPromptSceneId) {
         permissionPromptSceneId = '';
         renderToolbar();
       }
       if (!scene.sourceId && !scene.sourceName) {
         if (statusEl) showStatus(statusEl, scene.type === 'device'
-          ? 'No saved Mobile Device source. Open QuickTime manually, then choose the Movie Recording window.'
+          ? 'Mobile device disconnected.'
           : 'No saved capture source. Choose a source in Scene Settings.');
         return;
       }
@@ -2665,9 +2621,7 @@
         console.error('[startCapture] getUserMedia failed:', error.name, error.message, error.constraint || '', error);
         if (statusEl) showStatus(statusEl, `Capture failed: ${error.message || 'Unable to start selected source.'}`);
         if (video === iphoneVideo) {
-          const permission = await ipcRenderer.invoke('check-screen-permission').catch(() => 'unknown');
           updateDeviceDiagnostics({
-            permission,
             getUserMedia: 'failed',
             videoSrcObject: Boolean(video.srcObject),
             videoTrack: Boolean(video.srcObject && video.srcObject.getVideoTracks && video.srcObject.getVideoTracks()[0]),
@@ -2681,9 +2635,8 @@
           }
           if (!options.passive) showDeviceFallback();
           if (/permission|denied|notallowed|not allowed/i.test(error.message || '')) {
-            document.getElementById('selected-device-label').textContent = `Source capture failed: ${error.message || 'permission-related capture error'}. Choose another visible source below.`;
+            document.getElementById('selected-device-label').textContent = 'Mobile device disconnected.';
             updateDeviceDiagnostics({
-              permission: `${permission} (macOS API hint; capture failed after manual source selection)`,
               failure: `getUserMedia failed after source selection: ${error.message || 'permission-related capture error'}`
             });
           }
@@ -3058,6 +3011,7 @@
       document.getElementById('selected-device-label').textContent = 'Choose the QuickTime Movie Recording window, or another visible source.';
       await scanSources('device', false, true);
     });
+    ipcRenderer.on('notes-select-slide', (_, payload) => selectSlideFromNotes(payload));
     document.getElementById('quicktime-help-button').addEventListener('click', () => ipcRenderer.send('open-url', 'https://support.apple.com/guide/quicktime-player/welcome/mac'));
     document.getElementById('import-slides-button').addEventListener('click', importSlides);
 

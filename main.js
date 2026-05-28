@@ -82,16 +82,7 @@ function createMainWindow() {
     }
   });
 
-  mainWindow.once('ready-to-show', async () => {
-    try {
-      await desktopCapturer.getSources({
-        types: ['screen'],
-        thumbnailSize: { width: 1, height: 1 }
-      });
-    } catch (_) {
-      // Screen Recording permission may not be granted yet. Startup must continue.
-    }
-
+  mainWindow.once('ready-to-show', () => {
     if (splashWindow && !splashWindow.isDestroyed()) {
       splashWindow.close();
     }
@@ -907,6 +898,14 @@ ipcMain.on('notes-save', (_, key, text) => {
   const notes = readNotes();
   notes[key] = String(text || '');
   writeNotes(notes);
+});
+
+ipcMain.on('notes-select-slide', (_, payload = {}) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send('notes-select-slide', {
+    sceneId: payload.sceneId,
+    slideIndex: Number(payload.slideIndex) || 0
+  });
 });
 
 ipcMain.handle('workspace-recent', async () => readWorkspaceState());

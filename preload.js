@@ -16,6 +16,7 @@ const sendChannels = new Set([
   'notes-context',
   'notes-ready',
   'notes-save',
+  'notes-select-slide',
   'launch-quicktime',
   'minimize-quicktime',
   'open-screen-settings'
@@ -44,7 +45,8 @@ const invokeChannels = new Set([
 ]);
 
 const receiveChannels = new Set([
-  'notes-context'
+  'notes-context',
+  'notes-select-slide'
 ]);
 
 contextBridge.exposeInMainWorld('cuevue', {
@@ -90,13 +92,8 @@ function injectRuntimeHotfix() {
     .source-card img { min-height: 86px; image-rendering: auto; }
     .source-card small { display: block; margin-top: 4px; color: #8fa0b2; font-size: 10px; line-height: 1.2; }
     .source-card .source-score { display: inline-block; margin-left: 5px; color: #91d18b; font-size: 10px; font-weight: 800; }
-    .scene-button-label::before { margin-right: 5px; opacity: .95; }
-    .scene-button[aria-label="Flow"] .scene-button-label::before { content: "▦"; }
-    .scene-button[aria-label*="Demo"] .scene-button-label::before { content: "◎"; }
-    .scene-button[aria-label="Mobile Device"] .scene-button-label::before { content: "▯"; }
-    .scene-button[aria-label="Slides"] .scene-button-label::before { content: "▣"; }
-    .device-diagnostics { box-shadow: 0 16px 50px rgba(0,0,0,.42); }
-    .device-diagnostics dd { max-height: 96px; overflow: auto; }
+    .scene-button-label::before { content: none !important; }
+    .device-diagnostics { display: none !important; }
   \`;
   document.head.appendChild(css);
 
@@ -145,32 +142,6 @@ function injectRuntimeHotfix() {
     if (fallback) fallback.classList.add('open');
   }
 
-  function patchRetryButton() {
-    const retry = document.getElementById('retry-device-button');
-    if (!retry || retry.__cuevuePatched) return;
-    retry.__cuevuePatched = true;
-    retry.addEventListener('click', async () => {
-      setText('selected-device-label', 'Manual Retry Detect requested. CueVue will list visible sources without running macOS helpers.');
-      openFallbackGrid();
-      setTimeout(() => {
-        if (typeof window.scanSources === 'function') window.scanSources('device', false, true);
-      }, 150);
-    }, true);
-  }
-
-  function patchManualButton() {
-    const manual = document.getElementById('manual-device-button');
-    if (!manual || manual.__cuevuePatched) return;
-    manual.__cuevuePatched = true;
-    manual.addEventListener('click', () => {
-      openFallbackGrid();
-      setText('selected-device-label', 'Choose the saved QuickTime Movie Recording window, or another visible source.');
-      setTimeout(() => {
-        if (typeof window.scanSources === 'function') window.scanSources('device', false, true);
-      }, 100);
-    }, true);
-  }
-
   function patchToolbarLabels() {
     document.querySelectorAll('.scene-button').forEach((button) => {
       const label = button.querySelector('.scene-button-label');
@@ -187,7 +158,7 @@ function injectRuntimeHotfix() {
   window.alert = (message) => {
     const text = String(message || '');
     if (/screen recording|permission|denied/i.test(text)) {
-      setText('selected-device-label', text + ' - CueVue will still force source enumeration because System Settings may already be enabled.');
+      setText('selected-device-label', 'Mobile device disconnected.');
       return;
     }
     originalAlert.call(window, message);
@@ -196,8 +167,6 @@ function injectRuntimeHotfix() {
   window.cuevueForceSourceScan = forceScan;
 
   function tick() {
-    patchRetryButton();
-    patchManualButton();
     patchToolbarLabels();
   }
 

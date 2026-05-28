@@ -150,7 +150,7 @@ function injectRuntimeHotfix() {
     if (!retry || retry.__cuevuePatched) return;
     retry.__cuevuePatched = true;
     retry.addEventListener('click', async () => {
-      setText('selected-device-label', 'Forced fresh scan running - showing every capturable source, not only QuickTime.');
+      setText('selected-device-label', 'Manual Retry Detect requested. CueVue will list visible sources without running macOS helpers.');
       openFallbackGrid();
       setTimeout(() => {
         if (typeof window.scanSources === 'function') window.scanSources('device', false, true);
@@ -164,7 +164,7 @@ function injectRuntimeHotfix() {
     manual.__cuevuePatched = true;
     manual.addEventListener('click', () => {
       openFallbackGrid();
-      setText('selected-device-label', 'Manual source picker opened - choose QuickTime, a mobile mirror window, Movie Recording, or the visible screen.');
+      setText('selected-device-label', 'Choose the saved QuickTime Movie Recording window, or another visible source.');
       setTimeout(() => {
         if (typeof window.scanSources === 'function') window.scanSources('device', false, true);
       }, 100);

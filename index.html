@@ -610,7 +610,8 @@
       { id: 'jenn', name: 'Jenn Demo', type: 'url', order: 2, url: 'https://jenn.macmms.com/', bg: '', bgVersion: '', sourceId: '', sourceName: '' },
       { id: 'standard', name: 'Standard Demo', type: 'url', order: 3, url: 'https://standard.macmms.com/', bg: '', bgVersion: '', sourceId: '', sourceName: '' },
       { id: 'iphone', name: 'Mobile Device', type: 'device', order: 4, url: '', bg: '', bgVersion: '', sourceId: '', sourceName: '' },
-      { id: 'slides', name: 'Slides', type: 'slides', order: 5, url: '', bg: '', bgVersion: '', sourceId: '', sourceName: '' }
+      { id: 'slides', name: 'Slides', type: 'slides', order: 5, url: '', bg: '', bgVersion: '', sourceId: '', sourceName: '' },
+      { id: 'split', name: 'Split View', type: 'split', order: 6, url: '', bg: '', bgVersion: '', sourceId: '', sourceName: '', layout: 'horizontal-60', splitRatio: 0.6, sources: [{ type: 'device', url: '', sourceId: '', sourceName: '' }, { type: 'url', url: 'https://jenn.macmms.com/', sourceId: '', sourceName: '' }] }
     ];
 
     let scenes = loadScenes();
@@ -1071,55 +1072,72 @@
       }
 
       if (source.type === 'webcam') {
+        if (!cameoStream || cameoStream.getVideoTracks().every((track) => track.readyState !== 'live')) {
+          paneEl.innerHTML = '<div class="split-placeholder">Enable Cameo manually to use a browser-safe webcam source.</div>';
+          return;
+        }
         const video = document.createElement('video');
         video.autoplay = true;
         video.muted = true;
         video.playsInline = true;
         video.style.cssText = 'width:100%;height:100%;object-fit:cover;background:#000;display:block;';
         paneEl.appendChild(video);
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-          splitStreams[pane] = stream;
-          video.srcObject = stream;
-          await video.play();
-        } catch (err) {
-          paneEl.innerHTML = `<div class="split-placeholder">Webcam error: ${escapeHtml(err.message)}</div>`;
-        }
+        video.srcObject = cameoStream;
+        await video.play();
         return;
       }
 
-      // device or window capture
-      const video = document.createElement('video');
-      video.autoplay = true;
-      video.muted = true;
-      video.playsInline = true;
-      video.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000;display:block;';
-      paneEl.appendChild(video);
-
-      if (!source.sourceId && !source.sourceName) {
-        paneEl.innerHTML = `<div class="split-placeholder">No ${source.type} source selected.<br>Open scene settings → choose source in Scene Settings for this type, then re-enter this scene.</div>`;
+      if (source.type === 'device') {
+        const deviceScene = scenes.find((s) => s.type === 'device') || {};
+        const saved = {
+          type: 'device',
+          sourceId: source.sourceId || deviceScene.sourceId || '',
+          sourceName: source.sourceName || deviceScene.sourceName || ''
+        };
+        const stage = document.createElement('div');
+        stage.className = 'iphone-stage';
+        if (deviceScene.bg) stage.style.backgroundImage = sceneBackgroundUrl(deviceScene);
+        stage.innerHTML = `
+          <div class="bezel">
+            <video autoplay muted playsinline></video>
+          </div>
+          <div class="split-placeholder split-mobile-idle">No saved Mobile Device source selected.</div>
+        `;
+        paneEl.appendChild(stage);
+        const splitVideo = stage.querySelector('video');
+        const idle = stage.querySelector('.split-mobile-idle');
+        if (!saved.sourceId) return;
+        idle.textContent = `Reconnecting saved Mobile Device source: ${saved.sourceName || saved.sourceId}`;
+        const connected = await attachRememberedSource(saved, splitVideo, null, {
+          adoptAsCurrent: false,
+          registerSplitStream: true,
+          passive: true
+        });
+        idle.textContent = connected
+          ? `Mobile Device source: ${saved.sourceName || saved.sourceId}`
+          : `Saved Mobile Device source unavailable: ${saved.sourceName || saved.sourceId}`;
         return;
       }
 
-      try {
-        const scan = await queryCaptureSources(source.type);
-        const found = scan.sources.find((s) => s.id === source.sourceId)
-          || scan.sources.find((s) => s.name === source.sourceName)
-          || (source.type === 'device' ? scan.sources.find((s) => rankSource(s, 'device') <= 20) : null);
-        if (!found) {
-          paneEl.innerHTML = `<div class="split-placeholder">Source not found: ${escapeHtml(source.sourceName || source.sourceId || 'unknown')}.<br>Open scene settings to reconfigure.</div>`;
+      if (source.type === 'window') {
+        const video = document.createElement('video');
+        video.autoplay = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000;display:block;';
+        paneEl.appendChild(video);
+        if (!source.sourceId) {
+          paneEl.innerHTML = '<div class="split-placeholder">No Window source selected.<br>Choose a source in Scene Settings.</div>';
           return;
         }
-        paneEl.appendChild(video);
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: found.id } }
+        const connected = await attachRememberedSource(source, video, null, {
+          adoptAsCurrent: false,
+          registerSplitStream: true,
+          passive: true
         });
-        splitStreams[pane] = stream;
-        video.srcObject = stream;
-        await video.play();
-      } catch (err) {
-        paneEl.innerHTML = `<div class="split-placeholder">Capture failed: ${escapeHtml(err.message)}</div>`;
+        if (!connected) {
+          paneEl.innerHTML = `<div class="split-placeholder">Saved Window source unavailable: ${escapeHtml(source.sourceName || source.sourceId)}.</div>`;
+        }
       }
     }
 
@@ -1166,6 +1184,11 @@
       if (scene.type === 'slides') {
         const slides = Array.isArray(scene.slidePaths) ? scene.slidePaths : [];
         const index = Math.max(0, Math.min(Number(scene.slideIndex) || 0, Math.max(slides.length - 1, 0)));
+        const slideItems = slides.map((slidePath, slideIndex) => ({
+          path: slidePath,
+          url: cuevueFileUrl(slidePath),
+          name: slideName(scene, slideIndex)
+        }));
         ipcRenderer.send('notes-context', {
           type: 'slides',
           sceneId: scene.id,
@@ -1173,6 +1196,7 @@
           subtitle: slides.length ? slideName(scene, index) : 'Slide Notes',
           noteKey: `${scene.id}:slide:${index}`,
           slidePaths: slides,
+          slideItems,
           slideIndex: index
         });
         return;
@@ -2027,28 +2051,16 @@
           failure: options.message || 'Electron could not enumerate capture sources.'
         });
       }
-      showStatus(scene.type === 'device' ? deviceStatus : windowStatus, options.message || 'CueVue cannot enumerate capture sources yet. Retry Detect will force a fresh scan.');
-      permissionRecoveryTimer = setInterval(async () => {
-        const scan = await queryCaptureSources(scene.type);
-        if (scene.type === 'device') await refreshDeviceDiagnostics({ ...scan.diagnostics, failure: scan.sources.length ? '' : scan.diagnostics.failure });
-        if (!scan.sources.length) return;
-        stopPermissionRecovery();
-        permissionPromptSceneId = '';
-        renderToolbar();
-        hideStatus(scene.type === 'device' ? deviceStatus : windowStatus);
-        if (scene.type === 'device') {
-          document.getElementById('selected-device-label').textContent = 'Permission is on. Reconnecting QuickTime capture...';
-          await recoverQuickTimeCapture();
-        } else {
-          await showScene(scene.id);
-        }
-      }, 1500);
+      showStatus(scene.type === 'device' ? deviceStatus : windowStatus, options.message || 'Capture is disconnected. Use the manual source picker when you are ready to reconnect.');
     }
 
-    async function queryCaptureSources(kind) {
+    async function queryCaptureSources(kind, options = {}) {
       let result = null;
       try {
-        result = await ipcRenderer.invoke('get-capture-sources', { reason: kind || 'manual' });
+        result = await ipcRenderer.invoke('get-capture-sources', {
+          reason: kind || 'manual',
+          userInitiated: Boolean(options.userInitiated)
+        });
       } catch (error) {
         result = {
           ok: false,
@@ -2144,7 +2156,7 @@
 
     async function detectQuickTimeSource(autoPick = true) {
       await refreshDeviceDiagnostics({ failure: '' });
-      const scan = await queryCaptureSources('device');
+      const scan = await queryCaptureSources('device', { userInitiated: true });
       updateDeviceDiagnostics(scan.diagnostics);
       if (!scan.ok) {
         showDeviceFallback();
@@ -2218,7 +2230,7 @@
       if (grid) grid.innerHTML = `<p class="muted">Scanning windows and screens...</p>`;
       let sources = [];
       try {
-        const scan = await queryCaptureSources(kind);
+        const scan = await queryCaptureSources(kind, { userInitiated: true });
         sources = scan.sources;
         if (kind === 'device') await refreshDeviceDiagnostics(scan.diagnostics);
         if (!scan.ok) {
@@ -2286,7 +2298,10 @@
       if (scene.id === activeId) {
         const video = kind === 'device' ? iphoneVideo : windowVideo;
         const status = kind === 'device' ? deviceStatus : windowStatus;
-        const connected = await startCapture(source, video, status);
+        const connected = await startCapture(source, video, status, {
+          adoptAsCurrent: true,
+          userInitiated: true
+        });
         if (kind === 'device' && !connected) return;
       }
       ipcRenderer.send('focus-main-window');
@@ -2327,13 +2342,17 @@
       showStatus(deviceStatus, `${msg} Use Retry Detect or choose a source from the list below.`);
       // Scan sources so the manual picker has fresh entries, but do NOT auto-start capture.
       try {
-        const scan = await queryCaptureSources('device');
+        let scan = { diagnostics: {} };
+        if (options.userInitiated) {
+          scan = await queryCaptureSources('device', { userInitiated: true });
+        }
         updateDeviceDiagnostics(scan.diagnostics);
       } catch (_) {}
       return false;
     }
 
     async function retryDeviceCaptureAfterBlackFrame(failedSource, video, statusEl, options = {}) {
+      if (options.passive) return false;
       if (options.blackFrameRecovery) return false;
       const scene = sceneById(activeId);
       if (!scene || scene.type !== 'device') return false;
@@ -2347,7 +2366,7 @@
       }
       scenePreviewCache.delete(scene.id);
       updateScenePreview(scene);
-      const scan = await queryCaptureSources('device');
+      const scan = await queryCaptureSources('device', { userInitiated: Boolean(options.userInitiated) });
       updateDeviceDiagnostics(scan.diagnostics);
       if (!scan.ok || !scan.sources.length) {
         return startFullscreenDeviceFallback(scan.ok
@@ -2436,7 +2455,7 @@
     }
 
     async function getOrderedSources(kind) {
-      const scan = await queryCaptureSources(kind);
+      const scan = await queryCaptureSources(kind, { userInitiated: true });
       if (kind === 'device') updateDeviceDiagnostics(scan.diagnostics);
       if (!scan.ok) throw new Error(scan.diagnostics.sourceScanError || 'Electron failed to enumerate capture sources.');
       return scan.sources;
@@ -2467,6 +2486,23 @@
       return 3;
     }
 
+    async function attachRememberedSource(scene, video, statusEl, options = {}) {
+      if (!scene || !scene.sourceId) {
+        if (statusEl) showStatus(statusEl, 'No saved capture source. Use the manual source picker to select one.');
+        return false;
+      }
+      const source = {
+        id: scene.sourceId,
+        name: scene.sourceName || 'Remembered source',
+        kind: String(scene.sourceId).startsWith('screen:') ? 'screen' : 'window',
+        thumbnail: ''
+      };
+      return startCapture(source, video, statusEl, {
+        passive: true,
+        ...options
+      });
+    }
+
     async function restoreCapture(scene, video, statusEl) {
       if (scene.type === 'device') await refreshDeviceDiagnostics({ failure: '' });
       if (scene.id === permissionPromptSceneId) {
@@ -2474,51 +2510,21 @@
         renderToolbar();
       }
       if (!scene.sourceId && !scene.sourceName) {
-        hideStatus(statusEl);
-        if (scene.type === 'device') await detectQuickTimeSource(true);
+        if (statusEl) showStatus(statusEl, scene.type === 'device'
+          ? 'No saved Mobile Device source. Open QuickTime manually, then choose the Movie Recording window.'
+          : 'No saved capture source. Choose a source in Scene Settings.');
         return;
       }
-      let sources = [];
-      try {
-        sources = await getOrderedSources(scene.type);
-      } catch (error) {
-        if (scene.type === 'device') {
-          updateDeviceDiagnostics({ failure: error.message || 'Electron failed to enumerate capture sources.' });
-          showDeviceFallback();
-          await startFullscreenDeviceFallback(`Source scan failed; using full-screen fallback. ${error.message || ''}`);
-        }
-        return;
-      }
-      const source = sources.find((item) => item.id === scene.sourceId)
-        || sources.find((item) => item.name === scene.sourceName)
-        || sources.find((item) => scene.sourceName && item.name.toLowerCase() === scene.sourceName.toLowerCase());
-      if (!source) {
-        if (scene.type === 'device') {
-          const staleSelection = scene.sourceName || scene.sourceId || '';
-          updateDeviceDiagnostics({
-            staleSource: Boolean(scene.sourceId || scene.sourceName),
-            selectedSource: staleSelection,
-            failure: 'Saved source is stale or no longer visible. CueVue cleared it and will look for QuickTime again.'
-          });
-          clearCaptureSource(scene);
-          showDeviceFallback();
-          await startFullscreenDeviceFallback('Saved mobile capture source disappeared; using full-screen fallback.');
-          return;
-        }
-        hideStatus(statusEl);
-        return;
-      }
-      if (scene.type === 'device' && source.id !== scene.sourceId) {
-        scene.sourceId = source.id;
-        saveScenes();
-        updateDeviceDiagnostics({ staleSource: true, selectedSource: `${source.name} [${source.id}]` });
-      }
-      await startCapture(source, video, statusEl);
+      await attachRememberedSource(scene, video, statusEl, {
+        adoptAsCurrent: true,
+        passive: true
+      });
     }
 
     async function startCapture(source, video, statusEl, options = {}) {
       try {
-        stopStream();
+        const adoptAsCurrent = options.adoptAsCurrent !== false;
+        if (adoptAsCurrent) stopStream();
         const isDeviceVideo = video === iphoneVideo;
         if (isDeviceVideo) updateDeviceDiagnostics({
           selectedSource: `${source.name} [${source.id}]`,
@@ -2545,7 +2551,8 @@
           audio: false,
           video: videoConstraints
         });
-        currentStream = stream;
+        if (adoptAsCurrent) currentStream = stream;
+        if (options.registerSplitStream) splitStreams.push(stream);
         video.srcObject = stream;
         const track = stream.getVideoTracks()[0];
         if (isDeviceVideo) updateDeviceDiagnostics({
@@ -2557,8 +2564,8 @@
         if (!track) throw new Error('Selected source returned no video track.');
         if (isDeviceVideo) {
           track.addEventListener('ended', () => {
-            updateDeviceDiagnostics({ videoTrack: false, playback: 'ended', failure: 'Capture track ended. Switching to full-screen fallback.' });
-            startFullscreenDeviceFallback('Capture track ended; using full-screen fallback.');
+            updateDeviceDiagnostics({ videoTrack: false, playback: 'ended', failure: 'Capture track ended. Reconnect manually when the source is available.' });
+            if (!options.passive) startFullscreenDeviceFallback('Capture track ended; using full-screen fallback.', options);
           }, { once: true });
         }
         try {
@@ -2584,7 +2591,7 @@
             }
           }, 250);
         });
-        hideStatus(statusEl);
+        if (statusEl) hideStatus(statusEl);
         if (isDeviceVideo) updateDeviceDiagnostics({
           videoDimensions: `${video.videoWidth} x ${video.videoHeight}`,
           playback: 'playing',
@@ -2616,16 +2623,9 @@
           if (age > 4000) {
             console.warn('[captureWatchdog] No frames for', age, 'ms — restarting capture');
             clearInterval(captureFrameWatchdog); captureFrameWatchdog = null;
-            // Re-fetch the source (window IDs can change between QuickTime refreshes)
             const scene = sceneById(activeId);
             if (scene && (scene.type === 'device' || scene.type === 'window')) {
-              const scan = await queryCaptureSources(scene.type).catch(() => null);
-              const fresh = scan && (
-                scan.sources.find(s => s.id === source.id) ||
-                scan.sources.find(s => s.name === source.name) ||
-                (scene.type === 'device' ? scan.sources.find(s => rankSource(s, 'device') <= 20) : null)
-              );
-              if (fresh) await startCapture(fresh, video, statusEl, options);
+              await startCapture(source, video, statusEl, { ...options, passive: true });
             }
           }
         }, 2000);
@@ -2634,7 +2634,7 @@
         return true;
       } catch (error) {
         console.error('[startCapture] getUserMedia failed:', error.name, error.message, error.constraint || '', error);
-        showStatus(statusEl, `Capture failed: ${error.message || 'Unable to start selected source.'}`);
+        if (statusEl) showStatus(statusEl, `Capture failed: ${error.message || 'Unable to start selected source.'}`);
         if (video === iphoneVideo) {
           const permission = await ipcRenderer.invoke('check-screen-permission').catch(() => 'unknown');
           updateDeviceDiagnostics({
@@ -2650,7 +2650,7 @@
             const recovered = await retryDeviceCaptureAfterBlackFrame(source, video, statusEl, options);
             if (recovered) return true;
           }
-          showDeviceFallback();
+          if (!options.passive) showDeviceFallback();
           if (/permission|denied|notallowed|not allowed/i.test(error.message || '')) {
             document.getElementById('selected-device-label').textContent = `Source capture failed: ${error.message || 'permission-related capture error'}. Choose another visible source below.`;
             updateDeviceDiagnostics({
@@ -2658,8 +2658,10 @@
               failure: `getUserMedia failed after source selection: ${error.message || 'permission-related capture error'}`
             });
           }
-          const recovered = await startFullscreenDeviceFallback(`Selected source failed; using full-screen fallback. ${error.message || ''}`, options);
-          if (recovered) return true;
+          if (!options.passive) {
+            const recovered = await startFullscreenDeviceFallback(`Selected source failed; using full-screen fallback. ${error.message || ''}`, options);
+            if (recovered) return true;
+          }
         }
         return false;
       }
@@ -2935,16 +2937,15 @@
     document.getElementById('retry-device-button').addEventListener('click', async () => {
       stopQuickTimeDetection();
       setQuickTimeStep('recording', 'active');
-      document.getElementById('selected-device-label').textContent = 'Retrying QuickTime Movie Recording detection...';
-      const scene = sceneById(activeId);
-      if (scene && scene.type === 'device') {
-        clearCaptureSource(scene);
-        await recoverQuickTimeCapture();
-        return;
-      }
-      await detectQuickTimeSource(true);
+      document.getElementById('selected-device-label').textContent = 'Scanning windows and screens after manual Retry Detect.';
+      document.getElementById('device-fallback').classList.add('open');
+      await scanSources('device', false, true);
     });
-    document.getElementById('manual-device-button').addEventListener('click', showDeviceFallback);
+    document.getElementById('manual-device-button').addEventListener('click', async () => {
+      document.getElementById('device-fallback').classList.add('open');
+      document.getElementById('selected-device-label').textContent = 'Choose the QuickTime Movie Recording window, or another visible source.';
+      await scanSources('device', false, true);
+    });
     document.getElementById('quicktime-help-button').addEventListener('click', () => ipcRenderer.send('open-url', 'https://support.apple.com/guide/quicktime-player/welcome/mac'));
     document.getElementById('import-slides-button').addEventListener('click', importSlides);
 

@@ -230,6 +230,33 @@ function cloneJson(value) {
   return JSON.parse(JSON.stringify(value || null));
 }
 
+function notesSlideItems(context = {}) {
+  const slidePaths = Array.isArray(context.slidePaths) ? context.slidePaths : [];
+  const rendererItems = Array.isArray(context.slideItems) ? context.slideItems : [];
+  return slidePaths.map((slidePath, index) => {
+    const rendererItem = rendererItems[index] || {};
+    let url = rendererItem.url || '';
+    if (slidePath && fs.existsSync(slidePath)) {
+      try {
+        url = `data:${fileMimeType(slidePath)};base64,${fs.readFileSync(slidePath).toString('base64')}`;
+      } catch (_) {}
+    }
+    return {
+      path: slidePath,
+      url,
+      name: rendererItem.name || path.basename(slidePath || '') || `Slide ${index + 1}`
+    };
+  });
+}
+
+function normalizeNotesContext(context = {}) {
+  if (!context || context.type !== 'slides') return context || null;
+  return {
+    ...context,
+    slideItems: notesSlideItems(context)
+  };
+}
+
 function sceneAssetEntries(scenes = []) {
   const entries = [];
   scenes.forEach((scene, sceneIndex) => {
@@ -411,9 +438,19 @@ function notesWindowHtml() {
     .subtitle { display: none; }
     .slides { position: relative; z-index: 1; display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 0 8px; }
     .slides.open { display: grid; }
+    .slide-tools { position: relative; z-index: 1; display: none; gap: 8px; padding: 0 0 8px; }
+    .slide-tools.open { display: grid; }
+    .slide-tools button { min-height: 30px; border: 1px solid rgba(92, 76, 59, .35); border-radius: 7px; color: #2d2922; background: rgba(255,255,255,.34); font-weight: 900; }
     .slide-card { display: grid; gap: 4px; min-width: 0; color: #655447; font-size: 11px; font-weight: 800; text-align: center; }
     .slide-card.current { color: #23456f; }
     .slide-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid rgba(92, 76, 59, .28); border-radius: 5px; background: rgba(255,255,255,.45); }
+    .picker { position: fixed; inset: 12px; z-index: 4; display: none; grid-template-rows: auto 1fr; gap: 10px; padding: 12px; border: 1px solid rgba(92, 76, 59, .35); border-radius: 10px; background: #fbf2cf; box-shadow: 0 18px 60px rgba(0,0,0,.35); }
+    .picker.open { display: grid; }
+    .picker-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 900; }
+    .picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; overflow: auto; }
+    .picker-slide { display: grid; gap: 5px; min-width: 0; padding: 6px; border: 1px solid rgba(92, 76, 59, .24); border-radius: 7px; color: #2d2922; background: rgba(255,255,255,.32); font-size: 11px; font-weight: 900; text-align: center; }
+    .picker-slide.current { border-color: #23456f; background: rgba(35,69,111,.14); }
+    .picker-slide img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 5px; background: rgba(255,255,255,.45); }
     textarea { position: relative; z-index: 1; width: 100%; height: 100%; resize: none; border: 0; outline: 0; padding: 12px 2px 4px 0; color: #2b261f; background: transparent; font: 16px/30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     .empty-thumb { display: grid; place-items: center; width: 100%; aspect-ratio: 16 / 9; border: 1px dashed rgba(92, 76, 59, .28); border-radius: 5px; background: rgba(255,255,255,.25); }
   </style>
@@ -425,7 +462,12 @@ function notesWindowHtml() {
       <div id="subtitle" class="subtitle">No scene selected</div>
     </div>
     <div id="slides" class="slides"></div>
+    <div id="slideTools" class="slide-tools"><button id="selectSlide" type="button">Select Slide</button></div>
     <textarea id="notes" spellcheck="true" placeholder=""></textarea>
+    <div id="picker" class="picker">
+      <div class="picker-head"><span>Select Slide</span><button id="closePicker" type="button">Close</button></div>
+      <div id="pickerGrid" class="picker-grid"></div>
+    </div>
   </div>
   <script>
     const { ipcRenderer, fileUrl: cuevueFileUrl } = window.cuevue;
@@ -435,34 +477,70 @@ function notesWindowHtml() {
     const subtitle = document.getElementById('subtitle');
     const notes = document.getElementById('notes');
     const slides = document.getElementById('slides');
+    const slideTools = document.getElementById('slideTools');
+    const selectSlide = document.getElementById('selectSlide');
+    const picker = document.getElementById('picker');
+    const pickerGrid = document.getElementById('pickerGrid');
+    const closePicker = document.getElementById('closePicker');
+    let currentContext = null;
 
-    function fileUrl(filePath) {
-      return cuevueFileUrl(filePath);
+    function slideItems(context) {
+      if (Array.isArray(context.slideItems) && context.slideItems.length) return context.slideItems;
+      return Array.isArray(context.slidePaths)
+        ? context.slidePaths.map((path, index) => ({ path, url: cuevueFileUrl(path), name: 'Slide ' + (index + 1) }))
+        : [];
+    }
+
+    function itemUrl(item) {
+      return item && item.url ? item.url : cuevueFileUrl(item && item.path);
     }
 
     function renderSlides(context) {
       slides.innerHTML = '';
-      if (!context || context.type !== 'slides' || !Array.isArray(context.slidePaths) || !context.slidePaths.length) {
+      const items = context && context.type === 'slides' ? slideItems(context) : [];
+      if (!context || context.type !== 'slides' || !items.length) {
         slides.classList.remove('open');
+        slideTools.classList.remove('open');
+        picker.classList.remove('open');
         return;
       }
       slides.classList.add('open');
+      slideTools.classList.add('open');
       const index = Number(context.slideIndex) || 0;
       [
-        { label: 'Previous', path: context.slidePaths[index - 1], cls: '' },
-        { label: 'Current', path: context.slidePaths[index], cls: 'current' },
-        { label: 'Next', path: context.slidePaths[index + 1], cls: '' }
+        { label: 'Previous', item: items[index - 1], cls: '' },
+        { label: 'Current', item: items[index], cls: 'current' },
+        { label: 'Next', item: items[index + 1], cls: '' }
       ].forEach((item) => {
         const card = document.createElement('div');
         card.className = 'slide-card ' + item.cls;
-        card.innerHTML = item.path
-          ? '<img src="' + fileUrl(item.path) + '" alt=""><span>' + item.label + '</span>'
+        card.innerHTML = item.item
+          ? '<img src="' + itemUrl(item.item) + '" alt=""><span>' + item.label + '</span>'
           : '<div class="empty-thumb">-</div><span>' + item.label + '</span>';
         slides.appendChild(card);
+      });
+      renderPicker(context);
+    }
+
+    function renderPicker(context) {
+      pickerGrid.innerHTML = '';
+      const items = slideItems(context);
+      const index = Number(context.slideIndex) || 0;
+      items.forEach((item, slideIndex) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'picker-slide' + (slideIndex === index ? ' current' : '');
+        button.innerHTML = '<img src="' + itemUrl(item) + '" alt=""><span>' + (item.name || ('Slide ' + (slideIndex + 1))) + '</span>';
+        button.addEventListener('click', () => {
+          ipcRenderer.send('notes-select-slide', { sceneId: context.sceneId, slideIndex });
+          picker.classList.remove('open');
+        });
+        pickerGrid.appendChild(button);
       });
     }
 
     async function loadContext(context) {
+      currentContext = context;
       currentKey = context.noteKey || '';
       title.textContent = context.title || 'CueVue Notes';
       subtitle.textContent = context.subtitle || '';
@@ -479,6 +557,12 @@ function notesWindowHtml() {
     });
 
     ipcRenderer.on('notes-context', (_, context) => loadContext(context || {}));
+    selectSlide.addEventListener('click', () => {
+      if (!currentContext || currentContext.type !== 'slides') return;
+      renderPicker(currentContext);
+      picker.classList.add('open');
+    });
+    closePicker.addEventListener('click', () => picker.classList.remove('open'));
     ipcRenderer.send('notes-ready');
   </script>
 </body>
@@ -536,43 +620,26 @@ function createNotesWindow() {
 }
 
 function openMacApp(appName) {
-  if (!appName) return;
-  execFile('open', ['-a', appName], () => {});
+  // Disabled during prompt-free development to avoid native helper/process permission churn.
 }
 
 function openMacAppAsync(appName) {
-  return new Promise((resolve) => {
-    if (!appName) {
-      resolve(false);
-      return;
-    }
-    execFile('open', ['-a', appName], (error) => {
-      resolve(!error);
-    });
-  });
+  return Promise.resolve(false);
 }
 
 function runAppleScript(script) {
-  execFile('osascript', ['-e', script], () => {});
+  // Disabled during prompt-free development.
 }
 
 function runAppleScriptAsync(script) {
-  return new Promise((resolve) => {
-    execFile('osascript', ['-e', script], (error) => {
-      resolve(!error);
-    });
-  });
+  return Promise.resolve(false);
 }
 
 function runAppleScriptWithResult(script) {
-  return new Promise((resolve) => {
-    execFile('osascript', ['-e', script], { timeout: 120000 }, (error, stdout, stderr) => {
-      resolve({
-        ok: !error,
-        stdout: stdout || '',
-        stderr: stderr || (error ? error.message : '')
-      });
-    });
+  return Promise.resolve({
+    ok: false,
+    stdout: '',
+    stderr: 'macOS automation is disabled in prompt-free development mode.'
   });
 }
 
@@ -817,7 +884,7 @@ ipcMain.on('focus-main-window', () => {
 });
 
 ipcMain.on('notes-context', (_, context) => {
-  lastNotesContext = context || null;
+  lastNotesContext = normalizeNotesContext(context || null);
   if (notesWindow && !notesWindow.isDestroyed() && lastNotesContext) {
     notesWindow.setAlwaysOnTop(true, 'screen-saver');
     notesWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -903,83 +970,43 @@ ipcMain.handle('workspace-open', async (_, requestedPath) => {
 });
 
 ipcMain.on('launch-quicktime', () => {
-  openMacApp('QuickTime Player');
+  // Disabled during prompt-free development: launching native apps can trigger macOS authorization churn.
 });
 
 ipcMain.handle('quicktime-new-movie-recording', async () => {
-  const opened = await openMacAppAsync('QuickTime Player');
-  if (!opened) {
-    return {
-      ok: false,
-      message: 'QuickTime Player was not found. Install or restore QuickTime Player, then refresh device windows.'
-    };
-  }
-
-  setTimeout(() => {
-    runAppleScriptAsync('tell application "QuickTime Player" to activate\ntell application "System Events" to keystroke escape\ntell application "System Events" to keystroke "n" using {option down, command down}');
-  }, 900);
-
   return {
-    ok: true,
-    message: 'QuickTime opened. New Movie Recording was requested; refresh if the window does not appear.'
+    ok: false,
+    message: 'QuickTime automation is disabled in this development build to avoid macOS authorization prompts. Open QuickTime manually only when capture testing is explicitly requested.'
   };
 });
 
 ipcMain.handle('quicktime-status', async () => {
-  if (process.platform !== 'darwin') {
-    return { ok: true, running: false, windows: [], movieRecording: false };
-  }
-  try {
-    const script = [
-      'tell application "System Events"',
-      'if not (exists process "QuickTime Player") then return "NOT_RUNNING"',
-      'set windowNames to {}',
-      'tell process "QuickTime Player"',
-      'repeat with appWindow in windows',
-      'set end of windowNames to name of appWindow',
-      'end repeat',
-      'end tell',
-      'set AppleScript\'s text item delimiters to linefeed',
-      'set joinedNames to windowNames as text',
-      'set AppleScript\'s text item delimiters to ""',
-      'return joinedNames',
-      'end tell'
-    ].join('\n');
-    const output = await runAppleScriptAsync(script);
-    const raw = String(output || '').trim();
-    if (raw === 'NOT_RUNNING') return { ok: true, running: false, windows: [], movieRecording: false };
-    const windows = raw ? raw.split(/\r?\n/).map((name) => name.trim()).filter(Boolean) : [];
-    return {
-      ok: true,
-      running: true,
-      windows,
-      movieRecording: windows.some((name) => /movie recording|quicktime|iphone|ipad/i.test(name))
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      running: false,
-      windows: [],
-      movieRecording: false,
-      message: error.message || 'Unable to inspect QuickTime windows.'
-    };
-  }
+  return {
+    ok: false,
+    running: false,
+    windows: [],
+    movieRecording: false,
+    message: 'QuickTime status probing is disabled to avoid macOS automation authorization prompts.'
+  };
 });
 
 ipcMain.on('minimize-quicktime', () => {
-  runAppleScript('tell application "System Events" to tell process "QuickTime Player" to set miniaturized of windows to true');
+  // Disabled during prompt-free development.
 });
 
 function screenPermissionStatus() {
-  if (process.platform !== 'darwin') return 'granted';
-  try {
-    return systemPreferences.getMediaAccessStatus('screen');
-  } catch (_) {
-    return 'unknown';
-  }
+  return 'not-probed';
 }
 
-async function enumerateCaptureSources() {
+async function enumerateCaptureSources(options = {}) {
+  if (!options.userInitiated) {
+    return {
+      ok: false,
+      permission: 'not-probed',
+      error: 'Capture source enumeration is only available after an explicit user action.',
+      sources: []
+    };
+  }
   const permission = screenPermissionStatus();
   try {
     const sources = await desktopCapturer.getSources({
@@ -1007,10 +1034,10 @@ async function enumerateCaptureSources() {
   }
 }
 
-ipcMain.handle('get-capture-sources', async () => enumerateCaptureSources());
+ipcMain.handle('get-capture-sources', async (_, options = {}) => enumerateCaptureSources(options));
 
 ipcMain.handle('get-sources', async () => {
-  const result = await enumerateCaptureSources();
+  const result = await enumerateCaptureSources({ userInitiated: true });
   if (!result.ok) throw new Error(result.error || 'Unable to list capture sources.');
   return result.sources;
 });

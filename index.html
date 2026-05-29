@@ -2842,7 +2842,7 @@
           audio: false,
           video: videoConstraints
         });
-        if (isDeviceVideo && !options.silent) {
+        if (isDeviceVideo) {
           mobileStream = stream;
           mobileStreamSource = { id: source.id, name: source.name };
         } else {
@@ -2951,7 +2951,7 @@
           mobileStream = null;
           mobileStreamSource = null;
         }
-        if (isDeviceVideo && !options.silent) {
+        if (isDeviceVideo) {
           const permission = await ipcRenderer.invoke('check-screen-permission').catch(() => 'unknown');
           updateDeviceDiagnostics({
             permission,

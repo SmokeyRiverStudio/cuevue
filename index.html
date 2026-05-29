@@ -490,7 +490,7 @@
               </label>
               <div class="settings-grid">
                 <section class="settings-card">
-                  <div class="card-title">Left / Main Source</div>
+                  <div class="card-title">Source 1</div>
                   <label>Source type
                     <select id="edit-split-a-type">
                       <option value="url">URL / Live Site</option>
@@ -500,10 +500,31 @@
                       <option value="webcam">Webcam</option>
                     </select>
                   </label>
-                  <label>URL (if URL type) <input id="edit-split-a-url" type="url" spellcheck="false" placeholder="https://"></label>
+                  <div class="split-source-panel" data-split-pane="a" data-source-panel="url">
+                    <label>URL <input id="edit-split-a-url" type="url" spellcheck="false" placeholder="https://"></label>
+                    <label>Username <input id="edit-split-a-username" type="text" spellcheck="false" placeholder="Username placeholder"></label>
+                    <label>Password <input id="edit-split-a-password" type="password" placeholder="Password placeholder"></label>
+                    <label class="flow-visibility-toggle"><input id="edit-split-a-reload" type="checkbox"> Reload on activate</label>
+                  </div>
+                  <div class="split-source-panel" data-split-pane="a" data-source-panel="device">
+                    <div class="device-actions">
+                      <button id="edit-split-a-retry" type="button">Retry Detect</button>
+                      <button id="edit-split-a-window" type="button">Choose Window</button>
+                    </div>
+                    <label class="flow-visibility-toggle"><input id="edit-split-a-mirror" type="checkbox"> Mirror</label>
+                    <label>Rotate
+                      <select id="edit-split-a-rotate">
+                        <option value="0">0°</option>
+                        <option value="90">90°</option>
+                        <option value="180">180°</option>
+                        <option value="270">270°</option>
+                      </select>
+                    </label>
+                    <p class="muted">Uses the saved Mobile Device source and existing device reconnect controls.</p>
+                  </div>
                 </section>
                 <section class="settings-card">
-                  <div class="card-title">Right / Overlay Source</div>
+                  <div class="card-title">Source 2</div>
                   <label>Source type
                     <select id="edit-split-b-type">
                       <option value="device">Mobile Device</option>
@@ -513,7 +534,28 @@
                       <option value="webcam">Webcam</option>
                     </select>
                   </label>
-                  <label>URL (if URL type) <input id="edit-split-b-url" type="url" spellcheck="false" placeholder="https://"></label>
+                  <div class="split-source-panel" data-split-pane="b" data-source-panel="url">
+                    <label>URL <input id="edit-split-b-url" type="url" spellcheck="false" placeholder="https://"></label>
+                    <label>Username <input id="edit-split-b-username" type="text" spellcheck="false" placeholder="Username placeholder"></label>
+                    <label>Password <input id="edit-split-b-password" type="password" placeholder="Password placeholder"></label>
+                    <label class="flow-visibility-toggle"><input id="edit-split-b-reload" type="checkbox"> Reload on activate</label>
+                  </div>
+                  <div class="split-source-panel" data-split-pane="b" data-source-panel="device">
+                    <div class="device-actions">
+                      <button id="edit-split-b-retry" type="button">Retry Detect</button>
+                      <button id="edit-split-b-window" type="button">Choose Window</button>
+                    </div>
+                    <label class="flow-visibility-toggle"><input id="edit-split-b-mirror" type="checkbox"> Mirror</label>
+                    <label>Rotate
+                      <select id="edit-split-b-rotate">
+                        <option value="0">0°</option>
+                        <option value="90">90°</option>
+                        <option value="180">180°</option>
+                        <option value="270">270°</option>
+                      </select>
+                    </label>
+                    <p class="muted">Uses the saved Mobile Device source and existing device reconnect controls.</p>
+                  </div>
                 </section>
               </div>
               <p class="muted" style="margin-top:8px">Drag the divider bar in the live scene to resize panels. Device and Window sources use saved capture selections from their own scenes.</p>
@@ -962,7 +1004,15 @@
 
     function normalizeSplitSource(src) {
       const type = ['url', 'device', 'window', 'flow', 'webcam'].includes(src && src.type) ? src.type : 'url';
-      return { type, url: (src && src.url) || '', sourceId: (src && src.sourceId) || '', sourceName: (src && src.sourceName) || '' };
+      return {
+        type,
+        url: (src && src.url) || '',
+        reloadOnActivate: Boolean(src && src.reloadOnActivate),
+        mirror: Boolean(src && src.mirror),
+        rotate: ['0', '90', '180', '270'].includes(String(src && src.rotate)) ? String(src.rotate) : '0',
+        sourceId: (src && src.sourceId) || '',
+        sourceName: (src && src.sourceName) || ''
+      };
     }
 
     function normalizeSplitSources(sources) {
@@ -1195,14 +1245,22 @@
 
     function getSplitUrlWebview(scene, pane) {
       const key = `${scene.id}-${pane}`;
-      if (splitUrlWebviews.has(key)) return splitUrlWebviews.get(key);
       const source = scene.sources[pane === 'a' ? 0 : 1];
-      const wv = document.createElement('webview');
-      wv.setAttribute('partition', `persist:cuevue-split-${scene.id}-${pane}`);
-      wv.setAttribute('allowpopups', '');
-      wv.setAttribute('webpreferences', 'contextIsolation=yes,nodeIntegration=no,sandbox=yes');
-      splitUrlWebviews.set(key, wv);
-      if (source.url) wv.setAttribute('src', normalizeSceneUrl(source.url));
+      const targetUrl = normalizeSceneUrl(source && source.url);
+      let wv = splitUrlWebviews.get(key);
+      if (!wv) {
+        wv = document.createElement('webview');
+        wv.setAttribute('partition', `persist:cuevue-split-${scene.id}-${pane}`);
+        wv.setAttribute('allowpopups', '');
+        wv.setAttribute('webpreferences', 'contextIsolation=yes,nodeIntegration=no,sandbox=yes');
+        splitUrlWebviews.set(key, wv);
+      }
+      const currentUrl = wv.getAttribute('src') || '';
+      if (targetUrl && currentUrl !== targetUrl) {
+        wv.setAttribute('src', targetUrl);
+      } else if (targetUrl && source && source.reloadOnActivate && wv.isConnected) {
+        try { wv.reload(); } catch (_) {}
+      }
       return wv;
     }
 
@@ -1309,6 +1367,10 @@
         bezel.className = 'bezel';
         bezel.style.cssText = 'width:min(280px,36vh);';
         video.style.cssText = 'width:100%;height:100%;object-fit:cover;background:#000;';
+        const transforms = [];
+        if (source.mirror) transforms.push('scaleX(-1)');
+        if (Number(source.rotate)) transforms.push(`rotate(${Number(source.rotate)}deg)`);
+        video.style.transform = transforms.join(' ');
         bezel.appendChild(video);
         videoContainer.appendChild(bezel);
       } else {
@@ -2000,8 +2062,15 @@
         document.getElementById('edit-split-layout').value = scene.layout || 'horizontal';
         document.getElementById('edit-split-a-type').value = src[0].type;
         document.getElementById('edit-split-a-url').value = src[0].url || '';
+        document.getElementById('edit-split-a-reload').checked = src[0].reloadOnActivate;
+        document.getElementById('edit-split-a-mirror').checked = src[0].mirror;
+        document.getElementById('edit-split-a-rotate').value = src[0].rotate || '0';
         document.getElementById('edit-split-b-type').value = src[1].type;
         document.getElementById('edit-split-b-url').value = src[1].url || '';
+        document.getElementById('edit-split-b-reload').checked = src[1].reloadOnActivate;
+        document.getElementById('edit-split-b-mirror').checked = src[1].mirror;
+        document.getElementById('edit-split-b-rotate').value = src[1].rotate || '0';
+        syncSplitSourcePanels();
       }
     }
 
@@ -2029,6 +2098,40 @@
       document.querySelectorAll('.type-panel').forEach((panel) => panel.classList.remove('active'));
       const panel = document.getElementById(`panel-${editType.value}`);
       if (panel) panel.classList.add('active');
+      if (editType.value === 'split') syncSplitSourcePanels();
+    }
+
+    function syncSplitSourcePanels() {
+      ['a', 'b'].forEach((pane) => {
+        const typeSelect = document.getElementById(`edit-split-${pane}-type`);
+        if (!typeSelect) return;
+        document.querySelectorAll(`.split-source-panel[data-split-pane="${pane}"]`).forEach((panel) => {
+          panel.hidden = panel.dataset.sourcePanel !== typeSelect.value;
+        });
+      });
+    }
+
+    async function retrySplitDeviceSource() {
+      const splitId = editingId;
+      const previousActiveId = activeId;
+      const deviceScene = scenes.find((scene) => scene.type === 'device');
+      if (!deviceScene) return;
+      editingId = deviceScene.id;
+      activeId = deviceScene.id;
+      try {
+        await recoverQuickTimeCapture();
+      } finally {
+        editingId = splitId;
+        activeId = previousActiveId;
+        if (sceneById(previousActiveId) && sceneById(previousActiveId).type === 'split') {
+          showScene(previousActiveId);
+        }
+      }
+    }
+
+    function openSplitDeviceEditor() {
+      const deviceScene = scenes.find((scene) => scene.type === 'device');
+      if (deviceScene) openEditor(deviceScene.id);
     }
 
     async function saveEditor() {
@@ -2081,12 +2184,18 @@
           {
             type: document.getElementById('edit-split-a-type').value,
             url: normalizeSceneUrl(document.getElementById('edit-split-a-url').value),
+            reloadOnActivate: document.getElementById('edit-split-a-reload').checked,
+            mirror: document.getElementById('edit-split-a-mirror').checked,
+            rotate: document.getElementById('edit-split-a-rotate').value,
             sourceId: prevSources[0].sourceId,
             sourceName: prevSources[0].sourceName
           },
           {
             type: document.getElementById('edit-split-b-type').value,
             url: normalizeSceneUrl(document.getElementById('edit-split-b-url').value),
+            reloadOnActivate: document.getElementById('edit-split-b-reload').checked,
+            mirror: document.getElementById('edit-split-b-mirror').checked,
+            rotate: document.getElementById('edit-split-b-rotate').value,
             sourceId: prevSources[1].sourceId,
             sourceName: prevSources[1].sourceName
           }
@@ -3003,8 +3112,9 @@
       const layer = document.getElementById('cameo-layer');
       const video = document.getElementById('cameo-video');
       if (cameoStream) {
-        cameoStream.getTracks().forEach((t) => t.stop());
+        const stream = cameoStream;
         cameoStream = null;
+        if (stream && typeof stream.getTracks === 'function') stream.getTracks().forEach((t) => t.stop());
         video.srcObject = null;
         layer.classList.remove('active');
         renderToolbar();
@@ -3014,17 +3124,21 @@
         const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
         const videoDev = devices.find((d) => d.kind === 'videoinput');
         if (!videoDev) throw new Error('No camera found. Check System Settings → Privacy → Camera.');
-        cameoStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: videoDev.deviceId }, audio: false });
-        video.srcObject = cameoStream;
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: videoDev.deviceId }, audio: false });
+        cameoStream = stream;
+        video.srcObject = stream;
         await video.play().catch(() => {});
-        if (video.readyState >= 2 || cameoStream.getVideoTracks().length) {
+        const tracks = stream && typeof stream.getVideoTracks === 'function' ? stream.getVideoTracks() : [];
+        if (video.readyState >= 2 || tracks.length) {
           layer.classList.add('active');
         } else {
           throw new Error('Camera stream started but produced no video.');
         }
       } catch (err) {
         console.error('[Cameo]', err.message);
-        if (cameoStream) { cameoStream.getTracks().forEach((t) => t.stop()); cameoStream = null; }
+        const stream = cameoStream;
+        cameoStream = null;
+        if (stream && typeof stream.getTracks === 'function') stream.getTracks().forEach((t) => t.stop());
         video.srcObject = null;
         // Show brief passive error inside the cameo layer so user sees why it failed
         layer.classList.add('active');
@@ -3286,6 +3400,12 @@
       toggleFlowImpact(Number(row.dataset.flowTopicIndex));
     });
     editType.addEventListener('change', syncTypePanels);
+    document.getElementById('edit-split-a-type').addEventListener('change', syncSplitSourcePanels);
+    document.getElementById('edit-split-b-type').addEventListener('change', syncSplitSourcePanels);
+    document.getElementById('edit-split-a-retry').addEventListener('click', retrySplitDeviceSource);
+    document.getElementById('edit-split-b-retry').addEventListener('click', retrySplitDeviceSource);
+    document.getElementById('edit-split-a-window').addEventListener('click', openSplitDeviceEditor);
+    document.getElementById('edit-split-b-window').addEventListener('click', openSplitDeviceEditor);
     document.getElementById('choose-bg-button').addEventListener('click', chooseBackground);
     document.getElementById('choose-bg-all-button').addEventListener('click', chooseBackgroundAll);
     document.getElementById('flow-logo-left-button').addEventListener('click', () => chooseFlowLogo('left'));

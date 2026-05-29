@@ -1057,16 +1057,20 @@ function screenPermissionStatus() {
 async function enumerateCaptureSources() {
   const permission = screenPermissionStatus();
   let lastError = null;
+  const captureConfigs = [
+    { thumbnailSize: { width: 320, height: 180 }, fetchWindowIcons: false },
+    { thumbnailSize: { width: 80, height: 45 }, fetchWindowIcons: false },
+    { thumbnailSize: { width: 0, height: 0 }, fetchWindowIcons: false }
+  ];
   // Retry up to 3 times — desktopCapturer.getSources() can transiently fail
   // on first call after macOS sleep/wake or session startup before Screen
   // Recording permission has been fully activated by the OS.
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < captureConfigs.length; attempt++) {
     if (attempt > 0) await new Promise((r) => setTimeout(r, 600));
     try {
       const sources = await desktopCapturer.getSources({
         types: ['window', 'screen'],
-        thumbnailSize: { width: 320, height: 180 },
-        fetchWindowIcons: false
+        ...captureConfigs[attempt]
       });
       return {
         ok: true,
@@ -1076,7 +1080,7 @@ async function enumerateCaptureSources() {
           id: source.id,
           name: source.name,
           kind: source.id.startsWith('screen:') ? 'screen' : 'window',
-          thumbnail: source.thumbnail.toDataURL()
+          thumbnail: source.thumbnail && source.thumbnail.toDataURL ? source.thumbnail.toDataURL() : ''
         }))
       };
     } catch (error) {

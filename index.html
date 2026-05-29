@@ -143,7 +143,7 @@
     .device-check.fail { color: #ff8f8f; }
     .device-fallback { display: none; gap: 10px; }
     .device-fallback.open { display: grid; }
-    .device-diagnostics { position: absolute; right: 18px; bottom: 18px; z-index: 8; width: min(520px, calc(100% - 36px)); max-height: 42vh; overflow: auto; padding: 12px; border: 1px solid rgba(99, 161, 255, .45); border-radius: 8px; background: rgba(8, 12, 17, .86); color: #dce5ef; font-size: 12px; line-height: 1.35; }
+    .device-diagnostics { display: none !important; position: absolute; right: 18px; bottom: 18px; z-index: 8; width: min(520px, calc(100% - 36px)); max-height: 42vh; overflow: auto; padding: 12px; border: 1px solid rgba(99, 161, 255, .45); border-radius: 8px; background: rgba(8, 12, 17, .86); color: #dce5ef; font-size: 12px; line-height: 1.35; }
     .device-diagnostics.hidden { display: none; }
     .device-diagnostics h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; color: #8fc1ff; }
     .device-diagnostics dl { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(0, 1fr); gap: 5px 10px; margin: 0; }
@@ -211,10 +211,14 @@
     /* Cameo shape variants */
     .cameo-layer.shape-circle { border-radius: 50%; }
     .cameo-layer.shape-circle .cameo-content { border-radius: 50%; }
+    .cameo-layer.shape-rectangle { border-radius: 8px; }
+    .cameo-layer.shape-rectangle .cameo-content { border-radius: 6px; }
     .cameo-layer.shape-square .cameo-content { border-radius: 4px; }
     .cameo-layer.shape-cutout { border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
     .cameo-layer.shape-cutout .cameo-content { border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
     .cameo-layer.mirrored video { transform: scaleX(-1); }
+    .cameo-cutout-note { display: none; color: #9aa6b5; font-size: 12px; line-height: 1.35; }
+    .cameo-cutout-note.open { display: block; }
   </style>
 </head>
 <body>
@@ -551,13 +555,6 @@
             </select>
           </label>
         </section>
-        <!-- Status elements kept hidden in DOM — JS uses these IDs throughout -->
-        <div style="display:none" aria-hidden="true">
-          <div id="selected-window-label"></div>
-          <div id="selected-device-label"></div>
-          <div id="selected-slides-label"></div>
-          <div id="credential-status"></div>
-        </div>
         <section class="settings-card">
           <div>
             <div class="card-title">Workspace</div>
@@ -601,9 +598,11 @@
             <select id="cameo-shape-select">
               <option value="circle">Circle bubble</option>
               <option value="square">Square</option>
+              <option value="rectangle">Rectangle</option>
               <option value="cutout">Presenter cutout</option>
             </select>
           </label>
+          <p id="cameo-cutout-note" class="cameo-cutout-note">Presenter Cutout is prepared for background segmentation. Full person-only cutout requires a segmentation model; current fallback keeps the live camera feed in a presenter-shaped frame.</p>
           <label>Size
             <select id="cameo-size-select">
               <option value="small">Small</option>
@@ -619,6 +618,7 @@
           </label>
           <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
             <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cameo-mirror-toggle"> Mirror</label>
+            <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cameo-flip-toggle"> Flip horizontal</label>
             <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cameo-border-toggle"> Border</label>
             <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cameo-shadow-toggle" checked> Shadow</label>
           </div>
@@ -639,6 +639,14 @@
 
   <script>
     const { ipcRenderer, fileUrl: cuevueFileUrl } = window.cuevue;
+
+    ['selected-window-label', 'selected-device-label', 'selected-slides-label', 'credential-status'].forEach((id) => {
+      if (document.getElementById(id)) return;
+      const element = document.createElement('div');
+      element.id = id;
+      element.hidden = true;
+      document.body.appendChild(element);
+    });
 
     const STORAGE_KEY = 'cuevue_scenes_v2';
     const SETTINGS_KEY = 'cuevue_global_settings_v1';
@@ -711,6 +719,8 @@
     let splitDragStartX = 0, splitDragStartY = 0, splitDragStartRatio = 0.5;
     // ── Cameo state ───────────────────────────────────────────────
     let cameoStream = null;
+    let mobileStream = null;
+    let mobileStreamSource = null;
 
     const toolbar = document.getElementById('toolbar');
     const urlScene = document.getElementById('scene-url');
@@ -772,10 +782,10 @@
       const content = layer.querySelector('.cameo-content');
 
       // Shape
-      layer.classList.remove('shape-circle', 'shape-square', 'shape-cutout');
+      layer.classList.remove('shape-circle', 'shape-square', 'shape-rectangle', 'shape-cutout');
       layer.classList.add(`shape-${s.shape || 'circle'}`);
       // Mirror
-      layer.classList.toggle('mirrored', Boolean(s.mirror));
+      layer.classList.toggle('mirrored', Boolean(s.mirror || s.flip));
       // Border
       layer.style.borderColor = s.border ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.22)';
       layer.style.borderWidth = s.border ? '3px' : '2px';
@@ -793,6 +803,8 @@
           content.style.webkitMaskImage = '';
         }
       }
+      const cutoutNote = document.getElementById('cameo-cutout-note');
+      if (cutoutNote) cutoutNote.classList.toggle('open', (s.shape || 'circle') === 'cutout');
     }
 
     function applyCameoState() {
@@ -854,6 +866,7 @@
       const featherEl = document.getElementById('cameo-feather-slider');
       const featherVal = document.getElementById('cameo-feather-value');
       const mirrorEl = document.getElementById('cameo-mirror-toggle');
+      const flipEl = document.getElementById('cameo-flip-toggle');
       const borderEl = document.getElementById('cameo-border-toggle');
       const shadowEl = document.getElementById('cameo-shadow-toggle');
       if (shapeEl) shapeEl.value = s.shape || 'circle';
@@ -861,6 +874,7 @@
       if (opacityEl) { opacityEl.value = s.opacity ?? 100; if (opacityVal) opacityVal.textContent = s.opacity ?? 100; }
       if (featherEl) { featherEl.value = s.feather ?? 0; if (featherVal) featherVal.textContent = s.feather ?? 0; }
       if (mirrorEl) mirrorEl.checked = Boolean(s.mirror);
+      if (flipEl) flipEl.checked = Boolean(s.flip);
       if (borderEl) borderEl.checked = Boolean(s.border);
       if (shadowEl) shadowEl.checked = s.shadow !== false;
     }
@@ -1303,18 +1317,26 @@
       }
 
       try {
-        const scan = await queryCaptureSources(source.type);
         let found = null;
 
         if (resolvedSourceId || resolvedSourceName) {
-          found = scan.sources.find((s) => s.id === resolvedSourceId)
-            || scan.sources.find((s) => s.name === resolvedSourceName)
-            || scan.sources.find((s) => resolvedSourceName && s.name.toLowerCase() === resolvedSourceName.toLowerCase());
+          found = {
+            id: resolvedSourceId,
+            name: resolvedSourceName || 'Remembered source',
+            kind: String(resolvedSourceId || '').startsWith('screen:') ? 'screen' : 'window'
+          };
         }
 
-        // For device: auto-detect QuickTime by name rank if no explicit source or stale ID
-        if (!found && isDevice) {
-          found = scan.sources.find((s) => rankSource(s, 'device') <= 20);
+        if (!found) {
+          const scan = await queryCaptureSources(source.type);
+          if (resolvedSourceName) {
+            found = scan.sources.find((s) => s.name === resolvedSourceName)
+              || scan.sources.find((s) => resolvedSourceName && s.name.toLowerCase() === resolvedSourceName.toLowerCase());
+          }
+          // For device: auto-detect QuickTime by name rank if no explicit source or stale ID
+          if (!found && isDevice) {
+            found = scan.sources.find((s) => rankSource(s, 'device') <= 20);
+          }
         }
 
         if (!found) {
@@ -1326,13 +1348,14 @@
         }
 
         paneEl.appendChild(videoContainer);
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: found.id } }
+        const connected = await startCapture(found, video, null, {
+          kind: isDevice ? 'device' : 'window',
+          splitPaneKey: pane,
+          registerSplitStream: !isDevice,
+          preserveMobile: true,
+          silent: true
         });
-        splitStreams[pane] = stream;
-        video.srcObject = stream;
-        await video.play();
+        if (!connected) throw new Error('Capture stream did not render.');
       } catch (err) {
         paneEl.innerHTML = `<div class="split-placeholder">${isDevice ? 'Mobile device disconnected.' : `Capture failed: ${escapeHtml(err.message)}`}</div>`;
       }
@@ -1478,6 +1501,29 @@
       renderSlides(scene);
       sendNotesContext(scene);
       return true;
+    }
+
+    function isLiveStream(stream) {
+      return Boolean(stream && stream.getVideoTracks && stream.getVideoTracks().some((track) => track.readyState === 'live'));
+    }
+
+    function sourceFromScene(scene) {
+      if (!scene || !scene.sourceId) return null;
+      return {
+        id: scene.sourceId,
+        name: scene.sourceName || 'Remembered source',
+        kind: String(scene.sourceId).startsWith('screen:') ? 'screen' : 'window',
+        thumbnail: ''
+      };
+    }
+
+    async function waitForRenderableVideo(video, timeoutMs = 2500) {
+      const started = Date.now();
+      while (Date.now() - started < timeoutMs) {
+        if (video && video.videoWidth > 0 && video.videoHeight > 0 && !video.paused) return true;
+        await new Promise((resolve) => setTimeout(resolve, 120));
+      }
+      return false;
     }
 
     function sceneBackgroundUrl(scene) {
@@ -1704,7 +1750,7 @@
       activeId = id;
       const scene = sceneById(id) || sceneById('flow') || defaultScenes[0];
       renderToolbar();
-      stopStream();
+      stopStream({ preserveMobile: true });
       hideStatus(windowStatus);
       hideStatus(deviceStatus);
       hideStatus(slidesStatus);
@@ -2505,11 +2551,11 @@
         : kind === 'slides'
           ? document.getElementById('selected-slides-label')
           : document.getElementById('selected-window-label');
-      statusLabel.textContent = `Connected: ${source.name}`;
+      statusLabel.textContent = `Connecting: ${source.name}`;
       if (scene.id === activeId) {
         const video = kind === 'device' ? iphoneVideo : windowVideo;
         const status = kind === 'device' ? deviceStatus : windowStatus;
-        const connected = await startCapture(source, video, status);
+        const connected = await startCapture(source, video, status, { kind });
         if (kind === 'device' && !connected) return;
       }
       ipcRenderer.send('focus-main-window');
@@ -2577,7 +2623,9 @@
           ? 'Capture returned 0 x 0 and Electron has no listed sources; using full-screen fallback.'
           : `Capture returned 0 x 0 and source scan failed; using full-screen fallback. ${scan.diagnostics.sourceScanError || ''}`, options);
       }
-      const fallback = scan.sources.find((source) => source.id !== failedSource.id && source.kind === 'screen')
+      const fallback = scan.sources.find((source) => source.id !== failedSource.id && rankSource(source, 'device') <= 20)
+        || scan.sources.find((source) => source.id !== failedSource.id && source.kind === 'window')
+        || scan.sources.find((source) => source.id !== failedSource.id && source.kind === 'screen')
         || fallbackScreenSource(scan);
       if (!fallback) {
         showDeviceFallback();
@@ -2696,6 +2744,13 @@
         permissionPromptSceneId = '';
         renderToolbar();
       }
+      if (scene.type === 'device') {
+        const remembered = sourceFromScene(scene);
+        if (remembered) {
+          const connected = await startCapture(remembered, video, statusEl, { kind: 'device', preserveMobile: true, silent: true });
+          if (connected) return;
+        }
+      }
       if (!scene.sourceId && !scene.sourceName) {
         hideStatus(statusEl);
         if (scene.type === 'device') await detectQuickTimeSource(true);
@@ -2742,9 +2797,26 @@
     }
 
     async function startCapture(source, video, statusEl, options = {}) {
+      const isDeviceVideo = options.kind === 'device' || video === iphoneVideo;
       try {
-        stopStream();
-        const isDeviceVideo = video === iphoneVideo;
+        if (isDeviceVideo && isLiveStream(mobileStream) && mobileStreamSource && mobileStreamSource.id === source.id) {
+          video.srcObject = mobileStream;
+          await video.play().catch(() => {});
+          if (await waitForRenderableVideo(video, 1500)) {
+            hideStatus(statusEl);
+            return true;
+          }
+          mobileStream.getTracks().forEach((track) => track.stop());
+          mobileStream = null;
+          mobileStreamSource = null;
+          video.srcObject = null;
+        }
+        if (isDeviceVideo && mobileStream && (!mobileStreamSource || mobileStreamSource.id !== source.id)) {
+          mobileStream.getTracks().forEach((track) => track.stop());
+          mobileStream = null;
+          mobileStreamSource = null;
+        }
+        if (!isDeviceVideo) stopStream({ preserveMobile: true });
         if (isDeviceVideo) updateDeviceDiagnostics({
           selectedSource: `${source.name} [${source.id}]`,
           staleSource: false,
@@ -2770,7 +2842,16 @@
           audio: false,
           video: videoConstraints
         });
-        currentStream = stream;
+        if (isDeviceVideo && !options.silent) {
+          mobileStream = stream;
+          mobileStreamSource = { id: source.id, name: source.name };
+        } else {
+          currentStream = stream;
+        }
+        if (options.registerSplitStream && options.splitPaneKey && !isDeviceVideo) {
+          if (splitStreams[options.splitPaneKey]) splitStreams[options.splitPaneKey].getTracks().forEach((track) => track.stop());
+          splitStreams[options.splitPaneKey] = stream;
+        }
         video.srcObject = stream;
         const track = stream.getVideoTracks()[0];
         if (isDeviceVideo) updateDeviceDiagnostics({
@@ -2826,19 +2907,20 @@
         // If frames stop arriving for > 4 s the stream has frozen; restart capture.
         if (captureFrameWatchdog) clearInterval(captureFrameWatchdog);
         captureLastFrameTime = Date.now();
+        const watchedStream = isDeviceVideo ? mobileStream : currentStream;
         const attachFrameCallback = (v) => {
           if (!v.requestVideoFrameCallback) return;
           const tick = () => {
             captureLastFrameTime = Date.now();
             // Only re-register if this is still the active stream
-            if (v.srcObject === currentStream) v.requestVideoFrameCallback(tick);
+            if (v.srcObject === watchedStream) v.requestVideoFrameCallback(tick);
           };
           v.requestVideoFrameCallback(tick);
         };
         attachFrameCallback(video);
         captureFrameWatchdog = setInterval(async () => {
           // If the stream ended or was replaced, clear watchdog
-          if (!currentStream || video.srcObject !== currentStream) {
+          if (!watchedStream || video.srcObject !== watchedStream) {
             clearInterval(captureFrameWatchdog); captureFrameWatchdog = null; return;
           }
           const age = Date.now() - captureLastFrameTime;
@@ -2864,7 +2946,12 @@
       } catch (error) {
         console.error('[startCapture] getUserMedia failed:', error.name, error.message, error.constraint || '', error);
         showStatus(statusEl, `Capture failed: ${error.message || 'Unable to start selected source.'}`);
-        if (video === iphoneVideo) {
+        if (isDeviceVideo) {
+          if (mobileStream) mobileStream.getTracks().forEach((track) => track.stop());
+          mobileStream = null;
+          mobileStreamSource = null;
+        }
+        if (isDeviceVideo && !options.silent) {
           const permission = await ipcRenderer.invoke('check-screen-permission').catch(() => 'unknown');
           updateDeviceDiagnostics({
             permission,
@@ -2894,13 +2981,18 @@
       }
     }
 
-    function stopStream() {
+    function stopStream(options = {}) {
       if (captureFrameWatchdog) { clearInterval(captureFrameWatchdog); captureFrameWatchdog = null; }
       captureLastFrameTime = 0;
       if (currentStream) currentStream.getTracks().forEach((track) => track.stop());
       currentStream = null;
       windowVideo.srcObject = null;
-      iphoneVideo.srcObject = null;
+      if (!options.preserveMobile) {
+        if (mobileStream) mobileStream.getTracks().forEach((track) => track.stop());
+        mobileStream = null;
+        mobileStreamSource = null;
+        iphoneVideo.srcObject = null;
+      }
       // Also stop split-pane capture streams
       if (splitStreams.a) { splitStreams.a.getTracks().forEach((t) => t.stop()); splitStreams.a = null; }
       if (splitStreams.b) { splitStreams.b.getTracks().forEach((t) => t.stop()); splitStreams.b = null; }
@@ -3162,6 +3254,7 @@
     }
 
     function showStatus(el, message) {
+      if (!el) return;
       el.classList.remove('permission');
       el.textContent = message;
       el.classList.remove('hidden');
@@ -3173,6 +3266,7 @@
     }
 
     function hideStatus(el) {
+      if (!el) return;
       el.textContent = '';
       el.classList.remove('permission');
       el.classList.add('hidden');
@@ -3244,6 +3338,10 @@
     });
     document.getElementById('cameo-mirror-toggle').addEventListener('change', (e) => {
       saveCameoSetting('mirror', e.target.checked);
+      applyCameoVisuals();
+    });
+    document.getElementById('cameo-flip-toggle').addEventListener('change', (e) => {
+      saveCameoSetting('flip', e.target.checked);
       applyCameoVisuals();
     });
     document.getElementById('cameo-border-toggle').addEventListener('change', (e) => {
@@ -3378,13 +3476,17 @@
       const idx = Math.max(0, Math.min(Number(slideIndex) || 0, slides.length - 1));
       scene.slideIndex = idx;
       saveScenes();
-      if (scene.id === activeId) renderSlides(scene);
-      sendNotesContext(scene);
+      if (scene.id !== activeId) {
+        showScene(scene.id);
+      } else {
+        renderSlides(scene);
+        sendNotesContext(scene);
+      }
       if (editor.classList.contains('open') && scene.type === 'slides') renderSlideThumbnails(scene);
     });
 
     window.addEventListener('beforeunload', () => {
-      stopStream();
+      stopStream({ preserveMobile: false });
       stopQuickTimeDetection();
       stopPermissionRecovery();
       if (thumbnailRefreshTimer) clearInterval(thumbnailRefreshTimer);
